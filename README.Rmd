@@ -22,6 +22,12 @@ regex so don't expect it to be robust.  The code is slow and hacky.
 This is package is experimental, lightly tested, and not intended for production
 use.
 
+## Related
+
+* [svgpathtools](https://github.com/mathandy/svgpathtools).
+* [objjob svg](http://objjob.phrogz.net/svg/hierarchy) for
+  [`getPointAtLength`](http://phrogz.net/svg/convert_path_to_polygon.xhtml).
+
 ## Acknowledgments
 
 * R Core for developing and maintaining such a wonderful language.
