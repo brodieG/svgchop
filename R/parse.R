@@ -53,7 +53,7 @@ path_to_abs <- function(path) {
           y0 <- y
         }
         list(
-          c(cmd, rep(if(cmd == "C") "C" else "L"), len / 2 - 1),
+          c(cmd, rep(if(cmd == "C") "C" else "L", len / 2 - 1)),
           xs, ys
         )
       },
@@ -78,31 +78,19 @@ path_to_abs <- function(path) {
   ys <- unlist(lapply(path, '[[', 3))
   data.frame(cmd=cmds, x=xs, y=ys)
 }
-#' Split Path Into sub-paths
-#'
-#' A sub-path starts with M and contains no other Ms.
-#'
-#' @noRd
-#' @param data frame with cmd,x,y
-#' @return list of data frames each with a single sub-path
-
-split_path <- function(path)
-  unname(split(path, cumsum(path[['cmd']] == 'M')))
-
-
 #' Parse "d" Path Command
 #'
 #' Convert "d" path attribute into a more usable format containing only "M",
 #' "C", and "L" commands.
 #'
 #' @export
-#' @param x character a vector of the contents of the d attribute of SVG paths
+#' @param x character length 1
 #' @return a list of of length equal to `x`'s, with each element a list
-#'   containing as many data frames  as there are sub-paths in the corresponding
+#'   containing as many data frames as there are sub-paths in the corresponding
 #'   `x` element, with each data frame containing a column with commands in
 #'   `c("M","L","C")`.
 
-parse_path <- function(x) {
+parse_d <- function(x) {
   if(!is.character(x) || length(x) != 1) stop("Input not character(1L)")
   raw <- regmatches(x, gregexpr("-?[0-9.]+|[a-zA-Z]", x))[[1]]
   raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
@@ -112,12 +100,29 @@ parse_path <- function(x) {
       else list()
   } )
   # Convert to absolute coords
-  cmds.abs <- lapply(cmds, path_to_abs)
+  cmds.abs <- path_to_abs(cmds)
 
   # Split subpaths into paths
-  cmds.s <- unlist(lapply(cmds.abs, split_path), recursive=FALSE)
+  unname(split(cmds.abs, cumsum(cmds.abs[['cmd']] == 'M')))
+}
+#' Convert SVG Path to More Usable Format
+#'
+#' @param x a list representing a single SVG "path", which each element of the
+#'   list a property of the path.  It may be useful to ensure paths have an id
+#'   attribute to keep track of where each sub-path produced by this function
+#'   came from.
+#' @return a list with as many elements as there are sub-paths in the path "d"
+#'   property.  Each element is a "subpath" S3 object containing the path
+#'   commands and coordinates in a data frame, and all other path properties as
+#'   strings
 
-  cmds.s
+parse_path <- function(x) {
+  if(!"d" %in% names(x)) {
+    list()
+  } else {
+    d <- parse_d(x[['d']])
+    lapply(d, function(y) {x[['d']] <- y; structure(x, class='subpath')})
+  }
 }
 
 get_path <- function(dat) {

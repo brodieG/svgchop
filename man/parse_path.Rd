@@ -2,20 +2,22 @@
 % Please edit documentation in R/parse.R
 \name{parse_path}
 \alias{parse_path}
-\title{Parse "d" Path Command}
+\title{Convert SVG Path to More Usable Format}
 \usage{
 parse_path(x)
 }
 \arguments{
-\item{x}{character a vector of the contents of the d attribute of SVG paths}
+\item{x}{a list representing a single SVG "path", which each element of the
+list a property of the path.  It may be useful to ensure paths have an id
+attribute to keep track of where each sub-path produced by this function
+came from.}
 }
 \value{
-a list of of length equal to \code{x}'s, with each element a list
-containing as many data frames  as there are sub-paths in the corresponding
-\code{x} element, with each data frame containing a column with commands in
-\code{c("M","L","C")}.
+a list with as many elements as there are sub-paths in the path "d"
+property.  Each element is a "subpath" S3 object containing the path
+commands and coordinates in a data frame, and all other path properties as
+strings
 }
 \description{
-Convert "d" path attribute into a more usable format containing only "M",
-"C", and "L" commands.
+Convert SVG Path to More Usable Format
 }

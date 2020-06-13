@@ -27,6 +27,8 @@ use.
 * [svgpathtools](https://github.com/mathandy/svgpathtools).
 * [objjob svg](http://objjob.phrogz.net/svg/hierarchy) for
   [`getPointAtLength`](http://phrogz.net/svg/convert_path_to_polygon.xhtml).
+* [SVG Path Spec](https://www.w3.org/TR/SVG/paths.html)
+* [svg.path](https://github.com/regebro/svg.path)
 
 ## Acknowledgments
 
