@@ -2,6 +2,10 @@
 
 export(interp_path)
 export(parse_d)
+import(vetr)
+importFrom(grid,convertX)
+importFrom(grid,convertY)
+importFrom(grid,unit)
 importFrom(gridBezier,BezierGrob)
 importFrom(gridBezier,BezierPoints)
 importFrom(gridBezier,nSteps)
