@@ -37,7 +37,7 @@ path_to_abs <- function(path) {
     len <- length(el[[2]])
     path[[i]] <- switch(
       el[[1]],
-      c=,C=,m=,l=,M=,L={
+      m=,l=,M=,L={
         if(!len || len %% 2) invalid_cmd(i, el[[1]])
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
@@ -53,14 +53,33 @@ path_to_abs <- function(path) {
           y0 <- y
         }
         list(
-          c(cmd, rep(if(cmd == "C") "C" else "L", len / 2 - 1)),
+          c(cmd, rep("L", len / 2 - 1)),
           xs, ys
         )
+      },
+      c=,C={
+        if(!len || len %% 6) invalid_cmd(i, el[[1]])
+        xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
+        ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
+        if(el[[1]] == 'c') {
+          # reset current point every 3 coordinate pairs; not clear if it should
+          # be every three or at the end of a command, hoping it is every three
+          # otherwise we have to distinguish b/w sequential C commands and a
+          # longer C command.
+          x.off <- c(0, cumsum(xs[seq(3, length.out=len / 6 - 1, by=3)])) + x
+          y.off <- c(0, cumsum(ys[seq(3, length.out=len / 6 - 1, by=3)])) + y
+          xs <- xs + rep(x.off, each=3)
+          ys <- ys + rep(y.off, each=3)
+        }
+        x <- xs[len / 2]
+        y <- ys[len / 2]
+        list(rep("C", len / 2), xs, ys)
       },
       v=,h=,V=,H={
         rel <- el[[1]] == 'v' || el[[1]] == 'h'
         f <- if(rel) cumsum else identity
-        if(el[[1]] == 'v') y <- f(el[[2]]) + y * rel
+        cmd <- toupper(el[[1]])
+        if(cmd == 'V') y <- f(el[[2]]) + y * rel
         else x <- f(el[[2]]) + x * rel
         list(rep("L", length(x)), x, y)
       },
@@ -105,8 +124,9 @@ parse_d <- function(x) {
   # Split subpaths into paths
   unname(split(cmds.abs, cumsum(cmds.abs[['cmd']] == 'M')))
 }
-#' Convert SVG Path to More Usable Format
+#' Convert SVG Path to More Usable format
 #'
+#' @export
 #' @param x a list representing a single SVG "path", which each element of the
 #'   list a property of the path.  It may be useful to ensure paths have an id
 #'   attribute to keep track of where each sub-path produced by this function
@@ -124,13 +144,18 @@ parse_path <- function(x) {
     lapply(d, function(y) {x[['d']] <- y; structure(x, class='subpath')})
   }
 }
+#' Retrieve SVG Paths From File
+#'
+#' Pull all paths out of SVG file.
+#'
+#' @export
+#' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip
+#' @param file an SVG file
+#' @return a list of lists, each element containing all the attributes of one of
+#'   the paths
 
-get_path <- function(dat) {
-  path <- unlist(strsplit(sub('^"(.*)"$', '\\1', dat), " "))
-  path <- path[-length(path)]  # drop "Z" command at end
-  cmd <- sub("^([A-Z]*).*$", "\\1", path)
-  x <- sub("[^0-9]*([0-9.]*),.*$", "\\1", path)
-  y <- sub(".*,([0-9.]*).*$", "\\1", path)
-  d <- data.frame(i=seq_along(x), x=as.numeric(x), y=as.numeric(y), cmd=cmd)
-  d
+get_paths <- function(file) {
+  xml <- xml_ns_strip(read_xml(file))
+  paths <- xml_find_all(xml, ".//path")
+  lapply(xml_attrs(paths), as.list)
 }

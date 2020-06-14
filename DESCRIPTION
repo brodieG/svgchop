@@ -15,7 +15,8 @@ Depends:
 Imports:
     grid,
     gridBezier,
-    vetr
+    vetr,
+    xml2
 License: GPL (>= 2)
 LazyData: true
 URL: https://github.com/brodieG/svgchop

@@ -2,7 +2,7 @@
 % Please edit documentation in R/parse.R
 \name{parse_path}
 \alias{parse_path}
-\title{Convert SVG Path to More Usable Format}
+\title{Convert SVG Path to More Usable format}
 \usage{
 parse_path(x)
 }
@@ -19,5 +19,5 @@ commands and coordinates in a data frame, and all other path properties as
 strings
 }
 \description{
-Convert SVG Path to More Usable Format
+Convert SVG Path to More Usable format
 }

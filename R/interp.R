@@ -48,7 +48,7 @@ interp_path <- function(
 
   brle <- with(d, rle(cmd == "C"))
   bends <- with(brle, cumsum(lengths)[values])
-  bstarts <- with(brle, cumsum(lengths)[!values])
+  bstarts <- with(brle, cumsum(lengths)[!values])[seq_along(bends)]
 
   # BezierGrob seems to open a display device...
 
@@ -57,7 +57,7 @@ interp_path <- function(
       points <- d[start:end, c('x', 'y')]
       BezierGrob(points[[1]], points[[2]], stepFn=nSteps(steps))
     },
-    bstarts[seq_along(bends)],
+    bstarts,
     bends
   )
   # Can't figure out how to get BezierPoints to not return in inches, so
