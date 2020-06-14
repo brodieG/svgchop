@@ -128,9 +128,8 @@ parse_d <- function(x) {
 #'
 #' @export
 #' @param x a list representing a single SVG "path", which each element of the
-#'   list a property of the path.  It may be useful to ensure paths have an id
-#'   attribute to keep track of where each sub-path produced by this function
-#'   came from.
+#'   list a property of the path.  The "d" property will be a list of "subpath"
+#'   S3 objects.
 #' @return a list with as many elements as there are sub-paths in the path "d"
 #'   property.  Each element is a "subpath" S3 object containing the path
 #'   commands and coordinates in a data frame, and all other path properties as
@@ -146,22 +145,21 @@ parse_path <- function(x) {
 #' Pull all paths out of SVG file and converts the "d" attribute into a path
 #' command using only M, C, and L commands.  Only a subset of the path commands
 #' are handled.
-#' @export
 #'
-#' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip
+#' @export
+#' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #' @seealso [interp_paths()]
 #' @param file an SVG file
-#' @return an "svg_paths" object, which is a list of "svg_path" objects.
-#'
-#' list of lists, each element containing all the attributes of one of
-#'   the paths
+#' @return an "svg_paths" S3 object, which is a list of "svg_path" objects with
+#'   the `x`, `y`, `width`, and `height` values of the outer SVG element
+#'   recorded in the "box" attribute.
 
 parse_paths <- function(file) {
   xml <- xml_ns_strip(read_xml(file))
   if(!identical(xml_name(xml), "svg"))
     stop("Document does not start with an svg node")
   attrs <- xml_attrs(xml)
-  width <- height <- NA_real_
+  width <- height <- x <- y <- NA_real_
   if(all(c('width', 'height') %in% names(attrs))) {
     if(!grepl("^\\d+$", attrs['width']))
       stop("Unrecognize width format ", attrs['width'])
@@ -172,16 +170,26 @@ parse_paths <- function(file) {
   } else if ('viewBox' %in% names(attrs)) {
     # this isn't right, but appears to work in the couple of examples I've
     # worked with as the width/height and viewbox are the same
-    if(!grepl("^\\w*\\d+\\w+\\d+\\w+\\d+\\w+\\d+\\w*$", attrs['viewBox']))
+    if(!grepl("^\\s*\\d+\\s+\\d+\\s+\\d+\\s+\\d+\\s*$", attrs['viewBox']))
       stop("viewBox attribute in unknown format ", attrs['viewBox'])
-    viewbox <- strsplit(trimws(attrs['viewBox']), "\\w+")[[1]]
-    width <- viewbox[3]
-    height <- viewbox[4]
+    viewbox <- strsplit(trimws(attrs['viewBox']), "\\s+")[[1]]
+    x <- as.numeric(viewbox[1])
+    y <- as.numeric(viewbox[2])
+    width <- as.numeric(viewbox[3])
+    height <- as.numeric(viewbox[4])
+  }
+  if(is.na(x) && all(c('x', 'y') %in% names(attrs))) {
+    if(!grepl("^\\d+$", attrs['x']))
+      stop("Unrecognize width format ", attrs['x'])
+    if(!grepl("^\\d+$", attrs['height']))
+      stop("Unrecognize y format ", attrs['y'])
+    x <- as.numeric(attrs['x'])
+    y <- as.numeric(attrs['y'])
   }
   paths <- xml_find_all(xml, ".//path")
   paths <- lapply(xml_attrs(paths), as.list)
   structure(
     lapply(paths, parse_path),
-    class='svg_paths', width=width, height=height
+    class='svg_paths', box=c(x, y, width, height)
   )
 }

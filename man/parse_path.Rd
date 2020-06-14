@@ -8,9 +8,8 @@ parse_path(x)
 }
 \arguments{
 \item{x}{a list representing a single SVG "path", which each element of the
-list a property of the path.  It may be useful to ensure paths have an id
-attribute to keep track of where each sub-path produced by this function
-came from.}
+list a property of the path.  The "d" property will be a list of "subpath"
+S3 objects.}
 }
 \value{
 a list with as many elements as there are sub-paths in the path "d"

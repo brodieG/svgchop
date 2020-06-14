@@ -1,48 +1,73 @@
 #' Interpolate Path Curves
 #'
-#' Converts an SVG path in the format produced by [parse_path()] into pure x-y
+#' Converts an SVG paths in the format produced by [parse_paths()] into pure x-y
 #' coordinates by interpolating the Bezier curves.
 #'
 #' @export
 #' @importFrom gridBezier BezierGrob BezierPoints nSteps
 #' @importFrom grid unit convertX convertY
-#' @seealso [parse_path()]
-#' @param x a "subpath" S3 objects as produced by [parse_path()]
-#' @param width numeric(1) or numeric(2) or NULL, the width of the device, used
-#'   to normalize x coordinates into 0-1 range.  If two values are provided then
-#'   they represent the x range.  If a single value is provided then the other
-#'   end of the range is assumed to be zero.  If NULL is provided, the range is
-#'   taken to be the range covered by the supplied coordinates.  No effort is
-#'   made to compute the actual bounding box for any included Bezier curves.
+#' @seealso [parse_paths()]
+#' @param x a "svg_paths" S3 object as produced by [parse_paths()]
+#' @param box integer(4) or NULL, the x and y offset of the SVG display box, and
+#'   the width and height of that box, in that order.  If NULL these values will
+#'   be those that define the "bounding" box of the coordinates in `x`, although
 #'   The bounding box is defined simply to contain the supplied points,
 #'   including control points.
-#' @param height like `width`, except for the y range.
-#' @param normalize whether coordinates should be returned in 0-1 range.
-#' @return a "subpath_xy" S3 object, which is just like a "subpath" object, but
+#' @param normalize whether coordinates should be returned in 0-1 range.  If the
+#'   input range is not square the longest dimension will span 0-1 and the
+#'   shorter one whatever range starting at 0 preserves the aspect ratio.
+#' @return a "svg_paths_xy" S3 object, which is like a "svg_paths" object, but
 #'   the coordinates are expressed purely as x-y values and should be
 #'   interpreted as the vertices of a polygon or connected straight line
 #'   segments.
 
-interp_path <- function(
-  x, steps=10, width=NULL, height=NULL, normalize=FALSE
-) {
+interp_paths <- function(x, steps=10, box=NULL, normalize=FALSE) {
   vetr(
-    structure(list(), class='subpath'),
+    structure(list(), class='svg_paths'),
     INT.1.POS,
-    NULL || integer(1L) || integer(2L),
-    NULL || integer(1L) || integer(2L),
+    NUM.POS && length(.) == 4 || NULL,
     LGL.1
   )
-  d <- x[['d']]
-  if(is.null(width)) width <- range(d[['x']])
-  if(is.null(height)) height <- range(d[['y']])
-  if(length(width) == 1) width <- c(0, width)
-  if(length(height) == 1) height <- c(0, height)
+  if(is.null(box) && is.null(attr(x, 'box'))) {
+    coords.all <- do.call(rbind, unlist(lapply(x, '[[', 'd'), recursive=FALSE))
+    x.rng <- range(coords.all[['x']])
+    y.rng <- range(coords.all[['y']])
+    box <- c(x.rng[1], y.rng[1], diff(x.rng), diff(y.rng))
+  } else if(is.null(box)) {
+    box <- attr(x, 'box')
+  }
+  # Apply interpolation
+
+  interp <- lapply(
+    x,
+    function(y) {
+      y[['d']] <- lapply(y[['d']], interp_path, steps, box, normalize)
+      y
+  } )
+  # Collapse sub-paths into one DF, tracking the start points of each
+
+  paths_xy <- lapply(
+    interp,
+    function(y) {
+      starts <-
+        cumsum(vapply(y[['d']], nrow, numeric(1L)))[-length(y[['d']])] + 1L
+      coords <- do.call(rbind, y[['d']])
+      attr(coords, 'starts') <- starts
+      y[['d']] <- coords
+      y
+    }
+  )
+  structure(paths_xy, class='svg_paths_xy', box='box')
+}
+
+interp_path <- function(x, steps, box, normalize) {
+  d <- x
+  scale  <- max(box[3:4])
 
   # Normalize for npc use for GridBezier
 
-  d[['x']] <- (d[['x']] - width[1]) / diff(width)
-  d[['y']] <- (d[['y']] - height[1]) / diff(height)
+  d[['x']] <- (d[['x']] - box[1]) / scale
+  d[['y']] <- (d[['y']] - box[2]) / scale
 
   # C commands start one before the C command.
 
@@ -54,7 +79,7 @@ interp_path <- function(
 
   bzs <- Map(
     function(start, end) {
-      points <- d[start:end, c('x', 'y')]
+      points <- lapply(d[c('x', 'y')], '[', start:end)
       BezierGrob(points[[1]], points[[2]], stepFn=nSteps(steps))
     },
     bstarts,
@@ -75,7 +100,7 @@ interp_path <- function(
   lstarts <- with(lrle, cumsum(lengths)[!values][seq_along(lends)])
 
   lnsp <- Map(
-    function(start, end) d[start:end, c('x', 'y')],
+    function(start, end) lapply(d[c('x', 'y')], '[', start:end),
     lstarts,
     lends
   )
@@ -88,12 +113,10 @@ interp_path <- function(
   # Rescale
 
   if(!normalize) {
-    xvals <- (xvals * diff(width)) + width[1]
-    yvals <- (yvals * diff(height)) + height[1]
+    xvals <- (xvals * scale) + box[1]
+    yvals <- (yvals * scale) + box[2]
   }
-  class(x) <- "subpath_xy"
-  x[['d']] <- data.frame(x=xvals, y=yvals)
-  x
+  data.frame(x=xvals, y=yvals)
 }
 
 
