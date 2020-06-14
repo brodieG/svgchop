@@ -137,25 +137,51 @@ parse_d <- function(x) {
 #'   strings
 
 parse_path <- function(x) {
-  if(!"d" %in% names(x)) {
-    list()
-  } else {
-    d <- parse_d(x[['d']])
-    lapply(d, function(y) {x[['d']] <- y; structure(x, class='subpath')})
-  }
+  if(!"d" %in% names(x)) x[['d']] <- list()
+  x[['d']] <- lapply(parse_d(x[['d']]), structure, class='subpath')
+  x
 }
 #' Retrieve SVG Paths From File
 #'
-#' Pull all paths out of SVG file.
-#'
+#' Pull all paths out of SVG file and converts the "d" attribute into a path
+#' command using only M, C, and L commands.  Only a subset of the path commands
+#' are handled.
 #' @export
+#'
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip
+#' @seealso [interp_paths()]
 #' @param file an SVG file
-#' @return a list of lists, each element containing all the attributes of one of
+#' @return an "svg_paths" object, which is a list of "svg_path" objects.
+#'
+#' list of lists, each element containing all the attributes of one of
 #'   the paths
 
-get_paths <- function(file) {
+parse_paths <- function(file) {
   xml <- xml_ns_strip(read_xml(file))
+  if(!identical(xml_name(xml), "svg"))
+    stop("Document does not start with an svg node")
+  attrs <- xml_attrs(xml)
+  width <- height <- NA_real_
+  if(all(c('width', 'height') %in% names(attrs))) {
+    if(!grepl("^\\d+$", attrs['width']))
+      stop("Unrecognize width format ", attrs['width'])
+    if(!grepl("^\\d+$", attrs['height']))
+      stop("Unrecognize height format ", attrs['height'])
+    width <- as.numeric(attrs['width'])
+    height <- as.numeric(attrs['height'])
+  } else if ('viewBox' %in% names(attrs)) {
+    # this isn't right, but appears to work in the couple of examples I've
+    # worked with as the width/height and viewbox are the same
+    if(!grepl("^\\w*\\d+\\w+\\d+\\w+\\d+\\w+\\d+\\w*$", attrs['viewBox']))
+      stop("viewBox attribute in unknown format ", attrs['viewBox'])
+    viewbox <- strsplit(trimws(attrs['viewBox']), "\\w+")[[1]]
+    width <- viewbox[3]
+    height <- viewbox[4]
+  }
   paths <- xml_find_all(xml, ".//path")
-  lapply(xml_attrs(paths), as.list)
+  paths <- lapply(xml_attrs(paths), as.list)
+  structure(
+    lapply(paths, parse_path),
+    class='svg_paths', width=width, height=height
+  )
 }
