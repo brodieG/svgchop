@@ -15,7 +15,7 @@
 #'   including control points.
 #' @param normalize whether coordinates should be returned in 0-1 range.  If the
 #'   input range is not square the longest dimension will span 0-1 and the
-#'   shorter one whatever range starting at 0 preserves the aspect ratio.
+#'   shorter one whatever range preserves the aspect ratio, centered at 0.5.
 #' @return a "svg_paths_xy" S3 object, which is like a "svg_paths" object, but
 #'   the coordinates are expressed purely as x-y values and should be
 #'   interpreted as the vertices of a polygon or connected straight line
@@ -66,8 +66,12 @@ interp_path <- function(x, steps, box, normalize) {
 
   # Normalize for npc use for GridBezier
 
-  d[['x']] <- (d[['x']] - box[1]) / scale
-  d[['y']] <- (d[['y']] - box[2]) / scale
+  d[['x']] <- (
+    d[['x']] - box[1] + (scale -  box[3]) / 2
+  ) / scale
+  d[['y']] <- (
+    d[['y']] - box[2] + (scale -  box[4]) / 2
+  ) / scale
 
   # C commands start one before the C command.
 
@@ -113,8 +117,8 @@ interp_path <- function(x, steps, box, normalize) {
   # Rescale
 
   if(!normalize) {
-    xvals <- (xvals * scale) + box[1]
-    yvals <- (yvals * scale) + box[2]
+    xvals <- (xvals * scale) + box[1] - ((scale -  box[3]) / 2)
+    yvals <- (yvals * scale) + box[2] - ((scale -  box[4]) / 2)
   }
   data.frame(x=xvals, y=yvals)
 }
