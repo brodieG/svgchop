@@ -186,6 +186,9 @@ parse_paths <- function(file) {
     x <- as.numeric(attrs['x'])
     y <- as.numeric(attrs['y'])
   }
+  if(is.na(x)) x <- 0
+  if(is.na(y)) y <- 0
+
   paths <- xml_find_all(xml, ".//path")
   paths <- lapply(xml_attrs(paths), as.list)
   structure(
