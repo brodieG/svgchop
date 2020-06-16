@@ -57,7 +57,7 @@ interp_paths <- function(x, steps=10, box=NULL, normalize=FALSE) {
       y
     }
   )
-  structure(paths_xy, class='svg_paths_xy', box='box')
+  structure(paths_xy, class='svg_paths_xy', box=box)
 }
 
 interp_path <- function(x, steps, box, normalize) {
