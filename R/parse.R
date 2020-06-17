@@ -37,7 +37,7 @@ path_to_abs <- function(path) {
     len <- length(el[[2]])
     path[[i]] <- switch(
       el[[1]],
-      c=,C=,m=,l=,M=,L={
+      m=,l=,M=,L={
         if(!len || len %% 2) invalid_cmd(i, el[[1]])
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
@@ -53,14 +53,33 @@ path_to_abs <- function(path) {
           y0 <- y
         }
         list(
-          c(cmd, rep(if(cmd == "C") "C" else "L"), len / 2 - 1),
+          c(cmd, rep("L", len / 2 - 1)),
           xs, ys
         )
+      },
+      c=,C={
+        if(!len || len %% 6) invalid_cmd(i, el[[1]])
+        xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
+        ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
+        if(el[[1]] == 'c') {
+          # reset current point every 3 coordinate pairs; not clear if it should
+          # be every three or at the end of a command, hoping it is every three
+          # otherwise we have to distinguish b/w sequential C commands and a
+          # longer C command.
+          x.off <- c(0, cumsum(xs[seq(3, length.out=len / 6 - 1, by=3)])) + x
+          y.off <- c(0, cumsum(ys[seq(3, length.out=len / 6 - 1, by=3)])) + y
+          xs <- xs + rep(x.off, each=3)
+          ys <- ys + rep(y.off, each=3)
+        }
+        x <- xs[len / 2]
+        y <- ys[len / 2]
+        list(rep("C", len / 2), xs, ys)
       },
       v=,h=,V=,H={
         rel <- el[[1]] == 'v' || el[[1]] == 'h'
         f <- if(rel) cumsum else identity
-        if(el[[1]] == 'v') y <- f(el[[2]]) + y * rel
+        cmd <- toupper(el[[1]])
+        if(cmd == 'V') y <- f(el[[2]]) + y * rel
         else x <- f(el[[2]]) + x * rel
         list(rep("L", length(x)), x, y)
       },
@@ -78,31 +97,19 @@ path_to_abs <- function(path) {
   ys <- unlist(lapply(path, '[[', 3))
   data.frame(cmd=cmds, x=xs, y=ys)
 }
-#' Split Path Into sub-paths
-#'
-#' A sub-path starts with M and contains no other Ms.
-#'
-#' @noRd
-#' @param data frame with cmd,x,y
-#' @return list of data frames each with a single sub-path
-
-split_path <- function(path)
-  unname(split(path, cumsum(path[['cmd']] == 'M')))
-
-
 #' Parse "d" Path Command
 #'
 #' Convert "d" path attribute into a more usable format containing only "M",
 #' "C", and "L" commands.
 #'
 #' @export
-#' @param x character a vector of the contents of the d attribute of SVG paths
+#' @param x character length 1
 #' @return a list of of length equal to `x`'s, with each element a list
-#'   containing as many data frames  as there are sub-paths in the corresponding
+#'   containing as many data frames as there are sub-paths in the corresponding
 #'   `x` element, with each data frame containing a column with commands in
 #'   `c("M","L","C")`.
 
-parse_path <- function(x) {
+parse_d <- function(x) {
   if(!is.character(x) || length(x) != 1) stop("Input not character(1L)")
   raw <- regmatches(x, gregexpr("-?[0-9.]+|[a-zA-Z]", x))[[1]]
   raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
@@ -112,20 +119,80 @@ parse_path <- function(x) {
       else list()
   } )
   # Convert to absolute coords
-  cmds.abs <- lapply(cmds, path_to_abs)
+  cmds.abs <- path_to_abs(cmds)
 
   # Split subpaths into paths
-  cmds.s <- unlist(lapply(cmds.abs, split_path), recursive=FALSE)
-
-  cmds.s
+  unname(split(cmds.abs, cumsum(cmds.abs[['cmd']] == 'M')))
 }
+#' Convert SVG Path to More Usable format
+#'
+#' @export
+#' @param x a list representing a single SVG "path", which each element of the
+#'   list a property of the path.  The "d" property will be a list of "subpath"
+#'   S3 objects.
+#' @return a list with as many elements as there are sub-paths in the path "d"
+#'   property.  Each element is a "subpath" S3 object containing the path
+#'   commands and coordinates in a data frame, and all other path properties as
+#'   strings
 
-get_path <- function(dat) {
-  path <- unlist(strsplit(sub('^"(.*)"$', '\\1', dat), " "))
-  path <- path[-length(path)]  # drop "Z" command at end
-  cmd <- sub("^([A-Z]*).*$", "\\1", path)
-  x <- sub("[^0-9]*([0-9.]*),.*$", "\\1", path)
-  y <- sub(".*,([0-9.]*).*$", "\\1", path)
-  d <- data.frame(i=seq_along(x), x=as.numeric(x), y=as.numeric(y), cmd=cmd)
-  d
+parse_path <- function(x) {
+  if(!"d" %in% names(x)) x[['d']] <- list()
+  x[['d']] <- lapply(parse_d(x[['d']]), structure, class='subpath')
+  x
+}
+#' Retrieve SVG Paths From File
+#'
+#' Pull all paths out of SVG file and converts the "d" attribute into a path
+#' command using only M, C, and L commands.  Only a subset of the path commands
+#' are handled.
+#'
+#' @export
+#' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
+#' @seealso [interp_paths()]
+#' @param file an SVG file
+#' @return an "svg_paths" S3 object, which is a list of "svg_path" objects with
+#'   the `x`, `y`, `width`, and `height` values of the outer SVG element
+#'   recorded in the "box" attribute.
+
+parse_paths <- function(file) {
+  xml <- xml_ns_strip(read_xml(file))
+  if(!identical(xml_name(xml), "svg"))
+    stop("Document does not start with an svg node")
+  attrs <- xml_attrs(xml)
+  width <- height <- x <- y <- NA_real_
+  if(all(c('width', 'height') %in% names(attrs))) {
+    if(!grepl("^\\d+$", attrs['width']))
+      stop("Unrecognize width format ", attrs['width'])
+    if(!grepl("^\\d+$", attrs['height']))
+      stop("Unrecognize height format ", attrs['height'])
+    width <- as.numeric(attrs['width'])
+    height <- as.numeric(attrs['height'])
+  } else if ('viewBox' %in% names(attrs)) {
+    # this isn't right, but appears to work in the couple of examples I've
+    # worked with as the width/height and viewbox are the same
+    if(!grepl("^\\s*\\d+\\s+\\d+\\s+\\d+\\s+\\d+\\s*$", attrs['viewBox']))
+      stop("viewBox attribute in unknown format ", attrs['viewBox'])
+    viewbox <- strsplit(trimws(attrs['viewBox']), "\\s+")[[1]]
+    x <- as.numeric(viewbox[1])
+    y <- as.numeric(viewbox[2])
+    width <- as.numeric(viewbox[3])
+    height <- as.numeric(viewbox[4])
+  }
+  if(is.na(x) && all(c('x', 'y') %in% names(attrs))) {
+    if(!grepl("^\\d+$", attrs['x']))
+      stop("Unrecognize width format ", attrs['x'])
+    if(!grepl("^\\d+$", attrs['height']))
+      stop("Unrecognize y format ", attrs['y'])
+    x <- as.numeric(attrs['x'])
+    y <- as.numeric(attrs['y'])
+  }
+  if(is.na(x)) x <- 0
+  if(is.na(y)) y <- 0
+
+  paths <- xml_find_all(xml, ".//path")
+  paths <- lapply(xml_attrs(paths), as.list)
+  structure(
+    lapply(paths, parse_path),
+    class='svg_paths', box=c(x, y, width, height)
+  )
 }
