@@ -21,30 +21,24 @@ not intended for production use**.
     # retrieve and parse, and interpolate
     library(svgchop)
     paths.raw <- parse_paths('https://www.r-project.org/logo/Rlogo.svg')
-    paths <- interp_paths(paths.raw, normalize=TRUE)
+    paths <- interp_paths(paths.raw, steps=3, normalize=TRUE)
 
     # Paths are known to be closed in this case, so abuse that to create sub-paths
     subpaths <- lapply(
       paths, function(x) {
         x$d[attr(x$d, 'starts'),] <- NA
-        x$d$y <- 1 - x$d$y
+        x$d$y <- 1 - x$d$y  # need to flip y values
         x$d
     } )
     # Plot!
-    par(mai=numeric(4))
     plot.new()
-    Map(
-      polypath, subpaths, col=c("#A7A8AD", "#1E64B6"),
-      border=NA, rule='evenodd'
-    )
+    invisible(
+      Map(
+        polypath, subpaths, col=c("#A7A8AD", "#1E64B6"),
+        border=NA, rule='evenodd'
+    ) )
 
-![](extra/figures/README-unnamed-chunk-2-1.png)
-
-    ## [[1]]
-    ## NULL
-    ## 
-    ## [[2]]
-    ## NULL
+![](extra/figures/README-r-logo-1.png)
 
 Related
 -------
@@ -62,6 +56,23 @@ Acknowledgments
 -   Paul Murrell for
     [`gridBezier`](https://cran.r-project.org/package=gridBezier) with
     which we convert SVG curves into piecewise linear paths.
--   Jim Hester and Hadley Wickham for
-    [XML2](https://cran.r-project.org/package=xml2), which makes it easy
-    to extract properties from SVG (among other things).
+-   Jim Hester, Hadley Wickham, etal. for
+    [`xml2`](https://cran.r-project.org/package=xml2), which makes it
+    easy to extract properties from SVG (among other things).
+-   [Hadley Wickham](https://github.com/hadley/), [Peter
+    Danenberg](https://github.com/klutometis), etal. for
+    [roxygen2](https://cran.r-project.org/package=roxygen2).
+-   [Yihui Xie](https://github.com/yihui) for
+    [knitr](https://cran.r-project.org/package=knitr) and [J.J.
+    Allaire](https://github.com/jjallaire) etal for
+    [rmarkdown](https://cran.r-project.org/package=rmarkdown), and by
+    extension John MacFarlane for [pandoc](http://pandoc.org/).
+-   [Github](https://github.com/), [Travis-CI](https://travis-ci.org/),
+    [Codecov](https://codecov.io/),
+    [Vagrant](https://www.vagrantup.com/),
+    [Docker](https://www.docker.com/),
+    [Ubuntu](https://www.ubuntu.com/), [Brew](https://brew.sh/) for
+    providing infrastructure that greatly simplifies open source
+    development.
+-   [Free Software Foundation](http://fsf.org/) for developing the GPL
+    license and promotion of the free software movement.

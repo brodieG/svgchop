@@ -17,7 +17,7 @@ including control points.}
 
 \item{normalize}{whether coordinates should be returned in 0-1 range.  If the
 input range is not square the longest dimension will span 0-1 and the
-shorter one whatever range starting at 0 preserves the aspect ratio.}
+shorter one whatever range preserves the aspect ratio, centered at 0.5.}
 }
 \value{
 a "svg_paths_xy" S3 object, which is like a "svg_paths" object, but
@@ -27,7 +27,8 @@ segments.
 }
 \description{
 Converts an SVG paths in the format produced by \code{\link[=parse_paths]{parse_paths()}} into pure x-y
-coordinates by interpolating the Bezier curves.
+coordinates by interpolating the Bezier curves.  Due to how \code{gridBezier}
+works this requires spawning a new device.
 }
 \seealso{
 \code{\link[=parse_paths]{parse_paths()}}
