@@ -1,7 +1,60 @@
+#' Interpolate a single bezier curve
+#'
+#' Thin wrapper around `BezierGrob` / `BezierPoints`, but ensures result comes
+#' out in npc units.  `bezier_interp_even` returns "evenly" spaced points.  It
+#' works by subdividing the bezier according to the `t` parameter in `mult` as
+#' many segments as `steps` provided, and then interpolates along the resulting
+#' piecewise linear (yes, a nasty hack).
+#'
+#' @export
+#' @param coords a list with x and y coords only in that order.
+#' @param steps integer(1) how many equal size steps to interpolate along.
+#' @param mult how many more times to subivide per `steps` when looking for an
+#'   even interpolation.
+#' @param dev whether to spawn a new device (an open device is needed for
+#'   conversions to/from NPC to work.
+#' @return a list of coordinates in NPC (though the units are stripped) of the
+#'   points along the input curve.
+
+bezier_interp <- function(coords, steps=10, dev=TRUE) {
+  vetr(list(x=numeric(), y=numeric()), INT.1.POS.STR, LGL.1)
+  if(dev) {
+    dev.new()
+    on.exit(dev.off())
+  }
+  bzs <- BezierGrob(coords[[1]], coords[[2]], stepFn=nSteps(steps))
+
+  # Can't figure out how to get BezierPoints to not return in inches, so
+  # converting back to NPC manually, which is a real hack.
+
+  bzsp <- BezierPoints(bzs)
+  bzspi <- lapply(bzsp, unit, 'inches')
+  list(c(convertX(bzspi[[1]], 'npc')), c(convertY(bzspi[[2]], 'npc')))
+}
+#' @rdname bezier_interp
+#' @export
+
+bezier_interp_even <- function(coords, steps=10, mult=10, dev=TRUE) {
+  vetr(mult=INT.1.POS.STR)
+  res <- bezier_interp(coords, steps=steps * mult, dev=dev)
+  xd <- diff(res[[1]])
+  yd <- diff(res[[2]])
+  lens <- c(0, cumsum(sqrt(xd^2+yd^2)))
+  target <- seq(0, lens[length(lens)], length.out=steps)
+  interval <- findInterval(target, lens, rightmost.closed=TRUE)
+  low <- lens[interval]
+  high <- lens[interval + 1]
+  interp <- (target - low) / (high - low)
+  list(
+    res[[1]][interval] + xd[interval] * interp,
+    res[[2]][interval] + yd[interval] * interp
+  )
+}
 #' Interpolate Path Curves
 #'
 #' Converts an SVG paths in the format produced by [parse_paths()] into pure x-y
-#' coordinates by interpolating the Bezier curves.
+#' coordinates by interpolating the Bezier curves.  Due to how `gridBezier`
+#' works this requires spawning a new device.
 #'
 #' @export
 #' @importFrom gridBezier BezierGrob BezierPoints nSteps
@@ -38,6 +91,8 @@ interp_paths <- function(x, steps=10, box=NULL, normalize=FALSE) {
   }
   # Apply interpolation
 
+  dev <- dev.new()
+  on.exit(dev.off())
   interp <- lapply(
     x,
     function(y) {
@@ -81,21 +136,11 @@ interp_path <- function(x, steps, box, normalize) {
 
   # BezierGrob seems to open a display device...
 
-  bzs <- Map(
-    function(start, end) {
-      points <- lapply(d[c('x', 'y')], '[', start:end)
-      BezierGrob(points[[1]], points[[2]], stepFn=nSteps(steps))
-    },
+  bzsp <- Map(
+    function(start, end)
+      bezier_interp(lapply(d[c('x', 'y')], '[', start:end), steps, dev=FALSE),
     bstarts,
     bends
-  )
-  # Can't figure out how to get BezierPoints to not return in inches, so
-  # converting back to NPC manually, which is a real hack.
-
-  bzsp <- lapply(bzs, BezierPoints)
-  bzspi <- lapply(bzsp, lapply, unit, 'inches')
-  bzsp <- lapply(
-    bzspi, function(x) list(convertX(x[[1]], 'npc'), convertY(x[[2]], 'npc'))
   )
   # connect with the line segments
 
