@@ -15,8 +15,8 @@ Only a small set of SVG syntax and commands are recognized. The parsing
 is done with regex so don’t expect it to be robust. The code is slow and
 hacky.
 
-**This package is experimental, lightly tested, and not intended for
-production use**.
+**This package is experimental, lightly tested, poorly documented, and
+not intended for production use**.
 
     # retrieve and parse, and interpolate
     library(svgchop)
@@ -64,8 +64,4 @@ Acknowledgments
     which we convert SVG curves into piecewise linear paths.
 -   Jim Hester and Hadley Wickham for
     [XML2](https://cran.r-project.org/package=xml2), which makes it easy
-    to parse SVG (among other things).
--   Michael Sumner for
-    [`decido`](https://cran.r-project.org/package=decido) which allows
-    us to triangulate the piecewise linear polygons so that we may plot
-    those with holes in R.
+    to extract properties from SVG (among other things).
