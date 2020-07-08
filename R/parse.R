@@ -25,8 +25,8 @@ path_components <- function(x) {
 #'   as a numeric vector at position two.
 #' @param x starting x coordinate
 #' @param y starting y coordinate
-#' @return a list of lists similar to the input, except the only commands therein
-#'   will be M, C, L, and coordinates will be a nx2 matrix of x-y coordinates.
+#' @return a list of lists similar to the input, except the only commands
+#'   therein will be M, C, L, and coordinates will be absolute
 
 path_to_abs <- function(path) {
   invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
@@ -126,6 +126,8 @@ parse_d <- function(x) {
 }
 #' Convert SVG Path to More Usable format
 #'
+#' For polygons there is only ever one sub-path.
+#'
 #' @export
 #' @param x a list representing a single SVG "path", which each element of the
 #'   list a property of the path.  The "d" property will be a list of "subpath"
@@ -136,25 +138,55 @@ parse_d <- function(x) {
 #'   strings
 
 parse_path <- function(x) {
-  if(!"d" %in% names(x)) x[['d']] <- list()
-  x[['d']] <- lapply(parse_d(x[['d']]), structure, class='subpath')
+  x <- as.list(x)
+  x[['coords']] <-
+    if(!"d" %in% names(x)) list()
+    else lapply(parse_d(x[['d']]), structure, class=c('subpath','data.frame'))
   x
 }
-#' Retrieve SVG Paths From File
+#' @rdname parse_path
+#' @export
+
+parse_poly <- function(x) {
+  x <- as.list(x)
+  if(!"points" %in% names(x)) x[['points']] <- ""
+  raw <- regmatches(x[['points']], gregexpr("-?[0-9.]+", x[['points']]))[[1]]
+  stopifnot(length(raw) %% 2 == 0)
+  coord <- matrix(as.numeric(raw), ncol=2, byrow=TRUE)
+  # remove sequential duplicates
+  coord <- coord[c(TRUE, rowSums(coord[-1L,] == coord[-nrow(coord),]) < 2),]
+  coords <- if(nrow(coord)) {
+    # close poly if isn't already closed
+    if(all(coord[1,] != coord[nrow(coord),])) {
+      coord <- rbind(coord, coord[1,])
+    }
+    data.frame(cmd=c('M', rep('L', nrow(coord) - 1L)), x=coord[,1], y=coord[,2])
+  } else {
+    data.frame(cmd=character(), x=numeric(), y=numeric())
+  }
+  x[['coords']] <- list(structure(coords, class=c('subpath','data.frame')))
+  x
+}
+
+#' Retrieve SVG Elements From File
 #'
-#' Pull all paths out of SVG file and converts the "d" attribute into a path
-#' command using only M, C, and L commands.  Only a subset of the path commands
-#' are handled.
+#' Pull all paths and polygons out of an SVG file and convert them to x-y
+#' coordinates and L, M, and C SVG path commands corresponding to line segments.
+#' Originally this was all built around SVG paths, so we're forcing polygons
+#' through that pipeline even though we really don't need to.
 #'
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #' @seealso [interp_paths()]
 #' @param file an SVG file
-#' @return an "svg_paths" S3 object, which is a list of "svg_path" objects with
-#'   the `x`, `y`, `width`, and `height` values of the outer SVG element
-#'   recorded in the "box" attribute.
+#' @param elements character the types of elements to parse, currently only
+#'   "path" and "polygon" are supported.
+#' @return an "svg_paths" S3 object, which is a list of "subpath" that have been
+#'   converted from their original SVG form to a line segments.  The `x`, `y`,
+#'   `width`, and `height` values of the outer SVG element recorded in the "box"
+#'   attribute.
 
-parse_paths <- function(file) {
+parse_svg <- function(file) {
   xml <- xml_ns_strip(read_xml(file))
   if(!identical(xml_name(xml), "svg"))
     stop("Document does not start with an svg node")
@@ -189,10 +221,17 @@ parse_paths <- function(file) {
   if(is.na(x)) x <- 0
   if(is.na(y)) y <- 0
 
-  paths <- xml_find_all(xml, ".//path")
-  paths <- lapply(xml_attrs(paths), as.list)
+  els <- xml_find_all(xml, ".//path|.//polygon")
+  type <- xml_name(els)
+  el.path <- type == 'path'
+  el.poly <- type == 'polygon'
+
+  res <- list(length(els))
+  res[el.path] <- lapply(xml_attrs(els[el.path]), parse_path)
+  res[el.poly] <- lapply(xml_attrs(els[el.poly]), parse_poly)
+
   structure(
-    lapply(paths, parse_path),
-    class='svg_paths', box=c(x, y, width, height)
+    res, class='svg_paths', box=c(x, y, width, height),
+    type=type
   )
 }

@@ -26,9 +26,9 @@ interpreted as the vertices of a polygon or connected straight line
 segments.
 }
 \description{
-Converts an SVG paths in the format produced by \code{\link[=parse_paths]{parse_paths()}} into pure x-y
-coordinates by interpolating the Bezier curves.  Due to how \code{gridBezier}
-works this requires spawning a new device.
+Converts an SVG paths in the format produced by \code{\link[=parse_els]{parse_els()}} into pure x-y
+coordinates by interpolating the Bezier curves, if any.  Due to how
+\code{gridBezier} works this requires spawning a new device.
 }
 \seealso{
 \code{\link[=parse_paths]{parse_paths()}}

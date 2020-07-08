@@ -16,8 +16,8 @@ as a numeric vector at position two.}
 \item{y}{starting y coordinate}
 }
 \value{
-a list of lists similar to the input, except the only commands therein
-will be M, C, L, and coordinates will be a nx2 matrix of x-y coordinates.
+a list of lists similar to the input, except the only commands
+therein will be M, C, L, and coordinates will be absolute
 }
 \description{
 Recomputes any relative commands into their absolute equivalents,

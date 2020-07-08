@@ -2,9 +2,12 @@
 % Please edit documentation in R/parse.R
 \name{parse_path}
 \alias{parse_path}
+\alias{parse_poly}
 \title{Convert SVG Path to More Usable format}
 \usage{
 parse_path(x)
+
+parse_poly(x)
 }
 \arguments{
 \item{x}{a list representing a single SVG "path", which each element of the
@@ -18,5 +21,5 @@ commands and coordinates in a data frame, and all other path properties as
 strings
 }
 \description{
-Convert SVG Path to More Usable format
+For polygons there is only ever one sub-path.
 }
