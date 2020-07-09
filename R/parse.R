@@ -157,7 +157,7 @@ parse_poly <- function(x) {
   coord <- coord[c(TRUE, rowSums(coord[-1L,] == coord[-nrow(coord),]) < 2),]
   coords <- if(nrow(coord)) {
     # close poly if isn't already closed
-    if(all(coord[1,] != coord[nrow(coord),])) {
+    if(any(coord[1,] != coord[nrow(coord),])) {
       coord <- rbind(coord, coord[1,])
     }
     data.frame(cmd=c('M', rep('L', nrow(coord) - 1L)), x=coord[,1], y=coord[,2])
