@@ -47,6 +47,16 @@ invisible(
     border=NA, rule='evenodd'
 ) )
 ```
+```{r echo=FALSE, eval=FALSE}
+png('~/Downloads/logo-chunky.png', width=1200, height=1200, bg='transparent')
+plot.new()
+invisible(
+  Map(
+    polypath, subpaths, col=c("#A7A8AD", "#1E64B6"),
+    border=NA, rule='evenodd'
+) )
+dev.off()
+```
 
 ## Related
 

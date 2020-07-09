@@ -21,7 +21,8 @@ conversions to/from NPC to work.}
 even interpolation.}
 }
 \value{
-a list of NPC coordinats of the points along the input curve.
+a list of coordinates in NPC (though the units are stripped) of the
+points along the input curve.
 }
 \description{
 Thin wrapper around \code{BezierGrob} / \code{BezierPoints}, but ensures result comes

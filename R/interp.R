@@ -52,9 +52,9 @@ bezier_interp_even <- function(coords, steps=10, mult=10, dev=TRUE) {
 }
 #' Interpolate Path Curves
 #'
-#' Converts an SVG paths in the format produced by [parse_paths()] into pure x-y
-#' coordinates by interpolating the Bezier curves.  Due to how `gridBezier`
-#' works this requires spawning a new device.
+#' Converts an SVG paths in the format produced by [parse_svg)] into pure x-y
+#' coordinates by interpolating the Bezier curves, if any.  Due to how
+#' `gridBezier` works this requires spawning a new device.
 #'
 #' @export
 #' @importFrom gridBezier BezierGrob BezierPoints nSteps
@@ -82,7 +82,9 @@ interp_paths <- function(x, steps=10, box=NULL, normalize=FALSE) {
     LGL.1
   )
   if(is.null(box) && is.null(attr(x, 'box'))) {
-    coords.all <- do.call(rbind, unlist(lapply(x, '[[', 'd'), recursive=FALSE))
+    coords.all <- do.call(
+      rbind, unlist(lapply(x, '[[', 'coords'), recursive=FALSE)
+    )
     x.rng <- range(coords.all[['x']])
     y.rng <- range(coords.all[['y']])
     box <- c(x.rng[1], y.rng[1], diff(x.rng), diff(y.rng))
@@ -96,7 +98,7 @@ interp_paths <- function(x, steps=10, box=NULL, normalize=FALSE) {
   interp <- lapply(
     x,
     function(y) {
-      y[['d']] <- lapply(y[['d']], interp_path, steps, box, normalize)
+      y[['coords']] <- lapply(y[['coords']], interp_path, steps, box, normalize)
       y
   } )
   # Collapse sub-paths into one DF, tracking the start points of each
@@ -104,11 +106,12 @@ interp_paths <- function(x, steps=10, box=NULL, normalize=FALSE) {
   paths_xy <- lapply(
     interp,
     function(y) {
-      starts <-
-        cumsum(vapply(y[['d']], nrow, numeric(1L)))[-length(y[['d']])] + 1L
-      coords <- do.call(rbind, y[['d']])
+      starts <- cumsum(
+        vapply(y[['coords']], nrow, numeric(1L))
+      )[-length(y[['coords']])] + 1L
+      coords <- do.call(rbind, y[['coords']])
       attr(coords, 'starts') <- starts
-      y[['d']] <- coords
+      y[['coords']] <- coords
       y
     }
   )
