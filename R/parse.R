@@ -202,7 +202,9 @@ parse_svg <- function(file) {
   } else if ('viewBox' %in% names(attrs)) {
     # this isn't right, but appears to work in the couple of examples I've
     # worked with as the width/height and viewbox are the same
-    if(!grepl("^\\s*\\d+\\s+\\d+\\s+\\d+\\s+\\d+\\s*$", attrs['viewBox']))
+    num.rx <- "\\d*\\.?\\d+"
+    vb.rx <- sprintf("^\\s*(%s\\s+){3}%s\\s*$", num.rx, num.rx)
+    if(!grepl(vb.rx, attrs['viewBox']))
       stop("viewBox attribute in unknown format ", attrs['viewBox'])
     viewbox <- strsplit(trimws(attrs['viewBox']), "\\s+")[[1]]
     x <- as.numeric(viewbox[1])
