@@ -89,7 +89,7 @@ path_to_abs <- function(path) {
         y <- y0
         list("L", x, y)
       },
-      stop("unknown command ", i[[1]])
+      stop("unknown command ", el[[1]])
     )
   }
   cmds <- unlist(lapply(path, '[[', 1))
@@ -111,12 +111,24 @@ path_to_abs <- function(path) {
 
 parse_d <- function(x) {
   if(!is.character(x) || length(x) != 1) stop("Input not character(1L)")
-  raw <- regmatches(x, gregexpr("-?[0-9.]+|[a-zA-Z]", x))[[1]]
+  raw <- regmatches(x, gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x))[[1]]
   raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
   cmds <- lapply(
     raw, function(x) {
       if(length(x)) list(x[1], as.numeric(x[-1]))
       else list()
+  } )
+  # Convert qQ to cC
+
+  is.q <- vapply(cmds, "[[", "", 1) %in% c('q', 'Q')
+  cmds[is.q] <- lapply(
+    cmds[is.q],
+    function(x) {
+      if(!length(x[[2]]) || length(x[[2]]) %% 2)
+        stop("Malformed quadratic bezier ", paste0(unlist(x), collapse=" "))
+      x[[2]] <- rep(x[[2]], ((seq_along(x[[2]]) %% 2)) + 1)
+      x[[1]] <- c('c', 'C')[match(x[[1]], c('q', 'Q'))]
+      x
   } )
   # Convert to absolute coords
   cmds.abs <- path_to_abs(cmds)
