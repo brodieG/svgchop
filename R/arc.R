@@ -15,38 +15,13 @@
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 #
 # The `svg_angle` and `arc_endpoint_to_center` functions in this file started
-# off as utilities from the MIT licensed fuse-open fuselibs library.  The
-# modifications include conversion to R, and possibly other changes.  
+# off as utilities from the MIT licensed fuse-open fuselibs library.  However,
+# upon encountering seeming oddities we re-implemented them completely based on
+# the SVG 1.1 Appendix at:
 #
-# The original code was taken from:
-# https://github.com/fuse-open/fuselibs/blob/ee4df9deacb400211bcc30bbd11cfa6ccf787888/Source/Fuse.Drawing.Surface/SurfaceUtil.uno
-
-# Copyright Notice From Original Code:
+# https://www.w3.org/TR/SVG11/implnote.html#ArcImplementationNotes
 #
-# Copyright (C) 2018-present Fuse Open
-# Copyright (C) 2015-2018 Fusetools AS
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
-## Compute some kind of angle
-##
-## All parameters are numeric(1)
+# Some parameter names survive from the fuselibs implementation.
 
 svg_angle <- function(ux, uy, vx, vy ) {
   u <- c(X=ux, Y=uy);
@@ -76,7 +51,9 @@ svg_angle <- function(ux, uy, vx, vy ) {
 ## @return list containing:
 ## * "r" `numeric(2)`, the x and y radii which may have been scaled
 ## * "c" `numeric(2)`, the x and y coordinates of the center point
-## * "ang" `numeric(2)`, the theta and delta angles in degrees
+## * "ang" `numeric(2)`, the theta (from +ve x-axis, clockwise
+##    presumably, actually not obvious as standard rot matrix rotates
+##    counter-clockwise) and delta angles in degrees.
 
 arc_endpoint_to_center <- function(
   p1, p2, r, xAngle, flagA, flagS
@@ -86,7 +63,7 @@ arc_endpoint_to_center <- function(
   rY <- abs(r[2L])
   xAngle <- xAngle / 180 * pi
 
-  #(F.6.5.1)
+  #(F.6.5.1) re-center and rotate
   dx2 <- (p1[1L] - p2[1L]) / 2.0;
   dy2 <- (p1[2L] - p2[2L]) / 2.0;
   x1p <- cos(xAngle)*dx2 + sin(xAngle)*dy2;
@@ -122,17 +99,73 @@ arc_endpoint_to_center <- function(
   cy <- sin(xAngle)*cxp + cos(xAngle)*cyp + (p1[2L] + p2[2L])/2
 
   #(F.6.5.5)
-  theta <- svg_angle(1,0, (x1p-cxp) / rX, (y1p - cyp)/rY )
+  theta <- svg_angle(1, 0, (x1p-cxp) / rX, (y1p - cyp)/rY )
   #(F.6.5.6)
   delta <- svg_angle(
     (x1p - cxp)/rX, (y1p - cyp)/rY,
     (-x1p - cxp)/rX, (-y1p - cyp)/rY
   )
-  delta <- (delta %% pi);
-  if (!flagS) delta <- delta - 2 * pi;
+  delta <- delta %% (2 * pi);
+  if (!flagS && delta > 0) delta <- delta - 2 * pi;
 
   r <- c(rX, rY)
   c <- c(cx, cy)
   angles <- c(theta, delta)
-  list(r=r, c=c, ang=angles)
+  list(r=r, c=c, ang=angles / pi * 180)
+}
+
+
+vec_ang <- function(u, v) {
+  det <- sign(u[1] * v[2] - u[2] * v[1])
+  cos <- min(1, max(-1, sum(u*v) / (sqrt(sum(u^2))*sqrt(sum(v^2)))))
+  (acos(cos) %% (2*pi)) * if(det) det else 1
+}
+
+arc_ep_to_c <- function(p1, p2, r, xAngle, flagA, flagS) {
+  phi <- xAngle / 180 * pi
+
+  # 6.5.1
+  phi_m <- matrix(c(cos(phi), -sin(phi), sin(phi), cos(phi)), 2)
+  p1_ <- phi_m %*% matrix(c(p1 - p2) / 2)   
+  x1_ <- p1_[1]
+  y1_ <- p1_[2]
+
+  # 6.6.1 Radii Adjustment
+  if(any(r == 0)) {
+    stop('not handled')
+  }
+  # 6.6.2
+  r <- abs(r)
+
+  # 6.6.3
+  r_adj <- sum(p1_^2 / r^2)
+  if(r_adj > 1) r <- r_adj * r
+
+  # 6.5.2
+  rx <- r[1]
+  ry <- r[2]
+  c_ <- sqrt(
+    (prod(r^2) - rx^2*y1_^2 - ry^2*x1_^2) / (rx^2 * y1_^2 + ry^2 * x1_^2)
+  ) * c(rx * y1_ / ry, -ry*x1_ / rx)
+  if(!xor(flagA, flagS)) c_ <- -c_
+
+  # 6.5.3
+  c <- t(phi_m) %*% matrix(c_) + (p1 + p2) / 2
+
+  # 6.5.4-6
+  v <- (p1_ - c_) / r
+  theta.1 <- vec_ang(c(1, 0), v)
+  w <- (-p1_ - c_) / r
+  d.theta <- vec_ang(v, w)
+  d.theta <- d.theta +
+    if(!flagS && d.theta > 0) -2*pi
+    else if(flagS && d.theta < 0) 2*pi
+    else 0
+
+  ## radius adjustment not implemented
+  list(
+    center=c, angles=c(theta.1, d.theta)/ pi * 180, radii=r,
+    c_=c_, p1_=p1_
+
+  )
 }
