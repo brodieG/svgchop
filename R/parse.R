@@ -1,6 +1,20 @@
+# Copyright (C) 2020 Brodie Gaslam
+#
+# This file is part of "svgchop - Approximate SVG Elements With Line Segments"
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
 # - Basic Processing -----------------------------------------------------------
-
 
 ## Parse SVG Path Data
 ##
@@ -16,19 +30,17 @@ path_components <- function(x) {
 #'
 #' Recomputes any relative commands into their absolute equivalents,
 #' replaces H and V commands with their L equivalents, explicitly closes paths
-#' with L commands instead of Z.
+#' with L commands instead of Z, and converts arc commands to line segments.
 #'
 #' Assumes first command is a "moveto" command.
 #'
 #' @param list of lists, each sub-lists contains the command type (e.g. M, C, L,
-#'   V, H, Z, m, c, l, v, h, z) at position one, and then a set of coordinates
-#'   as a numeric vector at position two.
-#' @param x starting x coordinate
-#' @param y starting y coordinate
+#'   V, H, Z, A, m, c, l, v, h, z, a) at position one, and then a set of
+#'   coordinates as a numeric vector at position two.
 #' @return a list of lists similar to the input, except the only commands
 #'   therein will be M, C, L, and coordinates will be absolute
 
-path_to_abs <- function(path) {
+path_to_abs <- function(path, steps) {
   invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
   x0 <- 0
   y0 <- 0
@@ -89,6 +101,27 @@ path_to_abs <- function(path) {
         y <- y0
         list("L", x, y)
       },
+      a=,A={
+        # big problem is current framework is designed to reduce all path
+        # information into x-y ncoordinates and we can't do that with arcs.
+        # So we're forced to turn the arcs into line segments earlier than we
+        # woud have otherwise.  This is where turning them to beziers might make
+        # more sense, but not worth the hassle ATM.
+
+        if(!len || len %% 7) invalid_cmd(i, el[[1]])
+        if(el[[1]] == 'a') {
+          xsi <- seq(6, len, by=7)
+          ysi <- seq(7, len, by=7)
+          xs <- cumsum(el[[2]][xsi]) + x
+          ys <- cumsum(el[[2]][ysi]) + y
+          el[[2]][xsi] <- xs
+          el[[2]][ysi] <- ys
+        }
+        segs <- arcs_to_line_segs(el[[2]], x, y, steps)
+        x <- segs[[2]][length(segs[[2]])]
+        y <- segs[[3]][length(segs[[3]])]
+        segs
+      },
       stop("unknown command ", el[[1]])
     )
   }
@@ -103,13 +136,14 @@ path_to_abs <- function(path) {
 #' "C", and "L" commands.
 #'
 #' @export
+#' @inheritParams parse_path
 #' @param x character length 1
 #' @return a list of of length equal to `x`'s, with each element a list
 #'   containing as many data frames as there are sub-paths in the corresponding
 #'   `x` element, with each data frame containing a column with commands in
 #'   `c("M","L","C")`.
 
-parse_d <- function(x) {
+parse_d <- function(x, steps) {
   if(!is.character(x) || length(x) != 1) stop("Input not character(1L)")
   raw <- regmatches(x, gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x))[[1]]
   raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
@@ -131,29 +165,38 @@ parse_d <- function(x) {
       x
   } )
   # Convert to absolute coords
-  cmds.abs <- path_to_abs(cmds)
+  cmds.abs <- path_to_abs(cmds, steps)
 
   # Split subpaths into paths
   unname(split(cmds.abs, cumsum(cmds.abs[['cmd']] == 'M')))
 }
 #' Convert SVG Path to More Usable format
 #'
-#' For polygons there is only ever one sub-path.
+#' For polygons there is only ever one sub-path.  This also converts arcs to
+#' line segments.  Bézier curves are converted in the interpolation step later.
+#' That interpolation happens both at parse and interpolation time is a design
+#' flaw that originates from late addition of arc parsing.
 #'
 #' @export
+#' @see_also [interp_paths()]
 #' @param x a list representing a single SVG "path", which each element of the
 #'   list a property of the path.  The "d" property will be a list of "subpath"
 #'   S3 objects.
+#' @param steps positive integer(1), how many line segments to use per radian of
+#'   arc when converting arcs to line segments.
 #' @return a list with as many elements as there are sub-paths in the path "d"
 #'   property.  Each element is a "subpath" S3 object containing the path
 #'   commands and coordinates in a data frame, and all other path properties as
 #'   strings
 
-parse_path <- function(x) {
+parse_path <- function(x, steps=5) {
   x <- as.list(x)
   x[['coords']] <-
     if(!"d" %in% names(x)) list()
-    else lapply(parse_d(x[['d']]), structure, class=c('subpath','data.frame'))
+    else lapply(
+      parse_d(x[['d']], steps=steps),
+      structure, class=c('subpath','data.frame')
+    )
   x
 }
 #' @rdname parse_path
@@ -187,6 +230,9 @@ parse_poly <- function(x) {
 #' Originally this was all built around SVG paths, so we're forcing polygons
 #' through that pipeline even though we really don't need to.
 #'
+#' If the document contains multiple SVG elements, only the first will be
+#' parsed.
+#'
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #' @seealso [interp_paths()]
@@ -200,6 +246,7 @@ parse_poly <- function(x) {
 
 parse_svg <- function(file) {
   xml <- xml_ns_strip(read_xml(file))
+  xml <- xml_find_first(xml, ".//svg")
   if(!identical(xml_name(xml), "svg"))
     stop("Document does not start with an svg node")
   attrs <- xml_attrs(xml)

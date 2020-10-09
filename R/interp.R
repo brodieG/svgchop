@@ -56,11 +56,17 @@ bezier_interp_even <- function(coords, steps=10, mult=10, dev=TRUE) {
 #' coordinates by interpolating the Bezier curves, if any.  Due to how
 #' `gridBezier` works this requires spawning a new device.
 #'
+#' Note that arcs are pre-interpolated and are expected to show up as line
+#' segments here.
+#'
 #' @export
 #' @importFrom gridBezier BezierGrob BezierPoints nSteps
 #' @importFrom grid unit convertX convertY
 #' @seealso [parse_paths()]
 #' @param x a "svg_paths" S3 object as produced by [parse_paths()]
+#' @param steps positive integer(1) how many line segments to use in
+#'   interpolating Bézier curves.  See [parse_paths()] for controlling
+#'   smoothness of arcs.
 #' @param box integer(4) or NULL, the x and y offset of the SVG display box, and
 #'   the width and height of that box, in that order.  If NULL these values will
 #'   be those that define the "bounding" box of the coordinates in `x`, although

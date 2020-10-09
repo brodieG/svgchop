@@ -90,10 +90,59 @@ arc_ep_to_c <- function(p1, p2, r, phi, flagA, flagS) {
     else if(flagS && d.theta < 0) 2*pi
     else 0
 
-  ## radius adjustment not implemented
   list(
     center=c, angles=c(theta.1, d.theta)/ pi * 180, radii=r,
     c_=c_, p1_=p1_
 
   )
+}
+
+## Convert Absolute Arcs To Path Segments
+##
+## @return list with x and y coordinates for arc segments
+
+arc_to_line_seg <- function(x0, y0, middle, xn, yn, steps) {
+  # reparametrize
+  params <- arc_ep_to_c(
+    p1=c(x0, y0), p2=c(xn, yn),
+    r=middle[1:2], phi=middle[3], flagA=middle[4], flagS=middle[5]
+  )
+  # generate arc angles
+  angles <- params[['angles']] / 180 * pi
+  steps <- ceiling(steps * abs(angles[2]))
+  theta <- seq(
+    params[['angles']][1], params[['angles']][1] + params[['angles']][2],
+    length.out=steps
+  ) / 180 * pi
+  # generate points on arc
+  phir <- middle[3]/180*pi
+  points <- matrix(c(cos(phir), sin(phir), -sin(phir), cos(phir)), 2) %*%
+    (params[['radii']] * rbind(cos(theta), sin(theta))) + c(params[['center']])
+
+  # return skipping first point
+  list(xs=points[1,-1], ys=points[2,-1])
+}
+
+arcs_to_line_segs <- function(A, x0, y0, steps) {
+  vetr(
+    A=numeric() && !(length(.) %% 7),
+    x0=numeric(1), y0=numeric(1), steps=INT.1.POS.STR
+  )
+  len <- length(A)
+  xi <- seq(6, len, by=7)
+  yi <- seq(7, len, by=7)
+  xs <- c(x0, A[xi])
+  ys <- c(y0, A[yi])
+  middle <- split(A[-c(xi, yi)], rep(seq(1, length(xi), by=1), each=5))
+
+  segs <- Map(
+    arc_to_line_seg,
+    x0=xs[-length(xs)], y0=ys[-length(ys)],
+    middle=middle,
+    xn=xs[-1], yn=ys[-1],
+    steps=steps
+  )
+  xs <- unlist(lapply(segs, '[[', 1L))
+  ys <- unlist(lapply(segs, '[[', 2L))
+  list(rep("L", length(xs)), xs, ys)
 }
