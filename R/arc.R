@@ -46,13 +46,12 @@ vec_ang <- function(u, v) {
   cos <- min(1, max(-1, sum(u*v) / (sqrt(sum(u^2))*sqrt(sum(v^2)))))
   (acos(cos) %% (2*pi)) * if(det) det else 1
 }
-
-arc_ep_to_c <- function(p1, p2, r, xAngle, flagA, flagS) {
-  phi <- xAngle / 180 * pi
+arc_ep_to_c <- function(p1, p2, r, phi, flagA, flagS) {
+  phi <- phi / 180 * pi
 
   # 6.5.1
   phi_m <- matrix(c(cos(phi), -sin(phi), sin(phi), cos(phi)), 2)
-  p1_ <- phi_m %*% matrix(c(p1 - p2) / 2)   
+  p1_ <- phi_m %*% matrix(c(p1 - p2) / 2)
   x1_ <- p1_[1]
   y1_ <- p1_[2]
 
@@ -71,7 +70,10 @@ arc_ep_to_c <- function(p1, p2, r, xAngle, flagA, flagS) {
   rx <- r[1]
   ry <- r[2]
   c_ <- sqrt(
-    (prod(r^2) - rx^2*y1_^2 - ry^2*x1_^2) / (rx^2 * y1_^2 + ry^2 * x1_^2)
+    max(
+      0,
+      (prod(r^2) - rx^2*y1_^2 - ry^2*x1_^2) / (rx^2 * y1_^2 + ry^2 * x1_^2)
+    )
   ) * c(rx * y1_ / ry, -ry*x1_ / rx)
   if(!xor(flagA, flagS)) c_ <- -c_
 
