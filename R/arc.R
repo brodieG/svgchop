@@ -109,7 +109,7 @@ arc_to_line_seg <- function(x0, y0, middle, xn, yn, steps) {
   )
   # generate arc angles
   angles <- params[['angles']] / 180 * pi
-  steps <- ceiling(steps * abs(angles[2]))
+  steps <- ceiling(steps * abs(angles[2])) + 1L # at least 2
   theta <- seq(
     params[['angles']][1], params[['angles']][1] + params[['angles']][2],
     length.out=steps
