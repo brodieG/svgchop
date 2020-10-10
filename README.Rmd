@@ -29,15 +29,27 @@ par(mai=numeric(4))
 ```{r r-logo, fig.width=5, fig.height=5}
 # retrieve and parse, and interpolate
 library(svgchop)
-paths.raw <- parse_paths('https://www.r-project.org/logo/Rlogo.svg')
+paths.raw <- parse_svg('https://www.r-project.org/logo/Rlogo.svg')
 paths <- interp_paths(paths.raw, steps=3, normalize=TRUE)
+
+coords <- do.call(
+  rbind,
+  lapply(
+    paths,
+    function(x) {
+      res <- x[['coords']]
+      res[[1]] <- res[[1]] - .5
+      res[[2]] <- res[[2]] - .5
+      res
+    }
+) )
 
 # Paths are known to be closed in this case, so abuse that to create sub-paths
 subpaths <- lapply(
   paths, function(x) {
-    x$d[attr(x$d, 'starts'),] <- NA
-    x$d$y <- 1 - x$d$y  # need to flip y values
-    x$d
+    x$coords[attr(x$coords, 'starts'),] <- NA
+    x$coords$y <- 1 - x$coords$y  # need to flip y values
+    x$coords
 } )
 # Plot!
 plot.new()
