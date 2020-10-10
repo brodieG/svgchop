@@ -160,7 +160,10 @@ parse_d <- function(x, steps) {
     function(x) {
       if(!length(x[[2]]) || length(x[[2]]) %% 2)
         stop("Malformed quadratic bezier ", paste0(unlist(x), collapse=" "))
-      x[[2]] <- rep(x[[2]], ((seq_along(x[[2]]) %% 2)) + 1)
+      x[[2]] <- c(
+        matrix(x[[2]], 2)[,
+          rep(seq_len(length(x[[2]]) / 2), rep(2:1, length(x[[2]]) / 4))
+      ] )
       x[[1]] <- c('c', 'C')[match(x[[1]], c('q', 'Q'))]
       x
   } )
