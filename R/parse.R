@@ -249,7 +249,8 @@ parse_poly <- function(x) {
 
 parse_svg <- function(file) {
   xml <- xml_ns_strip(read_xml(file))
-  xml <- xml_find_first(xml, ".//svg")
+  if(!identical(xml_name(xml), "svg"))
+    xml <- xml_find_first(xml, ".//svg")
   if(!identical(xml_name(xml), "svg"))
     stop("Document does not start with an svg node")
   attrs <- xml_attrs(xml)
