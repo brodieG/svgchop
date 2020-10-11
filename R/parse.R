@@ -29,8 +29,12 @@ path_components <- function(x) {
 interleave <- function(x, y) {
   c(x, y)[order(c(seq_along(x), seq_along(y)))]
 }
-interleave_cols <- function(x, y) {
-  cbind(x, y)[,order(c(seq_len(ncol(x)), seq_len(ncol(y))))]
+## @param mult how many cols of y per col of x where ncol(y) > ncol(x)
+
+interleave_cols <- function(x, y, mult) {
+  cbind(x, y)[,
+    order(c(seq_len(ncol(x)), rep(seq_len(ncol(y) / mult), each=mult)))
+  ]
 }
 ## Convert Path To Absolute Coordinates
 ##
@@ -71,8 +75,8 @@ path_to_abs <- function(path) {
         }
         list(cmd, interleave(xs, ys))
       },
-      c=,C=,q=,Q=,t=,T={
-        blen <- switch(tolower(el[[1]]), c=6, q=4, t=2)
+      c=,C=,q=,Q=,t=,T=,s=,S={
+        blen <- switch(tolower(el[[1]]), c=6, s=4, q=4, t=2)
         if(!len || len %% blen) invalid_cmd(i, el[[1]])
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
@@ -165,27 +169,32 @@ path_simplify <- function(path, steps) {
         }
         list(c(cmd, rep("L", len / 2 - 1)), xs, ys)
       },
-      T=,Q=,C={
+      S=,T=,Q=,C={
         coords <- matrix(el[[2L]], 2)
-        # Quadratic Bézier Reflected
-        if(cmd == 'T') {
-          cmd <- 'Q'
-          ctrls <- matrix(0, 2, len / 2)
+        # Last Control Reflected (T, S)
+        if(cmd %in% c('T', 'S')) {
+          blen <- 2L + (cmd == 'S') * 2L
+          ctrls <- matrix(0, 2, len / blen)
           ctrl <- if(i > 1L) {
             prev <- do.call(rbind, res[[i-1L]][-1L])
+            prevc <- path[[i - 1L]][1L]
             cur <- ref <- prev[, ncol(prev)]
-            if(path[[i - 1L]][1L] %in% c('Q','T'))
+            if(
+              prevc %in% c('Q','T') && cmd == 'T' ||
+              prevc %in% c('C','S') && cmd == 'S'
+            )
               ref <- prev[, ncol(prev) - 1L]
           } else {
-            stop("'T' command not valid as first command in path.")
+            stop("'", cmd, "' command not valid as first command in path.")
           }
-          for(j in seq_len(len / 2L)) {
+          for(j in seq_len(len / blen)) {
             new <- cur + (cur - ref)
             ctrls[, j] <- new
             ref <- new
-            cur <- coords[, j]
+            cur <- coords[, j * blen / 2L]
           }
-          coords <- interleave_cols(ctrls, coords)
+          coords <- interleave_cols(ctrls, coords, blen / 2L)
+          cmd <- c('Q', 'C')[match(cmd, c('T', 'S'))]
         }
         # Quadratic -> Cubic Bézier
         if(cmd == 'Q') {
