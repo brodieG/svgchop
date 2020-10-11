@@ -53,11 +53,13 @@ bezier_interp_even <- function(coords, steps=10, mult=10, dev=TRUE) {
 #' Interpolate Path Curves
 #'
 #' Converts an SVG paths in the format produced by [parse_svg)] into pure x-y
-#' coordinates by interpolating the Bezier curves, if any.  Due to how
+#' coordinates by interpolating the Bézier curves, if any.  Due to how
 #' `gridBezier` works this requires spawning a new device.
 #'
 #' Note that arcs are pre-interpolated and are expected to show up as line
-#' segments here.
+#' segments here.  This is because arcs were added later and their parameters
+#' don't fit in the "svg_paths" structure, so we're forced to convert them to
+#' lines first.  At some point we may revise this (unlikely).
 #'
 #' @export
 #' @importFrom gridBezier BezierGrob BezierPoints nSteps

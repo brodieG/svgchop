@@ -26,34 +26,39 @@ path_components <- function(x) {
    pieces <- unname(split(x, cumsum(grepl("[a-zA-Z]", x))))
    lapply(pieces, function(y) list(y[1], as.numeric(y[-1])))
 }
-#' Convert Path To Absolute Curve and Lines
-#'
-#' Recomputes any relative commands into their absolute equivalents,
-#' replaces H and V commands with their L equivalents, explicitly closes paths
-#' with L commands instead of Z, and converts arc commands to line segments.
-#'
-#' Assumes first command is a "moveto" command.
-#'
-#' @param list of lists, each sub-lists contains the command type (e.g. M, C, L,
-#'   V, H, Z, A, m, c, l, v, h, z, a) at position one, and then a set of
-#'   coordinates as a numeric vector at position two.
-#' @return a list of lists similar to the input, except the only commands
-#'   therein will be M, C, L, and coordinates will be absolute
+interleave <- function(x, y) {
+  c(x, y)[order(c(seq_along(x), seq_along(y)))]
+}
+interleave_cols <- function(x, y) {
+  cbind(x, y)[,order(c(seq_len(ncol(x)), seq_len(ncol(y))))]
+}
+## Convert Path To Absolute Coordinates
+##
+## Recomputes any relative commands into their absolute equivalents.
+##
+## Assumes first command is a "moveto" command.
+##
+## @param path list of lists, each sub-lists contains the command type (e.g. M,
+##   C, L, V, H, Z, A, m, c, l, v, h, z, a) at position one, and then a numeric
+##   vector of parameters at position two.
+## @return a list of lists similar to the input, except all commands will be in
+##   absolute form.
 
-path_to_abs <- function(path, steps) {
+path_to_abs <- function(path) {
   invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
   x0 <- 0
   y0 <- 0
+  res <- vector('list', length(path))
   for(i in seq_along(path)) {
     el <- path[[i]]
     len <- length(el[[2]])
-    path[[i]] <- switch(
+    res[[i]] <- switch(
       el[[1]],
       m=,l=,M=,L={
         if(!len || len %% 2) invalid_cmd(i, el[[1]])
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
-        if(el[[1]] %in% c('c', 'm', 'l')) {
+        if(el[[1]] %in% c('m', 'l')) {
           xs <- cumsum(xs) + x
           ys <- cumsum(ys) + y
         }
@@ -64,42 +69,45 @@ path_to_abs <- function(path, steps) {
           x0 <- x
           y0 <- y
         }
-        list(
-          c(cmd, rep("L", len / 2 - 1)),
-          xs, ys
-        )
+        list(cmd, interleave(xs, ys))
       },
-      c=,C={
-        if(!len || len %% 6) invalid_cmd(i, el[[1]])
+      c=,C=,q=,Q=,t=,T={
+        blen <- switch(tolower(el[[1]]), c=6, q=4, t=2)
+        if(!len || len %% blen) invalid_cmd(i, el[[1]])
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
-        if(el[[1]] == 'c') {
-          # reset current point every 3 coordinate pairs; not clear if it should
-          # be every three or at the end of a command, hoping it is every three
-          # otherwise we have to distinguish b/w sequential C commands and a
-          # longer C command.
-          x.off <- c(0, cumsum(xs[seq(3, length.out=len / 6 - 1, by=3)])) + x
-          y.off <- c(0, cumsum(ys[seq(3, length.out=len / 6 - 1, by=3)])) + y
-          xs <- xs + rep(x.off, each=3)
-          ys <- ys + rep(y.off, each=3)
+        if(el[[1]] %in% letters) {  # relative
+          # reset current point after each implied Bézier command; not clear if
+          # it should be every implied command or end of a command, hoping it is
+          # every implied otherwise we have to distinguish b/w sequential C
+          # commands and a longer C command.
+
+          xy.i <- seq(blen / 2, length.out=len / blen - 1, by=blen / 2)
+          x.off <- c(0, cumsum(xs[xy.i])) + x
+          y.off <- c(0, cumsum(ys[xy.i])) + y
+          xs <- xs + rep(x.off, each=blen / 2)
+          ys <- ys + rep(y.off, each=blen / 2)
         }
         x <- xs[len / 2]
         y <- ys[len / 2]
-        list(rep("C", len / 2), xs, ys)
+        list(toupper(el[[1]]), interleave(xs, ys))
       },
       v=,h=,V=,H={
-        rel <- el[[1]] == 'v' || el[[1]] == 'h'
+        rel <- el[[1]] %in% c('v', 'h')
         f <- if(rel) cumsum else identity
         cmd <- toupper(el[[1]])
-        if(cmd == 'V') y <- f(el[[2]]) + y * rel
-        else x <- f(el[[2]]) + x * rel
-        list(rep("L", length(x)), x, y)
+        off <- if(cmd == 'V') y else x
+        coords <- f(el[[2]]) + off * rel
+
+        if(cmd == 'V') y <- coords[len] else x <- coords[len]
+
+        list(cmd, coords)
       },
       z=,Z={
         if(len) invalid_cmd(i, el[[1]])
         x <- x0
         y <- y0
-        list("L", x, y)
+        el
       },
       a=,A={
         # big problem is current framework is designed to reduce all path
@@ -117,6 +125,104 @@ path_to_abs <- function(path, steps) {
           el[[2]][xsi] <- xs
           el[[2]][ysi] <- ys
         }
+        x <- el[[2]][length(el[[2]]) - 1]
+        y <- el[[2]][length(el[[2]])]
+        list("A", el[[2]])
+      },
+      stop("unknown command ", el[[1]])
+    )
+  }
+  res
+}
+## Convert Path to Basic Commands
+##
+## V, H, Z, and A commands are converted to L, the last one by approximating the
+## arc with `steps` segments.
+##
+## @inheritParams path_to_abs
+## @inheritParams parse_path
+## @return a list of "data.frames", each containing a column of commands, x
+##   coordinates, and y coordinates.
+
+path_simplify <- function(path, steps) {
+  res <- vector('list', length(path))
+  x0 <- 0
+  y0 <- 0
+  for(i in seq_along(path)) {
+    el <- path[[i]]
+    cmd <- el[[1]]
+    len <- length(el[[2]])
+    res[[i]] <- switch(
+      cmd,
+      M=,L={
+        xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
+        ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
+        x <- xs[len / 2]
+        y <- ys[len / 2]
+        if(cmd == 'M') {
+          x0 <- x
+          y0 <- y
+        }
+        list(c(cmd, rep("L", len / 2 - 1)), xs, ys)
+      },
+      T=,Q=,C={
+        coords <- matrix(el[[2L]], 2)
+        # Quadratic Bézier Reflected
+        if(cmd == 'T') {
+          cmd <- 'Q'
+          ctrls <- matrix(0, 2, len / 2)
+          ctrl <- if(i > 1L) {
+            prev <- do.call(rbind, res[[i-1L]][-1L])
+            cur <- ref <- prev[, ncol(prev)]
+            if(path[[i - 1L]][1L] %in% c('Q','T'))
+              ref <- prev[, ncol(prev) - 1L]
+          } else {
+            stop("'T' command not valid as first command in path.")
+          }
+          for(j in seq_len(len / 2L)) {
+            new <- cur + (cur - ref)
+            ctrls[, j] <- new
+            ref <- new
+            cur <- coords[, j]
+          }
+          coords <- interleave_cols(ctrls, coords)
+        }
+        # Quadratic -> Cubic Bézier
+        if(cmd == 'Q') {
+          cmd <- 'C'
+          nc <- ncol(coords)
+          coords <- coords[,rep(seq_len(nc), seq_len(nc) %% 2L + 1L)]
+        }
+        x <- coords[1L, ncol(coords)]
+        y <- coords[2L, ncol(coords)]
+        list(rep(cmd, ncol(coords)), coords[1L,], coords[2L,])
+      },
+      V=,H={
+        if(cmd == 'V') {
+          ys <- el[[2]]
+          xs <- rep(x, len)
+        } else {
+          xs <- el[[2]]
+          ys <- rep(y, len)
+        }
+        x <- xs[len]
+        y <- ys[len]
+        list(rep("L", len), xs, ys)
+      },
+      Z={
+        if(len) invalid_cmd(i, el[[1]])
+        x <- x0
+        y <- y0
+        list("L", x, y)
+      },
+      A={
+        # big problem is current framework is designed to reduce all path
+        # information into x-y ncoordinates and we can't do that with arcs.
+        # So we're forced to turn the arcs into line segments earlier than we
+        # woud have otherwise.  This is where turning them to beziers might make
+        # more sense, but not worth the hassle ATM.
+
+        if(!len || len %% 7) invalid_cmd(i, el[[1]])
         segs <- arcs_to_line_segs(el[[2]], x, y, steps)
         x <- segs[[2]][length(segs[[2]])]
         y <- segs[[3]][length(segs[[3]])]
@@ -125,23 +231,23 @@ path_to_abs <- function(path, steps) {
       stop("unknown command ", el[[1]])
     )
   }
-  cmds <- unlist(lapply(path, '[[', 1))
-  xs <- unlist(lapply(path, '[[', 2))
-  ys <- unlist(lapply(path, '[[', 3))
+  cmds <- unlist(lapply(res, '[[', 1))
+  xs <- unlist(lapply(res, '[[', 2))
+  ys <- unlist(lapply(res, '[[', 3))
   data.frame(cmd=cmds, x=xs, y=ys)
 }
-#' Parse "d" Path Command
-#'
-#' Convert "d" path attribute into a more usable format containing only "M",
-#' "C", and "L" commands.
-#'
-#' @export
-#' @inheritParams parse_path
-#' @param x character length 1
-#' @return a list of of length equal to `x`'s, with each element a list
-#'   containing as many data frames as there are sub-paths in the corresponding
-#'   `x` element, with each data frame containing a column with commands in
-#'   `c("M","L","C")`.
+## Parse "d" Path Command
+##
+## Convert "d" path attribute into a more usable format containing only "M",
+## "C", and "L" commands.
+##
+## @export
+## @inheritParams parse_path
+## @param x character length 1
+## @return a list of of length equal to `x`'s, with each element a list
+##   containing as many data frames as there are sub-paths in the corresponding
+##   `x` element, with each data frame containing a column with commands in
+##   `c("M","L","C")`.
 
 parse_d <- function(x, steps) {
   if(!is.character(x) || length(x) != 1) stop("Input not character(1L)")
@@ -152,26 +258,12 @@ parse_d <- function(x, steps) {
       if(length(x)) list(x[1], as.numeric(x[-1]))
       else list()
   } )
-  # Convert qQ to cC
-
-  is.q <- vapply(cmds, "[[", "", 1) %in% c('q', 'Q')
-  cmds[is.q] <- lapply(
-    cmds[is.q],
-    function(x) {
-      if(!length(x[[2]]) || length(x[[2]]) %% 2)
-        stop("Malformed quadratic bezier ", paste0(unlist(x), collapse=" "))
-      x[[2]] <- c(
-        matrix(x[[2]], 2)[,
-          rep(seq_len(length(x[[2]]) / 2), rep(2:1, length(x[[2]]) / 4))
-      ] )
-      x[[1]] <- c('c', 'C')[match(x[[1]], c('q', 'Q'))]
-      x
-  } )
   # Convert to absolute coords
-  cmds.abs <- path_to_abs(cmds, steps)
+  cmds.abs <- path_to_abs(cmds)
+  simple <- path_simplify(cmds.abs, steps)
 
   # Split subpaths into paths
-  unname(split(cmds.abs, cumsum(cmds.abs[['cmd']] == 'M')))
+  unname(split(simple, cumsum(simple[['cmd']] == 'M')))
 }
 #' Convert SVG Path to More Usable format
 #'
