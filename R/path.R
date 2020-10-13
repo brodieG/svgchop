@@ -204,7 +204,12 @@ path_simplify <- function(path, steps) {
         }
         x <- coords[1L, ncol(coords)]
         y <- coords[2L, ncol(coords)]
-        list(rep(cmd, ncol(coords)), coords[1L,], coords[2L,])
+
+        # Cubic Bézier -> Line segments
+        start <- vapply(res[[i-1]][2:3], function(x) x[length(x)], 1)
+        coords.i <- bezier_interp2(list(x, y), start, steps=steps)
+
+        c(list(rep('L', length(coords.i[[1L]]))), coords.i)
       },
       V=,H={
         if(cmd == 'V') {
@@ -225,12 +230,6 @@ path_simplify <- function(path, steps) {
         list("L", x, y)
       },
       A={
-        # big problem is current framework is designed to reduce all path
-        # information into x-y ncoordinates and we can't do that with arcs.
-        # So we're forced to turn the arcs into line segments earlier than we
-        # woud have otherwise.  This is where turning them to beziers might make
-        # more sense, but not worth the hassle ATM.
-
         if(!len || len %% 7) invalid_cmd(i, el[[1]])
         segs <- arcs_to_line_segs(el[[2]], x, y, steps)
         x <- segs[[2]][length(segs[[2]])]
@@ -258,31 +257,28 @@ path_simplify <- function(path, steps) {
 ##   `x` element, with each data frame containing a column with commands in
 ##   `c("M","L","C")`.
 
-parse_d <- function(x, steps) {
-  vetr(character(1L))
-}
 empty.path <- data.frame(cmd=character(), x=numeric(), y=numeric())
 
 #' Convert SVG Path to Line Segments
 #'
-#' For polygons there is only ever one sub-path.  This also converts arcs to
-#' line segments.  Bézier curves are converted in the interpolation step later.
-#' That interpolation happens both at parse and interpolation time is a design
-#' flaw that originates from late addition of arc parsing.
+#' Parses the "d" path attribute into X-Y coordinates of line segments collected
+#' into sub-paths.  Sub-paths are designated by "M" or "m" commands embedded in
+#' the path command.  Bézier curves and paths are interpolated.
 #'
 #' @export
 #' @see_also [interp_paths()]
-#' @param x a list representing a single SVG "path", which each element of the
-#'   list a property of the path.  The "d" property will be a list of "subpath"
-#'   S3 objects.
+#' @param x a path SVG node.
 #' @param steps positive integer(1), how many line segments to use to
 #'   approximate Bézier curves or elliptical arcs.  For arcs, it is the number
 #'   of steps for a complete ellipse, so for partial ellipses fewer steps will
 #'   be used.
-#' @return a list with as many elements as there are sub-paths in the path "d"
-#'   property.  Each element is a "subpath" S3 object containing the path
-#'   commands and coordinates in a data frame, and all other path properties as
-#'   strings.
+#' @return a list with element "coords" set to a "data.frame" containing
+#'   the x and y coordinates of concatenated line segments that approximate the
+#'   path described by the "d" attribute of the path SVG element `x`.
+#'   If there is more than one sub-path, the starting row of sub-paths following
+#'   the first will be stored as the "starts" attribute of the "data.frame".
+#'   Other XML attributes of the input node `x` will be returned as elements of
+#'   the list along with "coords".
 
 parse_path <- function(x, steps=20) {
   x <- as.list(xml_attrs(x))
@@ -299,8 +295,19 @@ parse_path <- function(x, steps=20) {
     cmds.abs <- path_to_abs(cmds)
     simple <- path_simplify(cmds.abs, steps)
 
-    # Split subpaths into paths
-    unname(split(simple, cumsum(simple[['cmd']] == 'M')))
+    # Confirm that only remaining commands are M/L and drop them
+    if(!all(simple[['cmd']] %in% c('M','L'))) {
+      # nocov start
+      stop(
+        "Internal Error: simplified path command other than 'M', or 'L' found."
+      )
+      # nocov end
+    }
+    # Create data frame and add 'start' attribute to designate sub-paths
+    res <- as.data.frame(simple[c('x', 'y')])
+    attr(res, 'starts') <-
+      which(simple[['cmd']] == 'M' & seq_along(simple[['cmd']]) > 1)
+    res
   }
   x
 }
