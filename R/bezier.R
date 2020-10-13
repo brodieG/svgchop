@@ -13,7 +13,7 @@
 #' @export
 #' @param coords "data.frame" or "list" containing "x" and "y" columns
 #'   corresponding to the points in cubic Bézier, with `3n` rows, where `n`
-#'   is the number of Bezier curves spliced together in an SVG path.  The
+#'   is the number of Bézier curves spliced together in an SVG path.  The
 #'   first item is the first control point, as the actual start point must be
 #'   retrieved from the prior element and provided to this function via the
 #'   `start` parameter.
@@ -51,5 +51,9 @@ bezier_interp2 <- function(coords, start, steps) {
   }
   xi <- outer(t, seq_len(nc / 3), bi, 1)
   yi <- outer(t, seq_len(nc / 3), bi, 2)
-  list(xi, yi)
+
+  # Each bezier needs to remove the first point as that will exist as the end
+  # point of the prior
+
+  list(x=c(xi[-1,]), y=c(yi[-1,]))
 }
