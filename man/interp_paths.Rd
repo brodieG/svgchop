@@ -9,6 +9,10 @@ interp_paths(x, steps = 10, box = NULL, normalize = FALSE)
 \arguments{
 \item{x}{a "svg_paths" S3 object as produced by \code{\link[=parse_paths]{parse_paths()}}}
 
+\item{steps}{positive integer(1) how many line segments to use in
+interpolating Bézier curves.  See \code{\link[=parse_paths]{parse_paths()}} for controlling
+smoothness of arcs.}
+
 \item{box}{integer(4) or NULL, the x and y offset of the SVG display box, and
 the width and height of that box, in that order.  If NULL these values will
 be those that define the "bounding" box of the coordinates in \code{x}, although
@@ -26,9 +30,17 @@ interpreted as the vertices of a polygon or connected straight line
 segments.
 }
 \description{
-Converts an SVG paths in the format produced by \code{\link[=parse_els]{parse_els()}} into pure x-y
-coordinates by interpolating the Bezier curves, if any.  Due to how
+Converts an SVG paths in the format produced by [parse_svg)] into pure x-y
+coordinates by interpolating the Bézier curves, if any.  Due to how
 \code{gridBezier} works this requires spawning a new device.
+
+[parse_svg)]: R:parse_svg)
+}
+\details{
+Note that arcs are pre-interpolated and are expected to show up as line
+segments here.  This is because arcs were added later and their parameters
+don't fit in the "svg_paths" structure, so we're forced to convert them to
+lines first.  At some point we may revise this (unlikely).
 }
 \seealso{
 \code{\link[=parse_paths]{parse_paths()}}

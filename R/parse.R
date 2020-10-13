@@ -420,7 +420,8 @@ parse_transform <- function(x, CMS=diag(3)) {
 #' through that pipeline even though we really don't need to.
 #'
 #' If the document contains multiple SVG elements, only the first will be
-#' parsed.
+#' parsed.  In the future will likely add the option to directly pass an `xml2`
+#' node to allow iterating over multiple svgs.
 #'
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name

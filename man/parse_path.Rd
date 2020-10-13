@@ -2,17 +2,17 @@
 % Please edit documentation in R/parse.R
 \name{parse_path}
 \alias{parse_path}
-\alias{parse_poly}
 \title{Convert SVG Path to More Usable format}
 \usage{
-parse_path(x)
-
-parse_poly(x)
+parse_path(x, steps = 5)
 }
 \arguments{
 \item{x}{a list representing a single SVG "path", which each element of the
 list a property of the path.  The "d" property will be a list of "subpath"
 S3 objects.}
+
+\item{steps}{positive integer(1), how many line segments to use per radian of
+arc when converting arcs to line segments.}
 }
 \value{
 a list with as many elements as there are sub-paths in the path "d"
@@ -21,5 +21,8 @@ commands and coordinates in a data frame, and all other path properties as
 strings
 }
 \description{
-For polygons there is only ever one sub-path.
+For polygons there is only ever one sub-path.  This also converts arcs to
+line segments.  Bézier curves are converted in the interpolation step later.
+That interpolation happens both at parse and interpolation time is a design
+flaw that originates from late addition of arc parsing.
 }

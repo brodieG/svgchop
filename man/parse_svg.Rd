@@ -24,6 +24,11 @@ coordinates and L, M, and C SVG path commands corresponding to line segments.
 Originally this was all built around SVG paths, so we're forcing polygons
 through that pipeline even though we really don't need to.
 }
+\details{
+If the document contains multiple SVG elements, only the first will be
+parsed.  In the future will likely add the option to directly pass an \code{xml2}
+node to allow iterating over multiple svgs.
+}
 \seealso{
 \code{\link[=interp_paths]{interp_paths()}}
 }
