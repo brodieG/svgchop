@@ -93,7 +93,6 @@ arc_ep_to_c <- function(p1, p2, r, phi, flagA, flagS) {
   list(
     center=c, angles=c(theta.1, d.theta)/ pi * 180, radii=r,
     c_=c_, p1_=p1_
-
   )
 }
 

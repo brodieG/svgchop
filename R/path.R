@@ -202,12 +202,14 @@ path_simplify <- function(path, steps) {
           nc <- ncol(coords)
           coords <- coords[,rep(seq_len(nc), seq_len(nc) %% 2L + 1L)]
         }
-        x <- coords[1L, ncol(coords)]
-        y <- coords[2L, ncol(coords)]
+        xs <- coords[1L,]
+        ys <- coords[2L,]
+        x <- xs[length(xs)]
+        y <- ys[length(ys)]
 
         # Cubic Bézier -> Line segments
         start <- vapply(res[[i-1]][2:3], function(x) x[length(x)], 1)
-        coords.i <- bezier_interp2(list(x, y), start, steps=steps)
+        coords.i <- bezier_interp2(list(xs, ys), start, steps=steps)
 
         c(list(rep('L', length(coords.i[[1L]]))), coords.i)
       },
@@ -281,10 +283,11 @@ empty.path <- data.frame(cmd=character(), x=numeric(), y=numeric())
 #'   the list along with "coords".
 
 parse_path <- function(x, steps=20) {
-  x <- as.list(xml_attrs(x))
   x[['coords']] <- if(!'d' %in% names(x)) empty.path
   else {
-    raw <- regmatches(x, gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x))[[1]]
+    raw <- regmatches(
+      x[['d']], gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x[['d']])
+    )[[1]]
     raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
     cmds <- lapply(
       raw, function(x) {

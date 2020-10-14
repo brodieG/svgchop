@@ -1,7 +1,6 @@
 ## @param x named character vector with properties attached to a polygon
 
 parse_poly <- function(x) {
-  x <- as.list(x)
   if(!"points" %in% names(x)) x[['points']] <- ""
   raw <- regmatches(x[['points']], gregexpr("-?[0-9.]+", x[['points']]))[[1]]
   stopifnot(length(raw) %% 2 == 0)
@@ -13,12 +12,10 @@ parse_poly <- function(x) {
     if(any(coord[1,] != coord[nrow(coord),])) {
       coord <- rbind(coord, coord[1,])
     }
-    data.frame(cmd=c('M', rep('L', nrow(coord) - 1L)), x=coord[,1], y=coord[,2])
+    data.frame(x=coord[,1], y=coord[,2])
   } else {
-    data.frame(cmd=character(), x=numeric(), y=numeric())
+    data.frame(x=numeric(), y=numeric())
   }
-  x[['coords']] <- list(structure(coords, class=c('subpath','data.frame')))
-  x
 }
 ## @inheritParams parse_poly
 
@@ -27,8 +24,8 @@ parse_rect <- function(x) {
   if(any(c('rx', 'ry', 'pathLength') %in% props))
     warning('"r[xy] and pathLength properties on "rect" not supported')
 
-  if(!'x' %in% props) x['x'] <- "0"
-  if(!'y' %in% props) x['y'] <- "0"
+  if(!'x' %in% props) x[['x']] <- "0"
+  if(!'y' %in% props) x[['y']] <- "0"
   if(!all(c('width', 'height') %in% props))
     stop('"rect" requires width and height specified')
 
@@ -46,13 +43,13 @@ parse_rect <- function(x) {
     coords['y'] + coords['height'], coords['y'] + coords['height']
   )
   p <- paste(xs, ys, sep=",", collapse=" ")
-  parse_poly(c(points=p, x[!props %in% base.props]))
+  parse_poly(c(list(points=p), x[!props %in% base.props]))
 }
 
 ## @param x a list maybe containing 'transform' and 'coords' elements
 
 parse_transform <- function(x, CMS=diag(3)) {
-  raw <- [[1L]]
+  ## raw <- [[1L]]
   cstart <- attr
 
   raw <- regmatches(x, gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x))[[1]]
@@ -105,6 +102,7 @@ parse_transform <- function(x, CMS=diag(3)) {
       CMS <- CMS %*% CMS.tmp
     }
   }
+  CMS
 }
 
 #' Retrieve SVG Elements From File
@@ -129,7 +127,7 @@ parse_transform <- function(x, CMS=diag(3)) {
 #'   `width`, and `height` values of the outer SVG element recorded in the "box"
 #'   attribute.
 
-parse_svg <- function(file) {
+parse_svg <- function(file, steps=10) {
   xml <- xml_ns_strip(read_xml(file))
   if(!identical(xml_name(xml), "svg"))
     xml <- xml_find_first(xml, ".//svg")
@@ -168,19 +166,73 @@ parse_svg <- function(file) {
   if(is.na(x)) x <- 0
   if(is.na(y)) y <- 0
 
-  els <- xml_find_all(xml, ".//path|.//polygon|.//rect")
-  type <- xml_name(els)
-  el.path <- type == 'path'
-  el.poly <- type == 'polygon'
-  el.rect <- type == 'rect'
-
-  res <- list(length(els))
-  res[el.path] <- lapply(xml_attrs(els[el.path]), parse_path)
-  res[el.poly] <- lapply(xml_attrs(els[el.poly]), parse_poly)
-  res[el.rect] <- lapply(xml_attrs(els[el.rect]), parse_rect)
-  res <- parse_transform(res)
   structure(
-    res, class='svg_paths', box=c(x, y, width, height),
-    type=type
+    parse_node(xml, steps=steps), class='svg_paths', box=c(x, y, width, height)
   )
+}
+
+## Parse a Node and All It's Children
+##
+## Given a single XML node, recurse through it and all children parsing any SVG
+## element or path data encountered into X-Y line segment coordinates, and
+## recursively collecting attributes listed in `attr.rec`.  These are attributes
+## that you decide may sequentially apply to all child nodes (e.g. "transform").
+##
+## 
+## Collected
+## attributes are those that are supposed to lead to sequential modifications of
+## data and affect
+## child nodes.
+##
+## Only terminal nodes retain all attributes explicitly as members of the object
+## list.  Non terminal nodes keep their attributes as R attributes.
+##
+## , so if you want to
+## retain attributes from parents you must include those in 'attr.rec' (although
+## this will not tell you which parent the attributes came from).
+##
+## @param steps
+## @param attr.rec list any XML attributes that match the names in this list
+##   will be appended to the existing elements associated with that list.
+## @return A nested list.  Non-terminal node contain only other non-terminal
+##   nodes or terminal nodes, though they retain their XML name and attributes
+##   as R attributes.  Terminal nodes are recorded as lists containing elements:
+##   * "coords": Coordinates of segmentized SVG objects.
+##   * "attr": a character vector of unprocessed attributes attached to the node
+##   * "attr.rec": a list of character vectors of the attributes that should be
+##     tracked recursively.
+
+parse_node <- function(
+  node, attr.rec=list(transform=character(), class=character()),
+  steps
+) {
+  vetr(structure(list(), class='xml_node'), list(), INT.1.POS.STR)
+  term.nodes <- c('path', 'polygon', 'rect')  # parseable nodes
+
+  attrs <- as.list(xml_attrs(node))
+  for(i in names(attrs)[names(attrs) %in% names(attr.rec)]) {
+    attr.rec[[i]] <- c(attr.rec[[i]], attrs[[i]])
+  }
+  if(xml_length(node, only_elements=TRUE)) {
+    # Non-terminal node, recurse
+    res <-
+      lapply(xml_children(node), parse_node, attr.rec=attr.rec, steps=steps)
+    attr(res, 'xml_attrs') <- attrs
+    attr(res, 'xml_name') <- xml_name(node)
+    res
+  } else {
+    # Parse terminal node
+    ndat <- as.list(xml_attrs(node))
+    list(
+      name=xml_name(node),
+      coords=switch(tolower(xml_name(node)),
+        path=parse_path(ndat, steps),
+        polygon=parse_poly(ndat),
+        rect=parse_rect(ndat),
+        data.frame(x=numeric(), y=numeric())
+      ),
+      attr.rec=attr.rec,
+      attr=attrs
+    )
+  }
 }

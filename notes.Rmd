@@ -1,4 +1,23 @@
 
+## Recursive Travel
+
+* Start at svg element
+* Get children
+* If 'g':
+    * Append transform to existing
+    * Append class to existing record classes
+* If 'path/rect/poly' etc:
+    * Append transform to exiting
+    * Append class to existing
+    * Convert coords fully to line segments
+    * Apply transforms
+
+Do we keep the list structure?
+
+Do we apply clip paths?  Package [polyclip][4] may help with this.
+
+[4]: https://github.com/baddstats/polyclip
+
 ## Arcs
 
 [Mortoray post][1] on computing the center from the SVG parameters seems like a

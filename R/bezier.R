@@ -22,18 +22,18 @@
 
 bezier_interp2 <- function(coords, start, steps) {
   vetr(
-    list(x=numeric(), y=numeric()) && length(unique(lengths(.))) == 1,
+    list(numeric(), numeric()) && length(unique(lengths(.))) == 1,
     numeric(2),
     INT.1.POS.STR
   )
-  nc <- length(coords[['x']])
-  xy <- do.call(rbind, coords[c('x','y')])
+  nc <- length(coords[[1]])
+  xy <- do.call(rbind, coords)
   ends <- !(seq_len(nc) %% 3)
   outer <- cbind(start, xy[,ends])
-  P0 <- outer[,-ncol(outer)]
-  P3 <- outer[,-1]
-  P1 <- xy[, seq(1, nc, by=3)]
-  P2 <- xy[, seq(2, nc, by=3)]
+  P0 <- outer[,-ncol(outer), drop=FALSE]
+  P3 <- outer[,-1, drop=FALSE]
+  P1 <- xy[, seq(1, nc, by=3), drop=FALSE]
+  P2 <- xy[, seq(2, nc, by=3), drop=FALSE]
 
   stopifnot(length(unique(lengths(list(P0, P1, P2, P3)))) == 1L)
 
@@ -55,5 +55,5 @@ bezier_interp2 <- function(coords, start, steps) {
   # Each bezier needs to remove the first point as that will exist as the end
   # point of the prior
 
-  list(x=c(xi[-1,]), y=c(yi[-1,]))
+  list(c(xi[-1,]), c(yi[-1,]))
 }
