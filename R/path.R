@@ -283,7 +283,7 @@ empty.path <- data.frame(cmd=character(), x=numeric(), y=numeric())
 #'   the list along with "coords".
 
 parse_path <- function(x, steps=20) {
-  x[['coords']] <- if(!'d' %in% names(x)) empty.path
+  if(!'d' %in% names(x)) empty.path
   else {
     raw <- regmatches(
       x[['d']], gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x[['d']])
@@ -312,6 +312,5 @@ parse_path <- function(x, steps=20) {
       which(simple[['cmd']] == 'M' & seq_along(simple[['cmd']]) > 1)
     res
   }
-  x
 }
 
