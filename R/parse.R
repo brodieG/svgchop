@@ -131,65 +131,32 @@ parse_svg <- function(file, steps=10) {
 ## Parse a Node and All It's Children
 ##
 ## Given a single XML node, recurse through it and all children parsing any SVG
-## element or path data encountered into X-Y line segment coordinates, and
-## recursively collecting attributes listed in `attr.rec`.  These are attributes
-## that you decide may sequentially apply to all child nodes (e.g. "transform").
-##
-## 
-## Collected
-## attributes are those that are supposed to lead to sequential modifications of
-## data and affect
-## child nodes.
-##
-## Only terminal nodes retain all attributes explicitly as members of the object
-## list.  Non terminal nodes keep their attributes as R attributes.
-##
-## , so if you want to
-## retain attributes from parents you must include those in 'attr.rec' (although
-## this will not tell you which parent the attributes came from).
+## element or path data encountered into X-Y line segment coordinates.  All
+## nodes retain their XML attributes and XML name as the "xml_attr" and
+## "xml_name" R attributes.
 ##
 ## @param steps
-## @param attr.rec list any XML attributes that match the names in this list
-##   will be appended to the existing elements associated with that list.
-## @return A nested list.  Non-terminal node contain only other non-terminal
-##   nodes or terminal nodes, though they retain their XML name and attributes
-##   as R attributes.  Terminal nodes are recorded as lists containing elements:
-##   * "coords": Coordinates of segmentized SVG objects.
-##   * "attr": a character vector of unprocessed attributes attached to the node
-##   * "attr.rec": a list of character vectors of the attributes that should be
-##     tracked recursively.
+## @return A nested list with data.frames containing line segment X-Y coords are
+##   the leaves.  Branches that end in empty lists are possible.  XML attributes
+##   and names are retained as R attributes to each node.
 
-parse_node <- function(
-  node, attr.rec=list(transform=character(), class=character()),
-  steps
-) {
-  vetr(structure(list(), class='xml_node'), list(), INT.1.POS.STR)
-  term.nodes <- c('path', 'polygon', 'rect')  # parseable nodes
+parse_node <- function(node, steps) {
+  vetr(structure(list(), class='xml_node'), INT.1.POS.STR)
 
   attrs <- as.list(xml_attrs(node))
-  for(i in names(attrs)[names(attrs) %in% names(attr.rec)]) {
-    attr.rec[[i]] <- c(attr.rec[[i]], attrs[[i]])
-  }
-  if(xml_length(node, only_elements=TRUE)) {
+  res <- if(xml_length(node, only_elements=TRUE)) {
     # Non-terminal node, recurse
-    res <-
-      lapply(xml_children(node), parse_node, attr.rec=attr.rec, steps=steps)
-    attr(res, 'xml_attrs') <- attrs
-    attr(res, 'xml_name') <- xml_name(node)
-    res
+    lapply(xml_children(node), parse_node, steps=steps)
   } else {
     # Parse terminal node
-    ndat <- as.list(xml_attrs(node))
-    list(
-      name=xml_name(node),
-      coords=switch(tolower(xml_name(node)),
-        path=parse_path(ndat, steps),
-        polygon=parse_poly(ndat),
-        rect=parse_rect(ndat),
-        data.frame(x=numeric(), y=numeric())
-      ),
-      attr.rec=attr.rec,
-      attr=attrs
+    res <- switch(tolower(xml_name(node)),
+      path=parse_path(attrs, steps),
+      polygon=parse_poly(attrs),
+      rect=parse_rect(attrs),
+      data.frame(x=numeric(), y=numeric())
     )
   }
+  attr(res, 'xml_attrs') <- attrs
+  attr(res, 'xml_name') <- xml_name(node)
+  res
 }
