@@ -265,7 +265,7 @@ path_simplify <- function(path, steps) {
 #' the path command.  Bézier curves and paths are interpolated.
 #'
 #' @export
-#' @see_also [interp_paths()]
+#' @seealso [interp_paths()]
 #' @param x a path SVG node.
 #' @param steps positive integer(1), how many line segments to use to
 #'   approximate Bézier curves or elliptical arcs.  For arcs, it is the number

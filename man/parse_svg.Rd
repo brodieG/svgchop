@@ -4,7 +4,7 @@
 \alias{parse_svg}
 \title{Retrieve SVG Elements From File}
 \usage{
-parse_svg(file)
+parse_svg(file, steps = 10)
 }
 \arguments{
 \item{file}{an SVG file}

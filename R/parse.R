@@ -124,7 +124,9 @@ parse_svg <- function(file, steps=10) {
   if(is.na(y)) y <- 0
 
   structure(
-    parse_node(xml, steps=steps), class='svg_paths', box=c(x, y, width, height)
+    parse_node(xml, steps=steps),
+    class='svg_chopped',
+    box=c(x, y, width, height)
   )
 }
 

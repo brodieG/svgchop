@@ -1,4 +1,9 @@
 
+## ToDo
+
+* Separate parsing SVG from parsing an HTML file so we may deal with the
+  multi-SVG in an HTML page more gracefully.
+
 ## Recursive Travel
 
 * Start at svg element
@@ -12,9 +17,17 @@
     * Convert coords fully to line segments
     * Apply transforms
 
-Do we keep the list structure?
+Do we keep the list structure?  It's most useful for computing final style,
+transform, whatever, so if for each element we can recover all that information
+we don't have to worry about keeping the full list structure.
 
-Do we apply clip paths?  Package [polyclip][4] may help with this.
+So essentially apply everything recursively, including transforms, maybe
+clip-paths, record, classes, etc.  At the end flatten everything to a list
+containing coords.
+
+Do we apply clip paths?  Package [polyclip][4] may help with this.  Let's hold
+off for now and maybe only do an ad-hoc clip as it looks like properly
+implementing this will be pretty rough.
 
 [4]: https://github.com/baddstats/polyclip
 
