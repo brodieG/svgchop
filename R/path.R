@@ -111,6 +111,7 @@ path_to_abs <- function(path) {
         if(len) invalid_cmd(i, el[[1]])
         x <- x0
         y <- y0
+        el[[1]] <- toupper(el[[1]])
         el
       },
       a=,A={
