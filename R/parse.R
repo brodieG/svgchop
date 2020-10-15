@@ -28,9 +28,9 @@ parse_poly <- function(x) {
     if(any(coord[1,] != coord[nrow(coord),])) {
       coord <- rbind(coord, coord[1,])
     }
-    data.frame(x=coord[,1], y=coord[,2])
+    rbind(x=coord[,1], y=coord[,2])
   } else {
-    data.frame(x=numeric(), y=numeric())
+    rbind(x=numeric(), y=numeric())
   }
 }
 ## @inheritParams parse_poly
@@ -153,7 +153,7 @@ parse_node <- function(node, steps) {
       path=parse_path(attrs, steps),
       polygon=parse_poly(attrs),
       rect=parse_rect(attrs),
-      data.frame(x=numeric(), y=numeric())
+      list()
     )
   }
   attr(res, 'xml_attrs') <- attrs

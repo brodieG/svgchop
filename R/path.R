@@ -244,23 +244,20 @@ path_simplify <- function(path, steps) {
   cmds <- unlist(lapply(res, '[[', 1))
   xs <- unlist(lapply(res, '[[', 2))
   ys <- unlist(lapply(res, '[[', 3))
-  data.frame(cmd=cmds, x=xs, y=ys)
+
+  # Confirm that only remaining commands are M/L and drop them
+  if(!all(cmds %in% c('M','L'))) {
+    # nocov start
+    stop(
+      "Internal Error: simplified path command other than 'M', or 'L' found."
+    )
+    # nocov end
+  }
+  # Create data frame and add 'start' attribute to designate sub-paths
+  res <- rbind(x=xs, y=ys)
+  attr(res, 'starts') <- which(cmd == 'M' & seq_along(cmd) > 1)
+  res
 }
-## Parse "d" Path Command
-##
-## Convert "d" path attribute into a more usable format containing only "M",
-## "C", and "L" commands.
-##
-## @export
-## @inheritParams parse_path
-## @param x character length 1
-## @return a list of of length equal to `x`'s, with each element a list
-##   containing as many data frames as there are sub-paths in the corresponding
-##   `x` element, with each data frame containing a column with commands in
-##   `c("M","L","C")`.
-
-empty.path <- data.frame(cmd=character(), x=numeric(), y=numeric())
-
 #' Convert SVG Path to Line Segments
 #'
 #' Parses the "d" path attribute into X-Y coordinates of line segments collected
@@ -274,16 +271,15 @@ empty.path <- data.frame(cmd=character(), x=numeric(), y=numeric())
 #'   approximate Bézier curves or elliptical arcs.  For arcs, it is the number
 #'   of steps for a complete ellipse, so for partial ellipses fewer steps will
 #'   be used.
-#' @return a list with element "coords" set to a "data.frame" containing
-#'   the x and y coordinates of concatenated line segments that approximate the
-#'   path described by the "d" attribute of the path SVG element `x`.
-#'   If there is more than one sub-path, the starting row of sub-paths following
-#'   the first will be stored as the "starts" attribute of the "data.frame".
-#'   Other XML attributes of the input node `x` will be returned as elements of
-#'   the list along with "coords".
+#' @return numeric matrix, 2 x n containing the x and y coordinates of the
+#'   endpoints of the n - 1 concatenated line segments that approximate the path
+#'   described by the "d" attribute of the path SVG element `x`.  If there is
+#'   more than one sub-path, the starting column of sub-paths following the
+#'   first will be stored as the "starts" attribute of the matrix.
 
 parse_path <- function(x, steps=20) {
-  if(!'d' %in% names(x)) empty.path
+  if(!'d' %in% names(x))
+    matrix(numeric(), 2, 0, dimnames=list(c('x','y'), NULL))
   else {
     raw <- regmatches(
       x[['d']], gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x[['d']])
@@ -296,21 +292,7 @@ parse_path <- function(x, steps=20) {
     } )
     # Convert to absolute coords
     cmds.abs <- path_to_abs(cmds)
-    simple <- path_simplify(cmds.abs, steps)
-
-    # Confirm that only remaining commands are M/L and drop them
-    if(!all(simple[['cmd']] %in% c('M','L'))) {
-      # nocov start
-      stop(
-        "Internal Error: simplified path command other than 'M', or 'L' found."
-      )
-      # nocov end
-    }
-    # Create data frame and add 'start' attribute to designate sub-paths
-    res <- as.data.frame(simple[c('x', 'y')])
-    attr(res, 'starts') <-
-      which(simple[['cmd']] == 'M' & seq_along(simple[['cmd']]) > 1)
-    res
+    path_simplify(cmds.abs, steps)
   }
 }
 
