@@ -23,7 +23,7 @@ props <- c(
 
 ## Retrieve All Style Sheets
 ##
-## 
+##
 
 ## Parse a CSS Sheet
 ##
@@ -93,9 +93,10 @@ parse_css_rule <- function(x) {
   # Need to do this again b/c this may get called for inline style
   x <- gsub("/\\*.*?\\*/", "", x)  # strip comments
   m <- regmatches(
-    x, 
-    gregexec("\\h*([0-9a-zA-Z_\\-]+)\\h*:\\h*([^;\n]*)\\h*[;\n]", x, perl=TRUE)
-  )[[1]]
+    x,
+    gregexec(
+      "\\h*([0-9a-zA-Z_\\-]+)\\h*:\\h*([^;\n]*)\\h*(?:[;\n]|$)", x, perl=TRUE
+  ) )[[1]]
   if(!length(m) || length(m) %% 3)
     stop("CSS style sheet not in recognized format.")
 
@@ -150,8 +151,12 @@ parse_style <- function(node, style.prev=style()) {
   # carry along accumulated style
   # carry along accumulated props
 
+  xml_attr <- attr(node, 'xml_attrs')
 
-  trans.dat <- attr(node, 'xml_attrs')[['transform']]
+  if(!is.null(xml_attr[['style']])) {
+    style <- update_style(style.prev,)
+  }
+
   mx <- trans.prev[['mx']]
   if(is.null(trans.dat)) {
     cmds.full <- character()
