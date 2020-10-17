@@ -36,9 +36,6 @@
 ## accumulation.  So we produce "transform" objects containing the matrix and
 ## the accumulation.
 
-compute_transform <- function(mx, transform) {
-
-}
 ## @param x a list maybe containing 'transform' and 'coords' elements
 
 #' Compute and Apply SVG Transforms to Coordinates
@@ -56,7 +53,7 @@ compute_transform <- function(mx, transform) {
 transform_coords <- function(x) {
   vetr(structure(list(), class='svg_chopped'))
   trans.tree <- compute_transform(x)
-  apply_transform(x, trans.tree)
+  apply_transform(trans.tree)
 }
 
 ## Internal Transformation Functions
@@ -111,8 +108,6 @@ parse_transform <- function(node, trans.prev=trans()) {
     if(any(vapply(vals2, anyNA, TRUE)))
       stop('unparseable parameters in SVG transform command')
 
-    mx <- diag(3)
-
     for(i in seq_along(cmds)) {
       mx.tmp <- diag(3)
       valsi <- vals2[[i]]
@@ -146,27 +141,25 @@ parse_transform <- function(node, trans.prev=trans()) {
       cmds.full <- sprintf("%s(%s)", cmds, paste0(vals, collapse=", "))
     }
   }
-  trans(mx, append(trans.prev[['trans']], list(cmds.full)))
+  trans(mx, append(trans.prev[['cmds']], list(cmds.full)))
 }
 
 compute_transform <- function(x, trans.prev=trans()) {
   trans <- parse_transform(x, trans.prev)
   if(is.matrix(x)) {
-    trans
+    attr(x, 'transform-proc') <- trans
+    x
   } else {
-    lapply(x, compute_transform, trans)
+    x[] <- lapply(x, compute_transform, trans)
   }
 }
 
-apply_transform <- function(x, trans.tree) {
-  res <- if(is.matrix(x) && inherits(trans.tree, 'trans')) {
-    (trans.tree[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
-  } else if(
-    is.list(x) && is.list(trans.tree) && length(x) == length(trans.tree)
-  ) {
-    Map(apply_transform, x, trans.tree)
-  } else {
-    stop("Topology of `x` and `trans.tree` not identical")
+apply_transform <- function(x) {
+  trans <- attr(x, 'transform-proc')
+  res <- if(is.matrix(x) && inherits(trans, 'trans')) {
+    (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
+  } else  {
+    lapply(x, apply_transform)
   }
   attributes(res) <- attributes(x)
   res
