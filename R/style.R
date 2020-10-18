@@ -209,6 +209,7 @@ compute_inline_style <- function(node, style.prev=style()) {
 
 apply_style <- function(x, style.sheet) {
   style <- attr(x, 'style-inline')
+  if(is.null(style)) style <- style()
   vet(style.tpl, style, stop=TRUE)
 
   # match accumulated class vector against property class vector and take the
@@ -224,7 +225,7 @@ apply_style <- function(x, style.sheet) {
         lookup <- c(
           if(!is.na(prop)) setNames(prop, 'prop'),
           style.sheet[[y]],
-          if(!is.na(inline)) setNames(inline, 'inline'),
+          if(!is.na(inline)) setNames(inline, 'inline')
         )
         target <- which.max(
           match(
@@ -232,11 +233,11 @@ apply_style <- function(x, style.sheet) {
               'prop',
               paste0(".", style[['classes']]),
               paste0("#", style[['ids']]),
-              'inline',
+              'inline'
             ),
-            names(y)
+            names(lookup)
         ) )
-        if(!is.na(target)) lookup['target'] else NA_character_
+        if(length(target)) lookup[target] else NA_character_
       },
       character(1L)
     )
