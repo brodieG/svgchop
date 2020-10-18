@@ -2,7 +2,95 @@
 ## ToDo
 
 * Separate parsing SVG from parsing an HTML file so we may deal with the
-  multi-SVG in an HTML page more gracefully.
+  multi-SVG in an HTML page more gracefully, although need to recover styles
+  that may be outside of the SVG (yes)?
+
+## Overall strategy
+
+We can now parse a single SVG node, but a page may contain multiple SVG nodes,
+and there may be styles on the page and in the nodes.  Looks like the style is
+completely global, so that's okay.
+
+So:
+
+* Collect and process all CSS style sheets.
+* Collect all SVG objects.
+* For each SVG object, process, passing along the global style sheet object
+
+Interface is thus:
+
+* `process_file` (with a URL)
+* `process_svg(, style)`
+    * `parse_svg`
+    * `transform_svg`
+    * `style_svg`
+
+Other operations
+
+* `flatten`
+* `plot`
+
+## Transparency
+
+May need special tracking of opacity to ensure that we track all of them accrued
+across all classes / elements.
+
+## Styles
+
+### Questions
+
+* Are in line attribute inherited by children?  Probably same as html.  Or maybe
+  only via the "currentColor" value for the fill/stroke params?  Update,
+  elements to inherit whatever "<g>" element properties are set.
+
+### Basics
+
+* Inline styles are lower priority than style sheets others
+* Style sheets could appear anywhere
+
+### Strategy:
+
+Use "find" or whatever to get all the style sheets, and then parse them into a
+structure that can be looked up by some limited implementation of selectors.
+Most natural would be to focus on the very simple "only class" selectors, which
+would work for our purposes in the SVGs we've seen so far.
+
+Then
+
+* Recursively traverse our tree, tracking:
+    * latest seen in-line values for the supported style properties
+    * the class chain up to that point
+* When we hit a leaf, add this set to the back of the lookup structure.
+* Then do the lookup for each of the properties in question
+
+So the structure needs, for each property that we care about, a lookup table.
+
+So probably a:
+
+* list
+* named by property
+* containing named character:
+    * names are the classes
+    * values are the 
+* with in first position an unnamed element that corresponds to the most recent
+  inlined value for that property.
+
+What about inlined "style" property?  That probably needs to go at the end, but
+we need a special name for it to match?  Or maybe we just do a two pass thing
+where we grab the inline style property first since we know it will dominate.
+
+Then:
+
+* for each element
+* for each property
+* match accumulated class vector against property class vector and take the
+  highest index, and have match return 1 for no-match, so that the inlined
+  element at position one is taken if no classes match.
+* attach the full computed style to the node (matrix) in question as a specially
+  named attribute unlikely to conflict ("style-computed"?).
+
+
+
 
 ## Recursive Travel
 

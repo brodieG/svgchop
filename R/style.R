@@ -14,17 +14,45 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
-## Properties We're Tracking
+## SVG Display Properties We're Tracking
 
-props <- c(
+PROPS <- c(
   'fill', 'fill-opacity', 'stroke', 'stroke-opacity', 'stroke-width',
   'opacity'
 )
 
-## Retrieve All Style Sheets
+## Determine What Styles Apply to Each Element
 ##
+## Parses and collects CSS classes, inline style properties, and SVG display
+## properties, and for each element computes which CSS rules apply.
 ##
+## @param x "svg_chopped" object
+## @return "svg_choped" object with a "style-computed" attribute attached, which
+##   is a character vector of SVG display attributes with those attributes as
+##   the names and the values as the values.
 
+process_css <- function(x, style.sheet) {
+  vetr(
+    structure(list(), class='svg_chopped'), structure(list(), class='css')
+  )
+  x <- compute_inline_style(x)
+  apply_style(x, style.sheet=style.sheet)
+}
+
+## Retrieve and Parse All CSS Style Sheets
+##
+## Operating under the assumption that any style sheet, anywhere on the page
+## could affect CSS anywhere.
+##
+## @param xml xml2 "xml_document" object.
+## @return character vector of all contents (presumably CSS rules) across all
+##   style sheets in `xml`
+
+get_css <- function(xml) {
+  parse_css(
+    unlist(lapply(xml_find_all(xml, ".//style"), xml_text))
+  )
+}
 ## Parse a CSS Sheet
 ##
 ## We implement a naive regex based CSS parser that will work in some limited
@@ -78,16 +106,16 @@ parse_css <- function(x) {
   )
   res <- setNames(
     lapply(
-      lapply(props, function(x) lapply(tmp, '[[', x)),
+      lapply(PROPS, function(x) lapply(tmp, '[[', x)),
       function(y) {
         z <- do.call(rbind, y)
         # make sure ids go last for higher priority during matching
         z[order(substr(z[['selector']], 1, 1) == "#"),]
       }
     ),
-    props
+    PROPS
   )
-  res
+  structure(res, class="css")
 }
 parse_css_rule <- function(x) {
   # Need to do this again b/c this may get called for inline style
@@ -113,124 +141,109 @@ parse_css_selector <- function(x) {
   vapply(m, '[', "", 2)
 }
 
-# Track Inline Styles
+# Track non-Stylesheet Styles
 #
-# "style" slot contains styles recovered from inline "style" properties, and
+# "inline" contains styles recovered from inline "style" properties, and
 # "props" those from inline properties such as "fill", etc.  The former have
-# higher priority than style sheet
+# higher priority than the style sheet, while the latter lower priority.
 
+chr0 <- setNames(character(), character())
 
-style <- function(style=character(), props=character()) {
-  s.t <- p.t <- setNames(character(length(props)), props)
-  style.nm <- names(styles)[names(styles) %in% props]
-  s.t[style.nm] <- style[style.nm]
-  prop.nm <- names(props)[names(props) %in% props]
-  p.t[prop.nm] <- prop[prop.nm]
+style <- function(
+  styles=chr0, props=chr0, classes=character(), ids=character()
+) {
+  s.t <- p.t <- setNames(character(length(PROPS)), PROPS)
+  style.nm <- names(styles)[names(styles) %in% PROPS]
+  s.t[style.nm] <- styles[style.nm]
+  prop.nm <- names(props)[names(props) %in% PROPS]
+  p.t[prop.nm] <- props[prop.nm]
 
-  structure(list(style=s.t, props=p.t), class='style')
+  structure(
+    list(inline=s.t, props=p.t, classes=classes, ids=ids), class='style'
+  )
 }
-style.tpl <- structure(
-  list(
-    style=setNames(character(length(props)), props),
-    props=setNames(character(length(props)), props)
-  ),
-  class='style'
-)
+# For use in vetting
+
+style.tpl <- style()
 
 update_style <- function(old, new) {
   vetr(style.tpl, style.tpl)
-  new.s <- nzchar(new[['style']])
+  new.s <- nzchar(new[['inline']])
   new.p <- nzchar(new[['props']])
-  old[['style']][new.s] <- new[['style']][new.s]
+  old[['inline']][new.s] <- new[['inline']][new.s]
   old[['prop']][new.p] <- new[['prop']][new.p]
+  old[['classes']] <- c(old[['classes']], new[['classes']])
+  old[['ids']] <- c(old[['ids']], new[['ids']])
   old
 }
 
-parse_style <- function(node, style.prev=style()) {
-  # check style
-  # carry along accumulated style
-  # carry along accumulated props
-
+parse_inline_style <- function(node, style.prev=style()) {
   xml_attr <- attr(node, 'xml_attrs')
+  if(is.null(xml_attr)) xml_attr <- setNames(list(), character())
 
-  if(!is.null(xml_attr[['style']])) {
-    style <- update_style(style.prev,)
-  }
-
-  mx <- trans.prev[['mx']]
-  if(is.null(trans.dat)) {
-    cmds.full <- character()
-  } else {
-    vet(character(1L), trans.dat, stop=TRUE)
-    raw <- gregexpr("([a-zA-Z]+)\\s*\\(([^)]*)\\)", trans.dat, perl=TRUE)[[1L]]
-    cs <- attr(raw, 'capture.start')
-    cl <- attr(raw, 'capture.length')
-    proc1 <- substr(rep(trans.dat, length(cs)), c(cs), c(cs + cl - 1))
-    cmds <- proc1[seq_len(nrow(cs))]
-    vals <- proc1[seq_len(nrow(cs)) + nrow(cs)]
-    vals2 <- lapply(
-      regmatches(vals, gregexpr("-?[0-9]*\\.?[0-9]+", vals)), as.numeric
+  # Retrieve inline style/property and update the style object
+  inline <- if(!is.null(xml_attr[['inline']])) {
+    parse_css_rule(xml_attr[['inline']])
+  } else chr0
+  attr_props <- xml_attr[names(xml_attr) %in% PROPS]
+  props <- setNames(as.character(attr_props), names(attr_props))
+  update_style(
+    style.prev,
+    style(
+      inline, props,
+      if(is.null(xml_attr[['class']])) character() else xml_attr[['class']],
+      if(is.null(xml_attr[['ids']])) character() else xml_attr[['ids']]
     )
-    if(any(vapply(vals2, anyNA, TRUE)))
-      stop('unparseable parameters in SVG transform command')
-
-    mx <- diag(3)
-
-    for(i in seq_along(cmds)) {
-      mx.tmp <- diag(3)
-      valsi <- vals2[[i]]
-      switch(cmds[i],
-        translate={
-          if(length(valsi) == 2) {
-            mx.tmp[1:2,3] <- valsi
-          } else if(length(valsi) == 1) {
-            mx.tmp[1,3] <- valsi
-          } else stop('Invalid "translate" command')
-        },
-        rotate={
-          mx.tmp <- diag(3)
-          if(!length(valsi) %in% c(1, 3)) stop('Invalid "rotate" command')
-          ang <- valsi[1] / 180 * pi
-
-          mx.tmp[1:2, 1:2] <- c(cos(ang), sin(ang), -sin(ang), cos(ang))
-          # 3 params means translate -> rotate -> untranslate
-          if(length(valsi) == 3) {
-            trans1 <- trans2 <- diag(3)
-            trans1[3, 1:2] <- valsi[2:3]
-            trans2[3, 1:2] <- -valsi[2:3]
-            mx.tmp <- trans1 %*% mx.tmp %*% trans2
-          } else if(length(valsi) != 1)
-            stop('Invalid "rotate" command')
-        },
-        stop('"', cmds[i], '" transformation not supported')
-      )
-      mx <- mx %*% mx.tmp
-      # for posterity...
-      cmds.full <- sprintf("%s(%s)", cmds, paste0(vals, collapse=", "))
-    }
-  }
-  trans(mx, append(trans.prev[['trans']], list(cmds.full)))
+  )
 }
 
-compute_style <- function(x, trans.prev=trans()) {
-  trans <- parse_style(x, trans.prev)
+compute_inline_style <- function(node, style.prev=style()) {
+  style <- parse_inline_style(node, style.prev)
+  if(is.matrix(node)) {
+    attr(node, 'style-inline') <- style
+  } else {
+    node[] <- lapply(node, compute_inline_style, style)
+  }
+  node
+}
+
+apply_style <- function(x, style.sheet) {
+  style <- attr(x, 'style-inline')
+  vet(style.tpl, style, stop=TRUE)
+
+  # match accumulated class vector against property class vector and take the
+  # highest index, and have match return 1 for no-match, so that the inlined
+  # element at position one is taken if no classes match.
+
   if(is.matrix(x)) {
-    trans
+    styles.computed <- vapply(
+      names(style.sheet),
+      function(y) {
+        prop <- style[['props']][y]
+        inline <- style[['inline']][y]
+        lookup <- c(
+          if(!is.na(prop)) setNames(prop, 'prop'),
+          style.sheet[[y]],
+          if(!is.na(inline)) setNames(inline, 'inline'),
+        )
+        target <- which.max(
+          match(
+            c(
+              'prop',
+              paste0(".", style[['classes']]),
+              paste0("#", style[['ids']]),
+              'inline',
+            ),
+            names(y)
+        ) )
+        if(!is.na(target)) lookup['target'] else NA_character_
+      },
+      character(1L)
+    )
+    attr(x, 'style-computed') <- styles.computed
+    x
   } else {
-    lapply(x, compute_transform, trans)
+    x[] <- lapply(x, apply_style, style.sheet)
   }
-}
-
-apply_style <- function(x, trans.tree) {
-  res <- if(is.matrix(x) && inherits(trans.tree, 'trans')) {
-    (trans.tree[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
-  } else if(
-    is.list(x) && is.list(trans.tree) && length(x) == length(trans.tree)
-  ) {
-    Map(apply_transform, x, trans.tree)
-  } else {
-    stop("Topology of `x` and `trans.tree` not identical")
-  }
-  attributes(res) <- attributes(x)
-  res
+  x
 }

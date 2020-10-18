@@ -152,6 +152,7 @@ compute_transform <- function(x, trans.prev=trans()) {
   } else {
     x[] <- lapply(x, compute_transform, trans)
   }
+  x
 }
 
 apply_transform <- function(x) {

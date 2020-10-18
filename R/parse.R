@@ -62,35 +62,50 @@ parse_rect <- function(x) {
   parse_poly(c(list(points=p), x[!props %in% base.props]))
 }
 
-#' Retrieve SVG Elements From File
+#' Convert SVG Elements to Polygons
 #'
-#' Pull all paths and polygons out of an SVG file and convert them to x-y
-#' coordinates and L, M, and C SVG path commands corresponding to line segments.
-#' Originally this was all built around SVG paths, so we're forcing polygons
-#' through that pipeline even though we really don't need to.
+#' Parse and convert SVG elements into polygons.  SVG transforms are applied to
+#' the polygon coordinates, and SVG presentation attributes are computed from
+#' style sheets, inline styles and attributes, and are attached as the
+#' "style-computed" R attribute.
 #'
-#' If the document contains multiple SVG elements, only the first will be
-#' parsed.  In the future will likely add the option to directly pass an `xml2`
-#' node to allow iterating over multiple svgs.
+#' Currently only SVG path, rect, and polygon elements are supported.  Only some
+#' transforms are implemented.  CSS support is likely to be particularly fragile
+#' as the CSS parsing is regex based and only simple ASCII-only class and id
+#' selectors are supported.
 #'
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
+#'   xml_text xml_length xml_children
 #' @seealso [interp_paths()]
-#' @param file an SVG file
-#' @param elements character the types of elements to parse, currently only
-#'   "path" and "polygon" are supported.
-#' @return an "svg_paths" S3 object, which is a list of "subpath" that have been
-#'   converted from their original SVG form to a line segments.  The `x`, `y`,
-#'   `width`, and `height` values of the outer SVG element recorded in the "box"
-#'   attribute.
+#' @param file an HTML or other XML based text file containing SVG elements.
+#' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
+#'   objects.  Each "svg_chopped" object represents an SVG viewport the
+#'   dimensions of which are recorded in the "box" attribute.  "svg_chopped"
+#'   objects are recursive lists with `2 x n` numeric matrices as terminal
+#'   leaves.  The matrices contain the X-Y coordinates of the ordered `n`
+#'   endpoints of the `n - 1` line segments that the polygon representation of
+#'   the SVG elements comprise.
 
-parse_svg <- function(file, steps=10) {
+process_svg <- function(file, steps=10) {
   xml <- xml_ns_strip(read_xml(file))
-  if(!identical(xml_name(xml), "svg"))
-    xml <- xml_find_first(xml, ".//svg")
-  if(!identical(xml_name(xml), "svg"))
-    stop("Document does not start with an svg node")
-  attrs <- xml_attrs(xml)
+  css <- get_css(xml)
+
+  xml <-
+    if(!identical(xml_name(xml), "svg")) xml_find_all(xml, ".//svg")
+    else list(xml)
+
+  if(!length(xml))
+    stop("Document does not contain svg nodes")
+
+  parsed <- lapply(xml, parse_svg, steps=steps)
+  transformed <- lapply(parsed, transform_coords)
+  styled <- lapply(transformed, process_css, style.sheet=css)
+  structure(styled, class='svg_chopped_list')
+}
+
+parse_svg <- function(node, steps=10) {
+  attrs <- xml_attrs(node)
   width <- height <- x <- y <- NA_real_
   if(all(c('width', 'height') %in% names(attrs))) {
     if(!grepl("^\\d+$", attrs['width']))
@@ -124,7 +139,7 @@ parse_svg <- function(file, steps=10) {
   if(is.na(y)) y <- 0
 
   structure(
-    parse_node(xml, steps=steps),
+    parse_node(node, steps=steps),
     class='svg_chopped',
     box=c(x, y, width, height)
   )
