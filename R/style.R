@@ -210,10 +210,11 @@ compute_prop <- function(x, style, style.sheet) {
   inline <- style[['inline']][x]
   classes <- style[['classes']]
   ids <- style[['ids']]
+  css <- style.sheet[[x]]
+  css.lookup <- setNames(css[['value']], css[['selector']])
   lookup <- c(
     character(),
-    if(!is.na(prop)) setNames(prop, 'prop'),
-    style.sheet[[x]],
+    if(!is.na(prop)) setNames(prop, 'prop'), css.lookup,
     if(!is.na(inline)) setNames(inline, 'inline')
   )
   search <- c(
