@@ -141,7 +141,7 @@ parse_css_selector <- function(x) {
 }
 
 style <- function() {
-  setNames(vector('list', length(STYLE.PROPS)), STYLE.PROPS)
+  as.list(setNames(rep(NA, length(STYLE.PROPS)), STYLE.PROPS))
 }
 
 # Track Computed Styles
@@ -153,8 +153,9 @@ style <- function() {
 update_style <- function(old, new) {
   vetr(list(), list())
 
+  new.no.na <- names(new)[!vapply(new, anyNA, TRUE)]
   o.n <- names(old)
-  o.n.norm <- o.n[o.n %in% names(new) & o.n %in% STYLE.PROPS.NORM]
+  o.n.norm <- o.n[o.n %in% new.no.na & o.n %in% STYLE.PROPS.NORM]
   o.n.cum <- o.n[o.n %in% names(new) & o.n %in% STYLE.PROPS.CUM]
 
   old[o.n.norm] <- new[o.n.norm]
@@ -238,14 +239,14 @@ parse_inline_style <- function(node, style.prev=style(), style.sheet) {
     else unlist(strsplit(trimws(xml_attr[['class']]), "\\s+"))
   id <- if(is.null(xml_attr[['id']])) character() else xml_attr[['id']]
 
-  styles.computed <- sapply(
+  style.computed <- sapply(
     names(style.sheet),
     compute_prop,
     inline=inline, props=props, classes=classes, id=id,
     style.prev=style.prev, style.sheet=style.sheet,
     simplify=FALSE
   )
-  update_style(style.prev, styles.computed)
+  update_style(style.prev, style.computed)
 }
 parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
   style <- parse_inline_style(node, style.prev, style.sheet)
