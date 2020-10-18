@@ -35,7 +35,7 @@ process_css <- function(x, style.sheet) {
   vetr(
     structure(list(), class='svg_chopped'), structure(list(), class='css')
   )
-  x <- compute_inline_style(x)
+  x <- parse_inline_style_rec(x)
   apply_style(x, style.sheet=style.sheet)
 }
 
@@ -152,7 +152,7 @@ chr0 <- setNames(character(), character())
 style <- function(
   styles=chr0, props=chr0, classes=character(), ids=character()
 ) {
-  s.t <- p.t <- setNames(character(length(PROPS)), PROPS)
+  s.t <- p.t <- setNames(rep(NA_character_, length(PROPS)), PROPS)
   style.nm <- names(styles)[names(styles) %in% PROPS]
   s.t[style.nm] <- styles[style.nm]
   prop.nm <- names(props)[names(props) %in% PROPS]
@@ -168,8 +168,8 @@ style.tpl <- style()
 
 update_style <- function(old, new) {
   vetr(style.tpl, style.tpl)
-  new.s <- nzchar(new[['inline']])
-  new.p <- nzchar(new[['props']])
+  new.s <- !is.na(new[['inline']])
+  new.p <- !is.na(new[['props']])
   old[['inline']][new.s] <- new[['inline']][new.s]
   old[['prop']][new.p] <- new[['prop']][new.p]
   old[['classes']] <- c(old[['classes']], new[['classes']])
@@ -182,8 +182,8 @@ parse_inline_style <- function(node, style.prev=style()) {
   if(is.null(xml_attr)) xml_attr <- setNames(list(), character())
 
   # Retrieve inline style/property and update the style object
-  inline <- if(!is.null(xml_attr[['inline']])) {
-    parse_css_rule(xml_attr[['inline']])
+  inline <- if(!is.null(xml_attr[['style']])) {
+    parse_css_rule(xml_attr[['style']])
   } else chr0
   attr_props <- xml_attr[names(xml_attr) %in% PROPS]
   props <- setNames(as.character(attr_props), names(attr_props))
@@ -196,15 +196,45 @@ parse_inline_style <- function(node, style.prev=style()) {
     )
   )
 }
-
-compute_inline_style <- function(node, style.prev=style()) {
+parse_inline_style_rec <- function(node, style.prev=style()) {
   style <- parse_inline_style(node, style.prev)
   if(is.matrix(node)) {
     attr(node, 'style-inline') <- style
   } else {
-    node[] <- lapply(node, compute_inline_style, style)
+    node[] <- lapply(node, parse_inline_style_rec, style)
   }
   node
+}
+compute_prop <- function(x, style, style.sheet) {
+  prop <- style[['props']][x]
+  inline <- style[['inline']][x]
+  classes <- style[['classes']]
+  ids <- style[['ids']]
+  lookup <- c(
+    character(),
+    if(!is.na(prop)) setNames(prop, 'prop'),
+    style.sheet[[x]],
+    if(!is.na(inline)) setNames(inline, 'inline')
+  )
+  search <- c(
+    'prop',
+    paste0(rep_len(".", length(classes)), classes),
+    paste0(rep_len("#", length(ids)), ids),
+    'inline'
+  )
+  target <- which.max(match(search, names(lookup)))
+  if(length(target)) lookup[search[target]] else NA_character_
+  # deal with possible colors in '#000' format
+}
+proc_computed <- function(x) {
+  # Color styles in '#000' format
+  x[c('fill', 'stroke')] <- gsub(
+    '^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$', '#\\1\\1\\2\\2\\3\\3',
+    x[c('fill', 'stroke')]
+  )
+  # Color styles 'none'
+  x[c('fill', 'stroke')][x[c('fill', 'stroke')] == 'none'] <- NA_character_
+  x
 }
 
 apply_style <- function(x, style.sheet) {
@@ -219,29 +249,10 @@ apply_style <- function(x, style.sheet) {
   if(is.matrix(x)) {
     styles.computed <- vapply(
       names(style.sheet),
-      function(y) {
-        prop <- style[['props']][y]
-        inline <- style[['inline']][y]
-        lookup <- c(
-          if(!is.na(prop)) setNames(prop, 'prop'),
-          style.sheet[[y]],
-          if(!is.na(inline)) setNames(inline, 'inline')
-        )
-        target <- which.max(
-          match(
-            c(
-              'prop',
-              paste0(".", style[['classes']]),
-              paste0("#", style[['ids']]),
-              'inline'
-            ),
-            names(lookup)
-        ) )
-        if(length(target)) lookup[target] else NA_character_
-      },
-      character(1L)
+      compute_prop, character(1L),
+      style=style, style.sheet=style.sheet
     )
-    attr(x, 'style-computed') <- styles.computed
+    attr(x, 'style-computed') <- proc_computed(styles.computed)
     x
   } else {
     x[] <- lapply(x, apply_style, style.sheet)
