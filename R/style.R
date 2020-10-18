@@ -14,12 +14,12 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
-## SVG Display Properties We're Tracking
+## SVG Display Properties We're Tracking.  Some are cumulative and require
+## special handling (only transparency ones for the time being).
 
-PROPS <- c(
-  'fill', 'fill-opacity', 'stroke', 'stroke-opacity', 'stroke-width',
-  'opacity'
-)
+STYLE.PROPS.NORM <- c('fill', 'stroke', 'stroke-width')
+STYLE.PROPS.CUM <- c('fill-opacity', 'stroke-opacity', 'opacity')
+STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 
 ## Determine What Styles Apply to Each Element
 ##
@@ -35,8 +35,7 @@ process_css <- function(x, style.sheet) {
   vetr(
     structure(list(), class='svg_chopped'), structure(list(), class='css')
   )
-  x <- parse_inline_style_rec(x)
-  apply_style(x, style.sheet=style.sheet)
+  parse_inline_style_rec(x, style.sheet=style.sheet)
 }
 
 ## Retrieve and Parse All CSS Style Sheets
@@ -106,14 +105,14 @@ parse_css <- function(x) {
   )
   res <- setNames(
     lapply(
-      lapply(PROPS, function(x) lapply(tmp, '[[', x)),
+      lapply(STYLE.PROPS, function(x) lapply(tmp, '[[', x)),
       function(y) {
         z <- do.call(rbind, y)
         # make sure ids go last for higher priority during matching
         z[order(substr(z[['selector']], 1, 1) == "#"),]
       }
     ),
-    PROPS
+    STYLE.PROPS
   )
   structure(res, class="css")
 }
@@ -141,76 +140,42 @@ parse_css_selector <- function(x) {
   vapply(m, '[', "", 2)
 }
 
-# Track non-Stylesheet Styles
-#
-# "inline" contains styles recovered from inline "style" properties, and
-# "props" those from inline properties such as "fill", etc.  The former have
-# higher priority than the style sheet, while the latter lower priority.
-
-chr0 <- setNames(character(), character())
-
-style <- function(
-  styles=chr0, props=chr0, classes=character(), ids=character()
-) {
-  s.t <- p.t <- setNames(rep(NA_character_, length(PROPS)), PROPS)
-  style.nm <- names(styles)[names(styles) %in% PROPS]
-  s.t[style.nm] <- styles[style.nm]
-  prop.nm <- names(props)[names(props) %in% PROPS]
-  p.t[prop.nm] <- props[prop.nm]
-
-  structure(
-    list(inline=s.t, props=p.t, classes=classes, ids=ids), class='style'
-  )
+style <- function() {
+  setNames(vector('list', length(STYLE.PROPS)), STYLE.PROPS)
 }
-# For use in vetting
 
-style.tpl <- style()
+# Track Computed Styles
+#
+# Normal styles overwrite prior ones.  Cumulative ones need to be tracked so
+# they can have a final computation applied at time of styling.  Currently we
+# only have opacity, which we could recompute as we go along.
 
 update_style <- function(old, new) {
-  vetr(style.tpl, style.tpl)
-  new.s <- !is.na(new[['inline']])
-  new.p <- !is.na(new[['props']])
-  old[['inline']][new.s] <- new[['inline']][new.s]
-  old[['prop']][new.p] <- new[['prop']][new.p]
-  old[['classes']] <- c(old[['classes']], new[['classes']])
-  old[['ids']] <- c(old[['ids']], new[['ids']])
+  vetr(list(), list())
+
+  o.n <- names(old)
+  o.n.norm <- o.n[o.n %in% names(new) & o.n %in% STYLE.PROPS.NORM]
+  o.n.cum <- o.n[o.n %in% names(new) & o.n %in% STYLE.PROPS.CUM]
+
+  old[o.n.norm] <- new[o.n.norm]
+  old[o.n.cum] <- Map(c, old[o.n.cum], new[o.n.cum])
   old
 }
+## Compute Value for Property
+##
+## Given a property `x`, a "class", "id", style sheet, presentation attributes,
+## and parent computed style, compute style for that property.
+##
+## Implicit in this approach is that class resolution for the parents can be
+## completely conveyed by the prior style.
 
-parse_inline_style <- function(node, style.prev=style()) {
-  xml_attr <- attr(node, 'xml_attrs')
-  if(is.null(xml_attr)) xml_attr <- setNames(list(), character())
-
-  # Retrieve inline style/property and update the style object
-  inline <- if(!is.null(xml_attr[['style']])) {
-    parse_css_rule(xml_attr[['style']])
-  } else chr0
-  attr_props <- xml_attr[names(xml_attr) %in% PROPS]
-  props <- setNames(as.character(attr_props), names(attr_props))
-  update_style(
-    style.prev,
-    style(
-      inline, props,
-      if(is.null(xml_attr[['class']])) character() else xml_attr[['class']],
-      if(is.null(xml_attr[['ids']])) character() else xml_attr[['ids']]
-    )
-  )
-}
-parse_inline_style_rec <- function(node, style.prev=style()) {
-  style <- parse_inline_style(node, style.prev)
-  if(is.matrix(node)) {
-    attr(node, 'style-inline') <- style
-  } else {
-    node[] <- lapply(node, parse_inline_style_rec, style)
-  }
-  node
-}
-compute_prop <- function(x, style, style.sheet) {
-  prop <- style[['props']][x]
-  inline <- style[['inline']][x]
-  classes <- style[['classes']]
-  ids <- style[['ids']]
+compute_prop <- function(
+  x, style.prev, inline, props, style.sheet, classes, id
+) {
+  prop <- props[x]
+  inline <- inline[x]
   css <- style.sheet[[x]]
+
   css.lookup <- setNames(css[['value']], css[['selector']])
   lookup <- c(
     character(),
@@ -220,43 +185,75 @@ compute_prop <- function(x, style, style.sheet) {
   search <- c(
     'prop',
     paste0(rep_len(".", length(classes)), classes),
-    paste0(rep_len("#", length(ids)), ids),
+    paste0(rep_len("#", length(id)), id),
     'inline'
   )
   target <- which.max(match(search, names(lookup)))
-  if(length(target)) lookup[search[target]] else NA_character_
-  # deal with possible colors in '#000' format
+  if(length(target)) unname(lookup[search[target]]) else NA_character_
+}
+proc_color <- function(colors) {
+  colors <- gsub(
+    '^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$', '#\\1\\1\\2\\2\\3\\3',
+    colors
+  )
+  not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
+  not.color <- !colors[not.hex] %in% colors()
+  colors[not.hex][not.color] <- NA_character_
+  colors[not.hex][!not.color] <- col2rgb(colors[not.hex][!not.color])
+  colors
+
 }
 proc_computed <- function(x) {
-  # Color styles in '#000' format
-  x[c('fill', 'stroke')] <- gsub(
-    '^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$', '#\\1\\1\\2\\2\\3\\3',
-    x[c('fill', 'stroke')]
+  # Colors, converting to hex codes
+  x[c('fill', 'stroke')] <- lapply(x[c('fill', 'stroke')], proc_color)
+
+  # Compute total opacity and report it back.  We do not attach it to an RGB hex
+  # code b/c we might want to use it separately
+  op <- prod(as.numeric(x[['opacity']]))
+  x[['fill-opacity']] <- prod(as.numeric(x[['fill-opacity']])) * op
+  x[['stroke-opacity']] <- prod(as.numeric(x[['stroke-opacity']])) * op
+
+  x
+}
+parse_inline_style <- function(node, style.prev=style(), style.sheet) {
+  xml_attr <- attr(node, 'xml_attrs')
+  if(is.null(xml_attr)) xml_attr <- setNames(list(), character())
+
+  # Retrieve inline style/property and update the style object
+  inline <- if(!is.null(xml_attr[['style']])) {
+    parse_css_rule(xml_attr[['style']])
+  } else setNames(character(), character())
+
+  attr_props <- xml_attr[names(xml_attr) %in% STYLE.PROPS]
+  props <- setNames(as.character(attr_props), names(attr_props))
+
+  # Cumulative attributes need to resolve style sheet conflicts now.  Initially
+  # we defered computation of class styles to the end, but we have to do it here
+  # for things like transparency.
+
+  classes <-
+    if(is.null(xml_attr[['class']])) character()
+    else unlist(strsplit(trimws(xml_attr[['class']]), "\\s+"))
+  id <- if(is.null(xml_attr[['id']])) character() else xml_attr[['id']]
+
+  styles.computed <- sapply(
+    names(style.sheet),
+    compute_prop,
+    inline=inline, props=props, classes=classes, id=id,
+    style.prev=style.prev, style.sheet=style.sheet,
+    simplify=FALSE
   )
-  # Color styles 'none'
-  x[c('fill', 'stroke')][x[c('fill', 'stroke')] == 'none'] <- NA_character_
-  x
+  update_style(style.prev, styles.computed)
 }
-
-apply_style <- function(x, style.sheet) {
-  style <- attr(x, 'style-inline')
-  if(is.null(style)) style <- style()
-  vet(style.tpl, style, stop=TRUE)
-
-  # match accumulated class vector against property class vector and take the
-  # highest index, and have match return 1 for no-match, so that the inlined
-  # element at position one is taken if no classes match.
-
-  if(is.matrix(x)) {
-    styles.computed <- vapply(
-      names(style.sheet),
-      compute_prop, character(1L),
-      style=style, style.sheet=style.sheet
-    )
-    attr(x, 'style-computed') <- proc_computed(styles.computed)
-    x
+parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
+  style <- parse_inline_style(node, style.prev, style.sheet)
+  if(is.matrix(node)) {
+    attr(node, 'style-computed') <- proc_computed(style)
   } else {
-    x[] <- lapply(x, apply_style, style.sheet)
+    node[] <- lapply(
+      node, parse_inline_style_rec, style.prev=style, style.sheet=style.sheet
+    )
   }
-  x
+  node
 }
+
