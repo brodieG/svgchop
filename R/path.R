@@ -22,10 +22,6 @@
 ##
 ## @param x an svg path
 
-path_components <- function(x) {
-   pieces <- unname(split(x, cumsum(grepl("[a-zA-Z]", x))))
-   lapply(pieces, function(y) list(y[1], as.numeric(y[-1])))
-}
 interleave <- function(x, y) {
   c(x, y)[order(c(seq_along(x), seq_along(y)))]
 }
@@ -266,7 +262,6 @@ path_simplify <- function(path, steps) {
 #' the path command.  Bézier curves and paths are interpolated.
 #'
 #' @export
-#' @seealso [interp_paths()]
 #' @param x a path SVG node.
 #' @param steps positive integer(1), how many line segments to use to
 #'   approximate Bézier curves or elliptical arcs.  For arcs, it is the number

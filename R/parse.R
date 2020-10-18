@@ -77,7 +77,6 @@ parse_rect <- function(x) {
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #'   xml_text xml_length xml_children
-#' @seealso [interp_paths()]
 #' @param file an HTML or other XML based text file containing SVG elements.
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 #'   objects.  Each "svg_chopped" object represents an SVG viewport the
