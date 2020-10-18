@@ -288,7 +288,16 @@ parse_path <- function(x, steps=20) {
     } )
     # Convert to absolute coords
     cmds.abs <- path_to_abs(cmds)
-    path_simplify(cmds.abs, steps)
-  }
-}
+    cmds.cmds <- vapply(cmds.abs, '[[', "", 1)
+    cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
+    coords <- unname(lapply(cmds.split, path_simplify, steps))
+    if(length(coords) > 1) {
+      starts <- vapply(coords, ncol, 0)
+      starts <- starts[-length(starts)] + 1L
+      coords <- do.call(cbind, coords)
+      attr(coords, 'starts') <- starts
+      coords
+    } else {
+      coords[[1]]
+} } }
 

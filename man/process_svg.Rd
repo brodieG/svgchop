@@ -30,6 +30,3 @@ transforms are implemented.  CSS support is likely to be particularly fragile
 as the CSS parsing is regex based and only simple ASCII-only class and id
 selectors are supported.
 }
-\seealso{
-\code{\link[=interp_paths]{interp_paths()}}
-}

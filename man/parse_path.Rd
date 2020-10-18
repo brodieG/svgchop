@@ -26,6 +26,3 @@ Parses the "d" path attribute into X-Y coordinates of line segments collected
 into sub-paths.  Sub-paths are designated by "M" or "m" commands embedded in
 the path command.  Bézier curves and paths are interpolated.
 }
-\seealso{
-\code{\link[=interp_paths]{interp_paths()}}
-}
