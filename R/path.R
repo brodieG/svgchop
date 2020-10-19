@@ -271,7 +271,11 @@ path_simplify <- function(path, steps) {
 #'   endpoints of the n - 1 concatenated line segments that approximate the path
 #'   described by the "d" attribute of the path SVG element `x`.  If there is
 #'   more than one sub-path, the starting column of sub-paths following the
-#'   first will be stored as the "starts" attribute of the matrix.
+#'   first will be stored as the "starts" attribute of the matrix.  Whether the
+#'   (sub)paths are open or closed is recorded as the "closed" attribute.
+#'   (Sub)paths are considered closed if they end in a "Z" or "z" command, or if
+#'   the last coordinate equals the first (in SVG these two are not the same as
+#'   it affects how the line ends are displayed; we ignore that).
 
 parse_path <- function(x, steps=20) {
   if(!'d' %in% names(x))
@@ -290,8 +294,15 @@ parse_path <- function(x, steps=20) {
     cmds.abs <- path_to_abs(cmds)
     cmds.cmds <- vapply(cmds.abs, '[[', "", 1)
     cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
+
+    # compute which paths are closed
     coords <- unname(lapply(cmds.split, path_simplify, steps))
-    if(length(coords) > 1) {
+    closed <- unname(
+      vapply(cmds.split, function(x) x[[length(x)]][[1]] == 'Z', TRUE) |
+      vapply(coords, function(x) ncol(x) && all(x[,1] == x[,ncol(x)]), TRUE)
+    )
+    # Compute sub-path starting points
+    coords <- if(length(coords) > 1) {
       starts <- vapply(coords, ncol, 0)
       starts <- starts[-length(starts)] + 1L
       coords <- do.call(cbind, coords)
@@ -299,5 +310,8 @@ parse_path <- function(x, steps=20) {
       coords
     } else {
       coords[[1]]
-} } }
+    }
+    attr(coords, 'closed') <- closed
+    coords
+} }
 
