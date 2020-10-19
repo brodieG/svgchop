@@ -209,9 +209,11 @@ proc_computed <- function(x) {
 
   # Compute total opacity and report it back.  We do not attach it to an RGB hex
   # code b/c we might want to use it separately
-  op <- prod(as.numeric(x[['opacity']]))
-  x[['fill-opacity']] <- prod(as.numeric(x[['fill-opacity']])) * op
-  x[['stroke-opacity']] <- prod(as.numeric(x[['stroke-opacity']])) * op
+  op <- prod(as.numeric(x[['opacity']]), na.rm=TRUE)
+  x[['fill-opacity']] <-
+    prod(as.numeric(x[['fill-opacity']]), na.rm=TRUE) * op
+  x[['stroke-opacity']] <-
+    prod(as.numeric(x[['stroke-opacity']]), na.rm=TRUE) * op
 
   x
 }
