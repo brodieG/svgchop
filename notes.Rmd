@@ -1,9 +1,65 @@
+## Not Supported
+
+* Mixed units (no unit conversion whatsoever), all lengths are assumed to be in
+  the user coordinate system (pixels?).
+* SVG viewports are ignored
+* Nested SVG viewports are ignored (could support via grid viewports - clearly
+  there is a lot of similarities between SVG and grid viewports)
+* Clip-paths
+* Some elements
+* Some transforms
+* CSS transforms
 
 ## ToDo
 
-* Separate parsing SVG from parsing an HTML file so we may deal with the
-  multi-SVG in an HTML page more gracefully, although need to recover styles
-  that may be outside of the SVG (yes)?
+* Add all transforms (and test with files that use them)
+* Add the remaining shapes?
+* Plot methods (how do we plot multiple svg elements?).  They can nest!
+  Actually, that's a big deal; we need to make sure that we don't retrieve
+  nested SVG elements.  We could just traverse the whole document looking for
+  SVG elements tracking whether we are top level or not.  Or we need to figure
+  out the selector to pull out SVGs that are not nested in SVGs (better).
+
+## Display Port
+
+Scenarios to consider:
+
+* width & height & viewBox
+* (width | height) & viewBox
+* width & height
+* width | height
+
+If width and height are missing, then presumably the viewBox will expand to
+fill whatever space it needs, which will be determined by the width/height of
+the viewBox.  If those are not specified, then we can compute the extents of the
+object.
+
+So for each of width / height:
+
+* If specified as SVG width / height, use that
+* Else If specified as viewBox, use that
+* Else If Xmin/Ymin specified in viewBox:
+   * Compute extent and subtract max extent from min value
+* Else compute extent and take max value (effectively assume 0 is default X/Ymin)
+
+Or maybe we don't care about viewbox / viewport?  Just record those and return
+them as the extent.
+
+Do we return the whole thing flat?  Or recursive?  All attributes attached?
+
+Add the option to flatten?  Or make that a separate function?  Probably a
+separate function.
+
+* svg_chopped
+* svg_chopped_flat
+
+Plot methods for the two, and for:
+
+* svg_chopped_list
+
+Do we keep the `xml_attrs`?  Useful for debugging, but do we actually need them?
+Maybe we keep them for the tree, but not for flat by default?  Is it weird to
+have different settings for the two?
 
 ## Overall strategy
 
@@ -32,8 +88,18 @@ Other operations
 
 ## Transparency
 
+Transparency rules seem to be:
+
+* compute transparency of element from:
+    * style sheet
+    * inline style
+    * attribute
+    * winner takes all
+* Look back at pre-computed chain of transparency
+
+
 May need special tracking of opacity to ensure that we track all of them accrued
-across all classes / elements.
+across all classes / elements.  These definitely nest.
 
 ## Styles
 
