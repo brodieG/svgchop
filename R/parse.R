@@ -90,57 +90,78 @@ process_svg <- function(file, steps=10) {
   xml <- xml_ns_strip(read_xml(file))
   css <- get_css(xml)
 
+  # top level svgs, nested ones will just be consumed in recursive traversal
   xml <-
-    if(!identical(xml_name(xml), "svg")) xml_find_all(xml, ".//svg")
+    if(!identical(xml_name(xml), "svg"))
+      xml_find_all(xml,"//svg[not(ancestor::svg)]")
     else list(xml)
 
   if(!length(xml))
     stop("Document does not contain svg nodes")
 
-  parsed <- lapply(xml, parse_svg, steps=steps)
+  parsed <- lapply(xml, parse_node, steps=steps)
   transformed <- lapply(parsed, transform_coords)
   styled <- lapply(transformed, process_css, style.sheet=css)
-  structure(styled, class='svg_chopped_list')
+
+  # compute extents
+  get_coords <- function(obj, coord)
+    if(is.matrix(obj)) obj[coord,] else lapply(obj, get_coords, coord)
+  w.extents <- lapply(
+    styled,
+    function(x) {
+      xs <- range(unlist(lapply(x, get_coords, 1)))
+      ys <- range(unlist(lapply(x, get_coords, 2)))
+      attr(x, 'extents') <- list(x=xs, ys=ys)
+      x
+  } )
+  structure(w.extents, class='svg_chopped_list')
+}
+num.pat <- "(-?\\d*\\.?\\d+)\\w*"
+parse_length <- function(x) {
+  vetr(character())
+  num.like <- grepl(sprintf("^\\s*%s\\s*$", num.pat), x)
+  res <- rep(NA_real_, length(x))
+  res[num.like] <- as.numeric(
+    sub(sprintf("^.*?%s.*$", num.pat), "\\1", x[num.like], perl=TRUE)
+  )
+  if(!all(num.like))
+    warning(
+      "Some lengths ", paste0(deparse(x[!num.like]), collapse="\n"),
+      " could not be parsed into numbers."
+    )
+  res
+}
+parse_lengths <- function(x) {
+  vetr(CHR.1)
+  parse_length(strsplit(trimws(x), "\\s+")[[1]])
 }
 
-parse_svg <- function(node, steps=10) {
-  attrs <- xml_attrs(node)
+process_svg_node <- function(node.parsed, xml_attrs) {
+  attrs <- xml_attrs
   width <- height <- x <- y <- NA_real_
-  if(all(c('width', 'height') %in% names(attrs))) {
-    if(!grepl("^\\d+$", attrs['width']))
-      stop("Unrecognize width format ", attrs['width'])
-    if(!grepl("^\\d+$", attrs['height']))
-      stop("Unrecognize height format ", attrs['height'])
-    width <- as.numeric(attrs['width'])
-    height <- as.numeric(attrs['height'])
-  } else if ('viewBox' %in% names(attrs)) {
-    # this isn't right, but appears to work in the couple of examples I've
-    # worked with as the width/height and viewbox are the same
-    num.rx <- "\\d*\\.?\\d+"
-    vb.rx <- sprintf("^\\s*(%s\\s+){3}%s\\s*$", num.rx, num.rx)
-    if(!grepl(vb.rx, attrs['viewBox']))
-      stop("viewBox attribute in unknown format ", attrs['viewBox'])
-    viewbox <- strsplit(trimws(attrs['viewBox']), "\\s+")[[1]]
-    x <- as.numeric(viewbox[1])
-    y <- as.numeric(viewbox[2])
-    width <- as.numeric(viewbox[3])
-    height <- as.numeric(viewbox[4])
-  }
-  if(is.na(x) && all(c('x', 'y') %in% names(attrs))) {
-    if(!grepl("^\\d+$", attrs['x']))
-      stop("Unrecognize width format ", attrs['x'])
-    if(!grepl("^\\d+$", attrs['height']))
-      stop("Unrecognize y format ", attrs['y'])
-    x <- as.numeric(attrs['x'])
-    y <- as.numeric(attrs['y'])
+  viewbox <- rep(NA_real_, 4)
+
+  if('width' %in% names(attrs)) width <- parse_length(attrs[['width']])
+  if('height' %in% names(attrs)) height <- parse_length(attrs[['height']])
+  if('x' %in% names(attrs)) x <- parse_length(attr[['x']])
+  if('y' %in% names(attrs)) y <- parse_length(attr[['y']])
+
+  if ('viewBox' %in% names(attrs)) {
+    viewbox <- parse_lengths(attrs[['viewBox']])
+    if(length(viewbox) != 4) {
+      warning("Unrecognized viewBox format")
+      viewbox <- rep(NA_real_, 4)
+    }
   }
   if(is.na(x)) x <- 0
   if(is.na(y)) y <- 0
 
+  # return
   structure(
-    parse_node(node, steps=steps),
+    node.parsed,
     class='svg_chopped',
-    box=c(x, y, width, height)
+    viewBox=viewbox,
+    x=x, y=y, width=width, height=width
   )
 }
 
@@ -151,6 +172,9 @@ parse_svg <- function(node, steps=10) {
 ## nodes retain their XML attributes and XML name as the "xml_attr" and
 ## "xml_name" R attributes.
 ##
+## Something to consider: use the 'xml_name' as the parent list names to make it
+## easier to see what each element is...
+##
 ## @param steps
 ## @return A nested list with data.frames containing line segment X-Y coords are
 ##   the leaves.  Branches that end in empty lists are possible.  XML attributes
@@ -160,17 +184,21 @@ parse_node <- function(node, steps) {
   vetr(structure(list(), class='xml_node'), INT.1.POS.STR)
 
   attrs <- as.list(xml_attrs(node))
+
   res <- if(xml_length(node, only_elements=TRUE)) {
     # Non-terminal node, recurse
     lapply(xml_children(node), parse_node, steps=steps)
   } else {
     # Parse terminal node
-    res <- switch(tolower(xml_name(node)),
+    switch(tolower(xml_name(node)),
       path=parse_path(attrs, steps),
       polygon=parse_poly(attrs),
       rect=parse_rect(attrs),
       list()
     )
+  }
+  if(tolower(xml_name(node)) == 'svg') {
+    res <- process_svg_node(res, attrs)
   }
   attr(res, 'xml_attrs') <- attrs
   attr(res, 'xml_name') <- xml_name(node)
