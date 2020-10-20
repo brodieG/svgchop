@@ -2,14 +2,20 @@
 % Please edit documentation in R/plot.R
 \name{plot.svg_chopped}
 \alias{plot.svg_chopped}
+\alias{plot.svg_chopped_list}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
 \method{plot}{svg_chopped}(x, ...)
+
+\method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(which) && dev.interactive(), ...)
 }
 \arguments{
-\item{x}{an "svg_chopped" object}
+\item{x}{an "svg_chopped" or object}
 
-\item{...}{unused}
+\item{...}{passed on to \code{\link[=polypath]{polypath()}} and/or \code{\link[=lines]{lines()}}.}
+
+\item{ask}{logical; if \code{TRUE}, the user is \emph{ask}ed before
+    each plot, see \code{\link{par}(ask=.)}.}
 }
 \value{
 \code{x}, invisibly
@@ -28,4 +34,8 @@ in the outer viewport coordinates.
 Stroke widths are computed under the assumption that 1 "lwd" == 1/96th of an
 inch, and may look bad on devices that don't support "lwd" values less than
 one.
+
+The "svg_chopped_list" method will call the "svg_chopped" method for each
+item.  If you set \code{par(mfrow=...)} or similar each element of the list will
+be plotted in its own grid spot.
 }

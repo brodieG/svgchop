@@ -2,9 +2,11 @@
 
 * Mixed units (no unit conversion whatsoever), all lengths are assumed to be in
   the user coordinate system (pixels?).
-* SVG viewports are ignored
-* Nested SVG viewports are ignored (could support via grid viewports - clearly
-  there is a lot of similarities between SVG and grid viewports)
+* Nested SVG viewports are "ignored", which means that they are drawn without
+  any transformations and thus will not display as intended if any of the x, y,
+  width, height, or viewBox attributes are specified.  This information is
+  preserved in the recursive 'svg_chopped' structure so can be recovered and
+  used (e.g. with grid viewports) if the user so desires.
 * Clip-paths
 * Some elements
 * Some transforms
@@ -14,11 +16,8 @@
 
 * Add all transforms (and test with files that use them)
 * Add the remaining shapes?
-* Plot methods (how do we plot multiple svg elements?).  They can nest!
-  Actually, that's a big deal; we need to make sure that we don't retrieve
-  nested SVG elements.  We could just traverse the whole document looking for
-  SVG elements tracking whether we are top level or not.  Or we need to figure
-  out the selector to pull out SVGs that are not nested in SVGs (better).
+* Plot methods (how do we plot multiple svg elements?).
+
 
 ## Display Port
 

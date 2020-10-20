@@ -9,10 +9,12 @@ Version: 0.1.0
 Authors@R: c(
     person(
     "Brodie", "Gaslam", email="brodie.gaslam@yahoo.com",
-    role=c("aut", "cre")))
+    role=c("aut", "cre")),
+    person(family="R Core",
+    email="R-core@r-project.org", role="cph",
+    comment="implementation for using devAskNewPage from plot.lm")
+    )
 Imports:
-    grid,
-    gridBezier,
     vetr,
     xml2
 License: GPL (>= 2)

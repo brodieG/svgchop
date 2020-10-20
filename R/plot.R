@@ -26,9 +26,14 @@ flatten <- function(x) {
 #' inch, and may look bad on devices that don't support "lwd" values less than
 #' one.
 #'
+#' The "svg_chopped_list" method will call the "svg_chopped" method for each
+#' item.  If you set `par(mfrow=...)` or similar each element of the list will
+#' be plotted in its own grid spot.
+#'
 #' @export
-#' @param x an "svg_chopped" object
-#' @param ... unused
+#' @inheritParams stats::plot.lm
+#' @param x an "svg_chopped" or object
+#' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
 plot.svg_chopped <- function(x, ...) {
@@ -119,8 +124,26 @@ plot.svg_chopped <- function(x, ...) {
     }
     # plot
 
-    if(closed) polypath(t(mat), col=fill, border=stroke, lwd=stroke.width)
-    else lines(t(mat), col=stroke, lwd=stroke.width)
+    if(closed) polypath(t(mat), col=fill, border=stroke, lwd=stroke.width, ...)
+    else lines(t(mat), col=stroke, lwd=stroke.width, ...)
   }
   invisible(x)
 }
+#' @export
+#' @rdname plot.svg_chopped
+
+plot.svg_chopped_list <- function(
+  x,
+  ask = prod(par("mfcol")) < length(which) && dev.interactive(),
+  ...
+) {
+  vetr(structure(list(), class='svg_chopped_list'), LGL.1)
+  if (ask) {
+    oask <- devAskNewPage(TRUE)
+    on.exit(devAskNewPage(oask))
+  }
+  lapply(x, plot, ...)
+  invisible(x)
+}
+
+
