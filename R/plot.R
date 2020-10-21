@@ -89,7 +89,7 @@ plot.svg_chopped <- function(x, ...) {
     fill <- stroke <- NA
     stroke.width <- 1
     if(!is.null(style)) {
-      fill <- if(!is.na(style[['fill']])) style[['fill']] else NA
+      fill <- if(!is.na(style[['fill']])) style[['fill']] else '#000000'
       stroke <- if(!is.na(style[['stroke']])) style[['stroke']] else NA
       if(
         !is.na(fill) && !is.null(style[['fill-opacity']]) &&
