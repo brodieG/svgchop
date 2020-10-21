@@ -40,8 +40,6 @@ plot.svg_chopped <- function(x, ...) {
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
 
-  plot.new()
-
   vb <- attr(x, 'viewBox')
   extents <- attr(x, 'extents')
   if(
