@@ -143,8 +143,8 @@ process_svg_node <- function(node.parsed, xml_attrs) {
 
   if('width' %in% names(attrs)) width <- parse_length(attrs[['width']])
   if('height' %in% names(attrs)) height <- parse_length(attrs[['height']])
-  if('x' %in% names(attrs)) x <- parse_length(attr[['x']])
-  if('y' %in% names(attrs)) y <- parse_length(attr[['y']])
+  if('x' %in% names(attrs)) x <- parse_length(attrs[['x']])
+  if('y' %in% names(attrs)) y <- parse_length(attrs[['y']])
 
   if ('viewBox' %in% names(attrs)) {
     viewbox <- parse_lengths(attrs[['viewBox']])
