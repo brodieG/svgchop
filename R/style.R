@@ -200,7 +200,8 @@ proc_color <- function(colors) {
   not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
   not.color <- !colors[not.hex] %in% colors()
   colors[not.hex][not.color] <- NA_character_
-  colors[not.hex][!not.color] <- col2rgb(colors[not.hex][!not.color])
+  colors[not.hex][!not.color] <-
+    rgb(t(col2rgb(colors[not.hex][!not.color])), maxColorValue=255)
   colors
 
 }
