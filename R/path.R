@@ -193,11 +193,19 @@ path_simplify <- function(path, steps) {
           coords <- interleave_cols(ctrls, coords, blen / 2L)
           cmd <- c('Q', 'C')[match(cmd, c('T', 'S'))]
         }
-        # Quadratic -> Cubic Bézier
+        # Quadratic -> Cubic Bézier, each cubic control point must be 2/3 of the
+        # way from endpoints to Quadratic control point.
         if(cmd == 'Q') {
           cmd <- 'C'
-          nc <- ncol(coords)
-          coords <- coords[,rep(seq_len(nc), seq_len(nc) %% 2L + 1L)]
+          coords.all <- cbind(c(x, y), coords)
+          ep1 <- coords.all[, seq(1, ncol(coords.all) - 1, by=2), drop=FALSE]
+          ep2 <- coords.all[, seq(3, ncol(coords.all), by=2), drop=FALSE]
+          cpq <- coords.all[, seq(2, ncol(coords.all), by=2), drop=FALSE]
+
+          cpc1 <- cpq * 2/3 + ep1 * 1/3
+          cpc2 <- cpq * 2/3 + ep2 * 1/3
+
+          coords <- cbind(cpc1, cpc2, ep2)[, order(rep(seq_len(ncol(cpc1)), 3))]
         }
         xs <- coords[1L,]
         ys <- coords[2L,]
