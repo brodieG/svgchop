@@ -121,7 +121,8 @@ parse_transform <- function(node, trans.prev=trans()) {
         },
         rotate={
           mx.tmp <- diag(3)
-          if(!length(valsi) %in% c(1, 3)) stop('Invalid "rotate" command')
+          if(!length(valsi) %in% c(1, 3))
+            stop('Invalid "rotate" transform command')
           ang <- valsi[1] / 180 * pi
 
           mx.tmp[1:2, 1:2] <- c(cos(ang), sin(ang), -sin(ang), cos(ang))
@@ -132,7 +133,27 @@ parse_transform <- function(node, trans.prev=trans()) {
             trans2[3, 1:2] <- -valsi[2:3]
             mx.tmp <- trans1 %*% mx.tmp %*% trans2
           } else if(length(valsi) != 1)
-            stop('Invalid "rotate" command')
+            stop('Invalid "rotate" transform command')
+        },
+        scale={
+          if(length(valsi) %in% 1:2) {
+            mx.tmp[1:2,1:2] <- valsi
+          } else stop('Invalid "scale" transform command')
+        },
+        skewX={
+          if(length(valsi) == 1) {
+            mx.tmp[1,2] <- tan(valsi / 180 * pi)
+          } else stop('Invalid "skewX" transform command')
+        },
+        skewY={
+          if(length(valsi) == 1) {
+            mx.tmp[2,1] <- tan(valsi / 180 * pi)
+          } else stop('Invalid "skewX" transform command')
+        },
+        matrix={
+          if(length(valsi) == 6) {
+            mx.tmp[1:2,1:3] <- valsi
+          } else stop('Invalid "matrix" transform command')
         },
         stop('"', cmds[i], '" transformation not supported')
       )
