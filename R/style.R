@@ -21,22 +21,6 @@ STYLE.PROPS.NORM <- c('fill', 'stroke', 'stroke-width')
 STYLE.PROPS.CUM <- c('fill-opacity', 'stroke-opacity', 'opacity')
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 
-## Determine What Styles Apply to Each Element
-##
-## Parses and collects CSS classes, inline style properties, and SVG display
-## properties, and for each element computes which CSS rules apply.
-##
-## @param x "svg_chopped" object
-## @return "svg_choped" object with a "style-computed" attribute attached, which
-##   is a character vector of SVG display attributes with those attributes as
-##   the names and the values as the values.
-
-process_css <- function(x, style.sheet) {
-  vetr(
-    structure(list(), class='svg_chopped'), structure(list(), class='css')
-  )
-  parse_inline_style_rec(x, style.sheet=style.sheet)
-}
 
 ## Retrieve and Parse All CSS Style Sheets
 ##
@@ -192,30 +176,37 @@ compute_prop <- function(
   target <- which.max(match(search, names(lookup)))
   if(length(target)) unname(lookup[search[target]]) else NA_character_
 }
+## Must convert all colors to hex so they can be combined with transparency
+## codes.  Lone exception is "none" as we must distinguish it from NA missing as
+## the default for fill is to fill in black (i.e. NA == 'black', "none" ==
+## "none")
+
 proc_color <- function(colors) {
   colors <- gsub(
     '^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$', '#\\1\\1\\2\\2\\3\\3',
     colors
   )
   not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
-  not.color <- !colors[not.hex] %in% colors()
-  colors[not.hex][not.color] <- NA_character_
-  colors[not.hex][!not.color] <-
-    rgb(t(col2rgb(colors[not.hex][!not.color])), maxColorValue=255)
-  colors
+  none <- tolower(colors) == 'none'
+  not.color <- !tolower(colors[not.hex]) %in% colors()
+  colors[not.hex][not.color & !none] <- NA_character_
+  colors[not.hex][!not.color & !none] <-
+    rgb(t(col2rgb(colors[not.hex][!not.color & !none])), maxColorValue=255)
 
+  colors
 }
 proc_computed <- function(x) {
   # Colors, converting to hex codes
   x[c('fill', 'stroke')] <- lapply(x[c('fill', 'stroke')], proc_color)
 
   # Compute total opacity and report it back.  We do not attach it to an RGB hex
-  # code b/c we might want to use it separately
+  # code b/c we might want to use it separately.
   op <- prod(as.numeric(x[['opacity']]), na.rm=TRUE)
   x[['fill-opacity']] <-
     prod(as.numeric(x[['fill-opacity']]), na.rm=TRUE) * op
   x[['stroke-opacity']] <-
     prod(as.numeric(x[['stroke-opacity']]), na.rm=TRUE) * op
+  x[['opacity']] <- NULL
 
   x
 }
@@ -259,5 +250,21 @@ parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
     )
   }
   node
+}
+## Determine What Styles Apply to Each Element
+##
+## Parses and collects CSS classes, inline style properties, and SVG display
+## properties, and for each element computes which CSS rules apply.
+##
+## @param x "svg_chopped" object
+## @return "svg_choped" object with a "style-computed" attribute attached, which
+##   is a character vector of SVG display attributes with those attributes as
+##   the names and the values as the values.
+
+process_css <- function(x, style.sheet) {
+  vetr(
+    structure(list(), class='svg_chopped'), structure(list(), class='css')
+  )
+  parse_inline_style_rec(x, style.sheet=style.sheet)
 }
 

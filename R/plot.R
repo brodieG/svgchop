@@ -17,10 +17,11 @@ flatten <- function(x) {
 #' with [graphics::polypath()] and open ones with [graphics::lines()].  Will set
 #' the viewport to the SVG viewBox coordinates if they exist, and to the SVG
 #' extent if they don't.  Aspect ratio is fixed so that user coordinates are 1:1
-#' in x and y directions.
+#' in x and y directions.  The "width", "height", "x", and "y" attributes of the
+#' SVG element proper are ignored.
 #'
 #' Nested SVGs viewports will not be respected and their contents will be drawn
-#' in the outer viewport coordinates.
+#' in the outer viewport coordinates.  Maybe, this is untested.
 #'
 #' Stroke widths are computed under the assumption that 1 "lwd" == 1/96th of an
 #' inch, and may look bad on devices that don't support "lwd" values less than
@@ -89,8 +90,14 @@ plot.svg_chopped <- function(x, ...) {
     fill <- stroke <- NA
     stroke.width <- 1
     if(!is.null(style)) {
-      fill <- if(!is.na(style[['fill']])) style[['fill']] else '#000000'
-      stroke <- if(!is.na(style[['stroke']])) style[['stroke']] else NA
+      fill <- if(is.na(style[['fill']])) '#000000'
+        else if (tolower(style[['fill']]) == 'none') NA_character_
+        else style[['fill']]
+
+      stroke <- if(is.na(style[['stroke']])) NA_character_
+        else if (tolower(style[['stroke']]) == 'none') NA
+        else style[['stroke']]
+
       if(
         !is.na(fill) && !is.null(style[['fill-opacity']]) &&
         !is.na(style[['fill-opacity']])
