@@ -78,7 +78,7 @@ parse_ellipse <- function(x, steps) {
   lens <- parse_length(x[c('cx', 'cy', 'rx', 'ry')])
   lens[is.na(lens)] <- 0
   angles <- seq(0, 2 * pi, length.out=steps + 1)
-  (lens[1:2] * rbind(cos(angles), sin(angles))) + lens[3:4]
+  (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]
 }
 
 
