@@ -63,23 +63,16 @@ plot.svg_chopped <- function(x, ...) {
 
   asp <- height / width
   plot.new()
-  plot.window(c(x0, x0 + width), c(y0 + height, y0), asp=asp)
+  plot.window(c(x0, x0 + width), c(y0 + height, y0), asp=1)
 
   # lwd = 1 taken to be 1/96th of an inch
 
   pin <- par('pin')
-  if(width > height) {
-    if(pin[1] > pin[2]) {
-      ppi <- width / pin[1]
-    } else {
-      ppi <- height / pin[2]
-    }
-  } else{
-    if(pin[1] < pin[2]) {
-      ppi <- height / pin[2]
-    } else {
-      ppi <- width / pin[1]
-    }
+  asp.p <- pin[2] / pin[1]
+  if(asp > asp.p) {
+    ppi <- height / pin[2]
+  } else {
+    ppi <- width / pin[1]
   }
   ptolwd <- ppi / 96
 
