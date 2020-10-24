@@ -61,6 +61,28 @@ parse_rect <- function(x) {
   p <- paste(xs, ys, sep=",", collapse=" ")
   parse_poly(c(list(points=p), x[!props %in% base.props]))
 }
+parse_circle <- function(x, steps) {
+  x[c('rx', 'ry')] <- x['r']
+  props <- names(x)
+  cx <- cy <- r <- 0
+  parse_ellipse(x, steps)
+}
+parse_ellipse <- function(x, steps) {
+  props <- names(x)
+  if(any(c('pathLength') %in% props))
+    warning('"pathLength" property "circle/ellipse"')
+
+  # this is not quite right, ellipses default to 'auto' rx and ry, which we
+  # don't support.  It's right for circles though
+
+  lens <- parse_length(x[c('cx', 'cy', 'rx', 'ry')])
+  lens[is.na(lens)] <- 0
+  angles <- seq(0, 2 * pi, length.out=steps + 1)
+  (lens[1:2] * rbind(cos(angles), sin(angles))) + lens[3:4]
+}
+
+
+
 
 #' Convert SVG Elements to Polygons
 #'
@@ -165,6 +187,20 @@ process_svg_node <- function(node.parsed, xml_attrs) {
   )
 }
 
+parse_element <- function(node, steps) {
+  attrs <- xml_attrs(node)
+
+  switch(tolower(xml_name(node)),
+    path=parse_path(attrs, steps),
+    polygon=parse_poly(attrs),
+    rect=parse_rect(attrs),
+    circle=parse_circle(attrs, steps),
+    ellipse=parse_ellipse(attrs, steps),
+    use=parse_use(node, steps),
+    list()
+  )
+}
+
 ## Parse a Node and All It's Children
 ##
 ## Given a single XML node, recurse through it and all children parsing any SVG
@@ -183,24 +219,15 @@ process_svg_node <- function(node.parsed, xml_attrs) {
 parse_node <- function(node, steps) {
   vetr(structure(list(), class='xml_node'), INT.1.POS.STR)
 
-  attrs <- as.list(xml_attrs(node))
-
   res <- if(xml_length(node, only_elements=TRUE)) {
     # Non-terminal node, recurse
     lapply(xml_children(node), parse_node, steps=steps)
   } else {
     # Parse terminal node
-    switch(tolower(xml_name(node)),
-      path=parse_path(attrs, steps),
-      polygon=parse_poly(attrs),
-      rect=parse_rect(attrs),
-      list()
-    )
+    parse_element(node, steps)
   }
-  if(tolower(xml_name(node)) == 'svg') {
-    res <- process_svg_node(res, attrs)
-  }
-  attr(res, 'xml_attrs') <- attrs
+  # attach attributes; this should be done before final processing
+  attr(res, 'xml_attrs') <- as.list(xml_attrs(node))
   attr(res, 'xml_name') <- xml_name(node)
   res
 }
