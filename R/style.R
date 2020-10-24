@@ -179,19 +179,36 @@ compute_prop <- function(
 ## Must convert all colors to hex so they can be combined with transparency
 ## codes.  Lone exception is "none" as we must distinguish it from NA missing as
 ## the default for fill is to fill in black (i.e. NA == 'black', "none" ==
-## "none")
+## "none"). "transparent" is converted to "none".
 
 proc_color <- function(colors) {
+  # Short color codes
   colors <- gsub(
     '^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$', '#\\1\\1\\2\\2\\3\\3',
     colors
   )
+  # rgb color codes
+  rgb.el <- "\\s*(\\d+%?)\\s*"
+  rgb.pat <- sprintf("^\\s*rgb\\(%s,%s,%s\\)\\s*$", rgb.el, rgb.el, rgb.el)
+  rgb <- grepl(rgb.pat, colors)
+  if(any(rgb)) {
+    raw <- regmatches(colors[rgb], regexec(rgb.pat, colors[rgb]))
+    vals <- vapply(raw, '[', character(3), -1)
+    pct <- grepl("%$", vals)
+    vals <- array(as.numeric(gsub("%$", "", vals)), dim=dim(vals))
+    vals[pct] <- vals[pct] * (255 / 100)
+    vals[] <- pmax(pmin(255, round(vals)), 0)
+    hex <- matrix(format(as.hexmode(vals), width=2), nrow=nrow(vals))
+    colors[rgb] <- paste0('#', hex[1,], hex[2,], hex[3,])
+  }
+  # color-name colors
   not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
+  colors[tolower(colors) == 'transparent'] <- 'none'
   none <- tolower(colors) == 'none'
-  not.color <- !tolower(colors[not.hex]) %in% colors()
-  colors[not.hex][not.color & !none] <- NA_character_
-  colors[not.hex][!not.color & !none] <-
-    rgb(t(col2rgb(colors[not.hex][!not.color & !none])), maxColorValue=255)
+  not.color <- not.hex & !tolower(colors) %in% colors()
+  colors[not.color & !none] <- NA_character_
+  colors[!not.color & !none] <-
+    rgb(t(col2rgb(colors[!not.color & !none])), maxColorValue=255)
 
   colors
 }
