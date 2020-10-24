@@ -38,7 +38,7 @@ parse_poly <- function(x) {
 parse_rect <- function(x) {
   props <- names(x)
   if(any(c('rx', 'ry', 'pathLength') %in% props))
-    warning('"r[xy] and pathLength properties on "rect" not supported')
+    warning('"r[xy]" and "pathLength" properties on "rect" not supported')
 
   if(!'x' %in% props) x[['x']] <- "0"
   if(!'y' %in% props) x[['y']] <- "0"
@@ -83,6 +83,52 @@ parse_ellipse <- function(x, steps) {
 
 
 
+## Parse use link
+##
+## Still requires special handling in the caller to ensure that the transform is
+## recorded properly
+
+parse_use <- function(node, steps) {
+  href <- xml_attr(node, 'xlink:href')
+  if(is.na(href)) href <- xml_attr(node, 'href')
+  href <- trimws(href)
+  if(!is.na(href) && grepl("^#", href)) {
+    ref <- xml_find_first(
+      xml_root(node),
+      sprintf('.//*[@id="%s"]', sub("^#", "", href))
+    )
+    if(is(ref, "xml_missing")) {
+      list()
+    } else {
+      # Check for potential recursion
+      pars <- xml_parents(ref)
+      if(any(vapply(pars, identical, TRUE, ref)))
+        stop(
+          'Possible infinite recursion dectected when substituting "use" ',
+          'element with href "', href, '"'
+        )
+      list(parse_node(ref, steps))
+    }
+  } else {
+    warning('"use" element with non-ID based "href"')
+    list()
+  }
+}
+process_use_node <- function(node.parsed) {
+  attrs <- attr(node.parsed, 'xml_attrs')
+  x <- y <- 0
+  if('x' %in% names(attrs)) x <- parse_length(attrs[['x']])
+  if('y' %in% names(attrs)) y <- parse_length(attrs[['y']])
+
+  if(x != 0 || y != 0) {
+    transform <- paste0("translate(", x, " ", y, ")")
+    attrs[['transform']] <-
+      if(is.null(attrs[['transform']])) transform
+      else paste(attrs[['transform']], transform)
+  }
+  attr(node.parsed, 'xml_attrs') <- attrs
+  node.parsed
+}
 
 #' Convert SVG Elements to Polygons
 #'
@@ -91,10 +137,69 @@ parse_ellipse <- function(x, steps) {
 #' style sheets, inline styles and attributes, and are attached as the
 #' "style-computed" R attribute.
 #'
-#' Currently only SVG path, rect, and polygon elements are supported.  Only some
-#' transforms are implemented.  CSS support is likely to be particularly fragile
-#' as the CSS parsing is regex based and only simple ASCII-only class and id
-#' selectors are supported.
+#' @section Lengths:
+#'
+#' All lengths are assumed to be unit-less.  In other words "px", "em", "cm",
+#' etc. values are completely ignored.
+#'
+#' @section Elements:
+#'
+#' Currently svg "path", "rect", "polygon", "circle", and "ellipse"  elements
+#' are supported to varying degrees.  Every command for "path" in the SVG 1.1
+#' spec is implemented (MZLHVCSQTA, and the relative equivalents).  "rect" does
+#' not support rounded corners, and "ellipse" does not support "auto" values for
+#' "rx" and "ry" (that is the default, but we assume 0).  "pathLength" is not
+#' supported on any element.
+#'
+#' "g" elements act as containers for child elements and convey their properties
+#' to them.
+#'
+#' The "use" element is supported, but only if the "xlink:href" or "href"
+#' elements point to the id of an element within the same document.  Support is
+#' also non-conforming (not that anything in this package is truly
+#' conforming...) as CSS selector matching behaves as if the cloned copy of the
+#' object were a full DOM child of the "use" element.  However, this
+#' non-conformance is likely superseded by the very limited CSS selector
+#' implementation (see "Styling" section).  The "use" element will be treated
+#' exactly as if it were a "g" element with the referenced element as a child
+#' and the "x" and "y" attributes specified as a translate transform.
+#'
+#' Elements not explicitly referenced here are not directly supported and how
+#' they are processed is not specified.  Generally though such elements with
+#' children will behave like "g" elements, and those without will be omitted.
+#'
+#' @section Transforms:
+#'
+#' Only SVG transforms are supported (i.e. not CSS ones).  The transform
+#' attribute of every element in the SVG is read, parsed, and accumulated
+#' through element generations.  It is then applied to the computed coordinates
+#' of the terminal nodes.
+#'
+#' @section Styling:
+#'
+#' Style attributes attached directly to elements, whether as "style" attributes
+#' or explicitly as e.g. a "fill" attribute, are parsed and interpreted.  CSS
+#' styles are also processed, but support is limited to direct match
+#' lookups on ASCII class-only and id-only selectors (i.e. no hierarchies,
+#' properties, etc.).
+#'
+#' CSS support is likely to be particularly fragile as the CSS parsing is regex
+#' based and only simple ASCII-only class and id selectors are supported.
+#'
+#' Styles, classes, and ids are accumulated through element generations and
+#' computed into the "styles-computed" attribute of the terminal nodes, which is
+#' a list with scalar elements representing the computed style values.  Missing
+#' or uncomputable styles are reported as NA.  The computation is _intended_ to
+#' mimic how browsers would interpret style, although on a limited basis that is
+#' likely incorrect in many cases.
+#'
+#' Colors are returned as 6 digit hex-codes so that it is easy to append alpha
+#' values derived from the opacity values.  One exception is the "none" "color"
+#' that is returned as is so that it may be distinguished from unspecified color
+#' (those are NA).  If an element specifies both "opacity" and "stroke-opacity"
+#' or "fill-opacity", the latter two are multiplied by the value of "opacity".
+#' Since the "opacity" value is thus reflected in "stroke-opacity" and
+#' "style-opacity" it is #' dropped to avoid confusion.
 #'
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
@@ -131,8 +236,8 @@ process_svg <- function(file, steps=10) {
   w.extents <- lapply(
     styled,
     function(x) {
-      xs <- range(unlist(lapply(x, get_coords, 1)))
-      ys <- range(unlist(lapply(x, get_coords, 2)))
+      xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
+      ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
       attr(x, 'extents') <- list(x=xs, ys=ys)
       x
   } )
@@ -153,13 +258,14 @@ parse_length <- function(x) {
     )
   res
 }
+## For lengths that are pasted together; note parse_length IS vectorized
 parse_lengths <- function(x) {
   vetr(CHR.1)
   parse_length(strsplit(trimws(x), "\\s+")[[1]])
 }
 
-process_svg_node <- function(node.parsed, xml_attrs) {
-  attrs <- xml_attrs
+process_svg_node <- function(node.parsed) {
+  attrs <- attr(node.parsed, 'xml_attrs')
   width <- height <- x <- y <- NA_real_
   viewbox <- rep(NA_real_, 4)
 
@@ -229,5 +335,10 @@ parse_node <- function(node, steps) {
   # attach attributes; this should be done before final processing
   attr(res, 'xml_attrs') <- as.list(xml_attrs(node))
   attr(res, 'xml_name') <- xml_name(node)
-  res
+  switch(
+    tolower(xml_name(node)),
+    svg=process_svg_node(res),
+    use=process_use_node(res),
+    res
+  )
 }
