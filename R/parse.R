@@ -64,7 +64,6 @@ parse_rect <- function(x) {
 parse_circle <- function(x, steps) {
   x[c('rx', 'ry')] <- x['r']
   props <- names(x)
-  cx <- cy <- r <- 0
   parse_ellipse(x, steps)
 }
 parse_ellipse <- function(x, steps) {
@@ -203,7 +202,8 @@ process_use_node <- function(node.parsed) {
 #'
 #' @export
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
-#'   xml_text xml_length xml_children
+#'   xml_text xml_length xml_children xml_attr xml_find_first xml_root
+#'   xml_parents
 #' @param file an HTML or other XML based text file containing SVG elements.
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 #'   objects.  Each "svg_chopped" object represents an SVG viewport the
