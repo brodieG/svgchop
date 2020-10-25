@@ -16,6 +16,10 @@
 
 ## ToDo
 
+* Weirdness in how many steps are being allocated to arcs, short arcs get few
+  steps, longer ones way more than they seemingly should (try with steps = 5) to
+  see it.
+
 * Make sure "none" and "transparent" are reflected appropriately in fill and
   stroke.  More generally compute the defaults ourselves so whatever rendering
   happens later doesn't have to worry about SVG specific defaults.

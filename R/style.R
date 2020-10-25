@@ -23,35 +23,7 @@ STYLE.PROPS.NORM <- c(
 )
 STYLE.PROPS.CUM <- c('fill-opacity', 'stroke-opacity', 'opacity')
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
-
-compute_stop <- function(node, css) {
-
-}
-
-compute_gradient <- function(node, css) {
-  # offset is not a "presentation attribute"
-
-  # linear gradients
-
-  lin.grad <- xml_find_all(node, './/linearGradient')
-
-
-  # radial gradients
-
-  # get all the gradients
-  #
-  # for each stop
-  #
-  # * compute the styles using `parse_inline_style`
-  # * retrieve offset
-  # * return character vector with color, opacity, and offset
-  #
-  # Object should then have:
-  #
-  # * A list with all parsed relevant attributes
-  # * And a list of stops with the stop data
-
-}
+STYLE.PROPS.COLOR <- c('fill', 'stroke', 'stop-color')
 
 ## Retrieve and Parse All CSS Style Sheets
 ##
@@ -232,20 +204,23 @@ proc_color <- function(colors) {
     hex <- matrix(format(as.hexmode(vals), width=2), nrow=nrow(vals))
     colors[rgb] <- paste0('#', hex[1,], hex[2,], hex[3,])
   }
+  # url id codes
+  is.url <- grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", colors)
+
   # color-name colors
   not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
   colors[tolower(colors) == 'transparent'] <- 'none'
   none <- tolower(colors) == 'none'
-  not.color <- not.hex & !tolower(colors) %in% colors()
+  not.color <- not.hex & !is.url & !tolower(colors) %in% colors()
   colors[not.color & !none] <- NA_character_
-  colors[!not.color & !none] <-
-    rgb(t(col2rgb(colors[!not.color & !none])), maxColorValue=255)
+  colors[!not.color & !none & !is.url] <-
+    rgb(t(col2rgb(colors[!not.color & !none & !is.url])), maxColorValue=255)
 
   colors
 }
 proc_computed <- function(x) {
   # Colors, converting to hex codes
-  x[c('fill', 'stroke')] <- lapply(x[c('fill', 'stroke')], proc_color)
+  x[STYLE.PROPS.COLOR] <- lapply(x[STYLE.PROPS.COLOR], proc_color)
 
   # Compute total opacity and report it back.  We do not attach it to an RGB hex
   # code b/c we might want to use it separately.

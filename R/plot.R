@@ -33,11 +33,13 @@ flatten <- function(x) {
 #'
 #' @export
 #' @inheritParams stats::plot.lm
-#' @param x an "svg_chopped" or object
+#' @param x an "svg_chopped" or "svg_chopped_list" object
+#' @param url the "url" attribute of the "svg_chopped_list" object to pass on to
+#'   the "svg_chopped" method.
 #' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
-plot.svg_chopped <- function(x, ...) {
+plot.svg_chopped <- function(x, url=NULL, ...) {
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
 
@@ -85,7 +87,13 @@ plot.svg_chopped <- function(x, ...) {
     if(!is.null(style)) {
       fill <- if(is.na(style[['fill']])) '#000000'
         else if (tolower(style[['fill']]) == 'none') NA_character_
-        else style[['fill']]
+        else if (grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", style[['fill']])) {
+          # assuming fill is a gradient, take average (note URL does not have to
+          # be!)
+          url.id <- sub(".*#([^\\)]+)\\).*", "\\1", style[['fill']])
+          stops <- url[[url.id]][['stops']][['color']]
+          rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)
+        } else style[['fill']]
 
       stroke <- if(is.na(style[['stroke']])) NA_character_
         else if (tolower(style[['stroke']]) == 'none') NA
@@ -140,7 +148,7 @@ plot.svg_chopped_list <- function(
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot, ...)
+  lapply(x, plot, url=attr(x, "url"), ...)
   invisible(x)
 }
 

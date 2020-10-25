@@ -1,10 +1,10 @@
 
 process_stops <- function(node) {
   stop.children <-
-    vapply(node, function(x) identical(attr(x, xml_name), 'stop'), TRUE)
+    vapply(node, function(x) identical(attr(x, 'xml_name'), 'stop'), TRUE)
 
-  stops <- node[stops]
-  stop.style <- lapply(stops, attr, "", 'style-computed')
+  stops <- node[stop.children]
+  stop.style <- lapply(stops, attr, 'style-computed')
   stop.offset <- vapply(stops, "[[", 0, 1)
   stop.color <- vapply(stop.style, '[[', "", 'stop-color')
   stop.opacity <- vapply(stop.style, '[[', "", 'stop-opacity')
@@ -12,6 +12,7 @@ process_stops <- function(node) {
 }
 
 common_grad_attr <- function(x) {
+  attrs <- attr(x, 'xml_attrs')
   gradientTransform <- diag(3)
   gradientUnits <- "objectBoundingBox"
   spreadMethod <- "pad"
@@ -30,7 +31,6 @@ common_grad_attr <- function(x) {
     gradientTransform=gradientTransform, gradientUnits=gradientUnits,
     spreadMethod=spreadMethod
   )
-
 }
 
 ## Process Gradients
@@ -83,7 +83,7 @@ process_gradient_radial <- function(node) {
 
 parse_stop <- function(node) {
   offset <- trimws(xml_attr(node, 'offset'))
-  offset <- if(!grepl(sprintf("^%s$", num.pat.pct, offset))){
+  offset <- if(!grepl(sprintf("^%s$", num.pat.pct), offset)){
     NA
   } else {
     max(c(min(c(1, as.numeric(sub(num.pat.pct, "\\1", offset)) / 100)), 0))

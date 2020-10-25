@@ -24,10 +24,11 @@ process_url <- function(node) {
   # Looking for things with xml_name in the known elements
 
   name <- attr(node, 'xml_name')
-  id <- attr(node, 'id')
   if(is.null(name)) name <- ""
   url.old <- attr(node, 'url')
   if(is.null(url.old)) url.old <- list()
+  id <- attr(node, 'xml_attrs')[['id']]
+  if(is.null(id)) id <- ""
 
   # If it is something to extract extract it and make it the attribute,
   # else recurse.  Another option would be to do this via environment, which
@@ -39,6 +40,7 @@ process_url <- function(node) {
   ) {
     node.new <- structure(list(), class=c('terminal', name))
     url.old[[id]] <- switch(
+      name,
       linearGradient=process_gradient_linear(node),
       radialGradient=process_gradient_radial(node),
       node
