@@ -9,33 +9,35 @@
   preserved in the recursive 'svg_chopped' structure so can be recovered and
   used (e.g. with grid viewports) if the user so desires.
 * Gradients
-* Clip-paths
+* Clip-paths (polyclip?)  Applied before transforms?
 * Patterns
 * Some elements
 * CSS transforms
 
 ## ToDo
 
-* Weirdness in how many steps are being allocated to arcs, short arcs get few
-  steps, longer ones way more than they seemingly should (try with steps = 5) to
-  see it.
-
 * Make sure "none" and "transparent" are reflected appropriately in fill and
   stroke.  More generally compute the defaults ourselves so whatever rendering
   happens later doesn't have to worry about SVG specific defaults.
+
 * Add the remaining shapes?
+
 * Think more carefully about how we want to handle path closing.  Should only
   explicitly closed paths be marked as closed (YES)?  Should open paths be drawn
   with both a polypath with NA stroke and a line to replicate how they are
   rendered by SVG renderers (MAYBE - not worth spending a lot of time on the
   plot method)?
+
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.
+
 * "oddeven" etc. fill rules
+
 * Should have option not to apply transforms, or make it an explicit
   post-process option in case some rendering interfaces prefer to receive that
   transform matrix directly.  Applying transform will need to recompute the
   extents.
+
 * When implementing patterns, will need to think about whether to apply them
   truly (i.e. replace target with tessellated and clipped pattern, or just
   compute the un-transformed pattern).

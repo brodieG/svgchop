@@ -79,9 +79,6 @@ parse_ellipse <- function(x, steps) {
   angles <- seq(0, 2 * pi, length.out=steps + 1)
   (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]
 }
-
-
-
 ## Parse use link
 ##
 ## Still requires special handling in the caller to ensure that the transform is
@@ -248,7 +245,12 @@ process_use_node <- function(node.parsed) {
 #'   xml_parents
 #' @param file an HTML or other XML based text file containing SVG elements.
 #' @param steps integer(1L) > 0, how many line segments to use to approximate
-#'   Bézier curves and arcs.  
+#'   Bézier curves, arcs, ellipses, and circles.  For Bézier curves, it is how
+#'   many segment each individual curve gets, so sequences of Bézier curves will
+#'   get that many for each curve in the sequence.  For arcs, ellipses, and
+#'   circles, it is how many segments per 360 degrees of arc.  The hope is that
+#'   in the future this parameter will be deprecated in favor of tolerance
+#'   based ones.
 #' @param transform TRUE (default) or FALSE whether to apply the transformation
 #'   to the computed element coordinates.
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
