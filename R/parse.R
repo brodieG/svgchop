@@ -134,12 +134,16 @@ process_use_node <- function(node.parsed) {
 #' Parse and convert SVG elements into polygons.  SVG transforms are applied to
 #' the polygon coordinates, and SVG presentation attributes are computed from
 #' style sheets, inline styles and attributes, and are attached as the
-#' "style-computed" R attribute.
+#' "style-computed" R attribute.  The SVG 1.1 specification is only loosely
+#' followed so do not expect outputs to be exactly the same as in a conforming
+#' SVG rendering engine.  This function is experimental and the API and
+#' structure of the return value may change in future versions.
 #'
 #' @section Lengths:
 #'
-#' All lengths are assumed to be unit-less.  In other words "px", "em", "cm",
-#' etc. values are completely ignored.
+#' All lengths and coordinates are assumed to be unit-less.  In other words
+#' "px", "em", "cm", "%", etc. values are completely ignored, except for "%"
+#' measures for the "offset" attribute to gradient stops.
 #'
 #' @section Elements:
 #'
@@ -160,8 +164,8 @@ process_use_node <- function(node.parsed) {
 #' object were a full DOM child of the "use" element.  However, this
 #' non-conformance is likely superseded by the very limited CSS selector
 #' implementation (see "Styling" section).  The "use" element will be treated
-#' exactly as if it were a "g" element with the referenced element as a child
-#' and the "x" and "y" attributes specified as a translate transform.
+#' as if it were a "g" element with the referenced element as a child and the
+#' "x" and "y" attributes specified as a translate transform.
 #'
 #' Elements not explicitly referenced here are not directly supported and how
 #' they are processed is not specified.  Generally though such elements with
@@ -172,7 +176,12 @@ process_use_node <- function(node.parsed) {
 #' Only SVG transforms are supported (i.e. not CSS ones).  The transform
 #' attribute of every element in the SVG is read, parsed, and accumulated
 #' through element generations.  It is then applied to the computed coordinates
-#' of the terminal nodes.
+#' of the terminal nodes.  You may turn off the application of the transforms by
+#' setting `transform=FALSE`, in which case you will be responsible for
+#' retrieving the transform data from the "transform-proc" attribute of the
+#' terminal leaves of the "svg_chopped" objects.  This attribute will be a
+#' "trans" S3 object containing the transformation matrix as the "mx" member and
+#' the commands that were processed to produce that matrix as the "cmds" member.
 #'
 #' @section Styling:
 #'
@@ -192,29 +201,76 @@ process_use_node <- function(node.parsed) {
 #' mimic how browsers would interpret style, although on a limited basis that is
 #' likely incorrect in many cases.
 #'
-#' Colors are returned as 6 digit hex-codes so that it is easy to append alpha
-#' values derived from the opacity values.  One exception is the "none" "color"
-#' that is returned as is so that it may be distinguished from unspecified color
-#' (those are NA).  If an element specifies both "opacity" and "stroke-opacity"
-#' or "fill-opacity", the latter two are multiplied by the value of "opacity".
-#' Since the "opacity" value is thus reflected in "stroke-opacity" and
-#' "style-opacity" it is #' dropped to avoid confusion.
+#' Fill and stroke values, with three exceptions, are returned as 6 digit
+#' hex-codes or NA so that it is easy to append alpha values derived from the
+#' opacity values.  Supported color formats are 6 digit hex, 3 digit hex, named
+#' colors in [graphics::colors()], and those in `rgb(x,y,z)` where `x`, `y`, and
+#' `z` are numeric or percentage values as per the CSS spec.  Colors "none" and
+#' "transparent" are both returned as "none" so that they may be distinguished
+#' from unspecified color (those are NA).  `url(#id)` values are returned as is.
+#' Supported external styling such as gradients will be recorded as part of the
+#' "svg_chopped_list" object and may be retrieved with the [svg_url()] function.
+#'
+#' Opacity is accumulated through generations and applied to the terminal
+#' elements as the product of all accumulated opacity values.  If an element
+#' specifies both "opacity" and "stroke-opacity" or "fill-opacity", the latter
+#' two are multiplied with the value of "opacity".  Since the "opacity" value is
+#' thus reflected in "stroke-opacity" and "style-opacity" it is dropped to avoid
+#' confusion.
+#'
+#' @section Gradients:
+#'
+#' Both linear and radial gradients have limited support.  Gradients are parsed
+#' and stop style is computed based on where they are defined.  "href" or
+#' "xlink:href" attributes are not followed.  Gradients are attached as members
+#' of the "url" attribute of the return value.  All the gradient coordinate
+#' values (e.g. "x", "y", "cx", "cy", ...) are assumed to be specified in [0,
+#' 1], and not as percentages.
+#'
+#' Unlike with typical opacity attributes "stop-opacity" is not accumulated
+#' nor affected by any parent element "opacity" values, under the assumption
+#' that "stop" elements are unlikely to be nested.
+#'
+#' "gradientTransform" is computed and attached as the "transform-proc"
+#' attribute.
+#'
+#' @section Patterns, Masks, and Clip Paths:
+#'
+#' These are collected under the "url" attribute of the return value, and while
+#' they may be processed in some way or other, it is not specified how.  More
+#' support for these instructions may be added in the future.  Or not.
 #'
 #' @export
+#' @seealso [plot.svg()]
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #'   xml_text xml_length xml_children xml_attr xml_find_first xml_root
 #'   xml_parents
 #' @param file an HTML or other XML based text file containing SVG elements.
+#' @param steps integer(1L) > 0, how many line segments to use to approximate
+#'   Bézier curves and arcs.  
+#' @param transform TRUE (default) or FALSE whether to apply the transformation
+#'   to the computed element coordinates.
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
-#'   objects.  Each "svg_chopped" object represents an SVG viewport the
+#'   objects.  Each "svg_chopped" object represents a top level SVG viewport the
 #'   dimensions of which are recorded in the "box" attribute.  "svg_chopped"
-#'   objects are recursive lists with `2 x n` numeric matrices as terminal
-#'   leaves.  The matrices contain the X-Y coordinates of the ordered `n`
-#'   endpoints of the `n - 1` line segments that the polygon representation of
-#'   the SVG elements comprise.
+#'   objects are recursive lists with `2 x n` numeric matrices or empty lists as
+#'   terminal leaves.  The matrices contain the X-Y coordinates of the ordered
+#'   `n` endpoints of the `n - 1` line segments that the polygon representation
+#'   of the SVG elements comprise.  The empty lists correspond to elements that
+#'   could not be processed or simply branches without a displayable terminal
+#'   object.  The "svg_chopped_list" object may have an "url" attribute which is
+#'   a list named by the ids of "gradient" and other objects that may be
+#'   referenced via "url(#id)" values for "style-computed" attributes (see
+#'   Styling section).
 
-process_svg <- function(file, steps=10) {
-  xml <- xml_ns_strip(read_xml(file))
+process_svg <- function(file, steps=10, transform=TRUE) {
+  vetr(CHR.1, INT.1.POS.STR, LGL.1)
+  xml <- try(xml_ns_strip(read_xml(file)))
+  if(inherits(try, 'try-error'))
+    stop(
+      "Argument `file` could not be interpreted as an XML file; ",
+      "see prior errors"
+    )
   css <- get_css(xml)
 
   # top level svgs, nested ones will just be consumed in recursive traversal
@@ -226,24 +282,52 @@ process_svg <- function(file, steps=10) {
   if(!length(xml))
     stop("Document does not contain svg nodes")
 
+  # Extract relevant data from XML and convert to nested R list.  Elements
+  # coordinates are computed
   parsed <- lapply(xml, parse_node, steps=steps)
-  transformed <- lapply(parsed, transform_coords)
-  styled <- lapply(transformed, process_css, style.sheet=css)
+
+  # Extract and compute styles for terminal nodes
+  styled <- lapply(parsed, process_css, style.sheet=css)
+
+  # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
+  # clip paths, masks, and patterns, although currently only gradients are
+  # supported.  These are also extracted from tree into the `url` list.
+  processed <- process_url(styled)
+  url <- attr(processed, 'url')
+  attr(processed, 'url') <- NULL
+
+  # Apply the `url()` elements.  This is most meaningful for clip paths and
+  # patterns as we could in theory apply them ourselves here, although probably
+  # on an optional basis should we want the graphical device to do the work.
+  #
+  # At this time we don't apply any of the url elements directly
+
+  # Apply transformations
+  final <- lapply(processed, transform_coords, apply=transform)
 
   # compute extents
   get_coords <- function(obj, coord)
     if(is.matrix(obj)) obj[coord,] else lapply(obj, get_coords, coord)
   w.extents <- lapply(
-    styled,
+    final,
     function(x) {
       xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
       ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
       attr(x, 'extents') <- list(x=xs, ys=ys)
       x
   } )
-  structure(w.extents, class='svg_chopped_list')
+  structure(
+    w.extents,
+    class='svg_chopped_list',
+    url=url
+  )
 }
-num.pat <- "(-?\\d*\\.?\\d+)\\w*"
+num.pat.core <- "(-?\\d*\\.?\\d+)"
+num.pat <- sprintf("%s\\w*", num.pat.core)
+num.pat.pct <- sprintf("%s%%", num.pat.core)
+
+## Vectorized, parses lengths dropping units.
+
 parse_length <- function(x) {
   vetr(character())
   num.like <- grepl(sprintf("^\\s*%s\\s*$", num.pat), x)
@@ -296,15 +380,20 @@ process_svg_node <- function(node.parsed) {
 parse_element <- function(node, steps) {
   attrs <- xml_attrs(node)
 
-  switch(tolower(xml_name(node)),
+  res <- switch(tolower(xml_name(node)),
     path=parse_path(attrs, steps),
     polygon=parse_poly(attrs),
     rect=parse_rect(attrs),
     circle=parse_circle(attrs, steps),
     ellipse=parse_ellipse(attrs, steps),
     use=parse_use(node, steps),
+    stop=parse_stop(node),
     list()
   )
+  if(length(res)) {
+    class(res) <- unique(c('terminal', class(res)))
+  }
+  res
 }
 
 ## Parse a Node and All It's Children

@@ -1,5 +1,6 @@
 ## Not Supported
 
+* Text
 * Mixed units (no unit conversion whatsoever), all lengths are assumed to be in
   the user coordinate system (pixels?).
 * Nested SVG viewports are "ignored", which means that they are drawn without
@@ -7,104 +8,128 @@
   width, height, or viewBox attributes are specified.  This information is
   preserved in the recursive 'svg_chopped' structure so can be recovered and
   used (e.g. with grid viewports) if the user so desires.
+* Gradients
 * Clip-paths
+* Patterns
 * Some elements
-* Some transforms
 * CSS transforms
 
 ## ToDo
 
-* Add all transforms (and test with files that use them)
+* Make sure "none" and "transparent" are reflected appropriately in fill and
+  stroke.  More generally compute the defaults ourselves so whatever rendering
+  happens later doesn't have to worry about SVG specific defaults.
 * Add the remaining shapes?
 * Think more carefully about how we want to handle path closing.  Should only
-  explicitly closed paths be marked as closed?  Should open paths be drawn with
-  both a polypath with NA stroke and a line to replicate how they are rendered
-  by SVG renderers?
-* What about "transparent" color?
+  explicitly closed paths be marked as closed (YES)?  Should open paths be drawn
+  with both a polypath with NA stroke and a line to replicate how they are
+  rendered by SVG renderers (MAYBE - not worth spending a lot of time on the
+  plot method)?
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.
+* "oddeven" etc. fill rules
+* Should have option not to apply transforms, or make it an explicit
+  post-process option in case some rendering interfaces prefer to receive that
+  transform matrix directly.  Applying transform will need to recompute the
+  extents.
+* When implementing patterns, will need to think about whether to apply them
+  truly (i.e. replace target with tessellated and clipped pattern, or just
+  compute the un-transformed pattern).
 
 
-## Display Port
+## Gradients
 
-Scenarios to consider:
+Do we care where the gradients are?  They are supposed to be in "def" tags, but
+they are ID identified so presumably we can just get the from everywhere.  From
+testing the seems to be the case, so long as inside an SVG.
 
-* width & height & viewBox
-* (width | height) & viewBox
-* width & height
-* width | height
+We need to expand the capabilities of the "fill" attribute to recognize
+gradients.  One option is to leave them as they are and provide a named list
+with the parsed gradient data for the renderer to use.
 
-If width and height are missing, then presumably the viewBox will expand to
-fill whatever space it needs, which will be determined by the width/height of
-the viewBox.  If those are not specified, then we can compute the extents of the
-object.
+Gradients themselves need to have their stop values computed which may require
+style sheet look-ups, and possibly inheritance from enclosing elements?
 
-So for each of width / height:
+We could potentially use a simplifying (YES) assumption that we don't need to
+track all the inheritance business for gradients?  It is very unlikely that a
+gradient is going to be defined somewhere we care about parent properties, and
+it doesn't make sense for.
 
-* If specified as SVG width / height, use that
-* Else If specified as viewBox, use that
-* Else If Xmin/Ymin specified in viewBox:
-   * Compute extent and subtract max extent from min value
-* Else compute extent and take max value (effectively assume 0 is default X/Ymin)
+Do we need to upgrade fill/stroke tracking to record the type of color we're
+dealing with (pattern/gradient/color, or should it be url/color)?  Probably not
+worth the hassle.  The formats are unambiguous: "url(...)" or "#xxxxxx" or
+"none" so we can just have a utility function.
 
-Or maybe we don't care about viewbox / viewport?  Just record those and return
-them as the extent.
-
-Do we return the whole thing flat?  Or recursive?  All attributes attached?
-
-Add the option to flatten?  Or make that a separate function?  Probably a
-separate function.
-
-* svg_chopped
-* svg_chopped_flat
-
-Plot methods for the two, and for:
-
-* svg_chopped_list
-
-Do we keep the `xml_attrs`?  Useful for debugging, but do we actually need them?
-Maybe we keep them for the tree, but not for flat by default?  Is it weird to
-have different settings for the two?
-
-## Overall strategy
-
-We can now parse a single SVG node, but a page may contain multiple SVG nodes,
-and there may be styles on the page and in the nodes.  Looks like the style is
-completely global, so that's okay.
+Patterns are far more complicated because they should have at least some limited
+form of inheritance.  In fact, it seems we can place them outside of the defs
+and they do inherit properties from the parents.  **Doesn't seem to inherit
+transforms** in the place they are created.  The spec seems to suggest they
+should if set on the pattern element itself.  They do however inherit the
+tranforms of the object they are painting  So for patterns they should be
+applied at the time of styling, or at least moved from the "url" list to be an
+attribute of the object so that it may be transformed.  One saving grace in all
+this is maybe we don't do any of this and let the display implementation figure
+out how they want to apply the pattern based on the pattern directions?  Hmm,
+no, we'll need to apply the transforms to the patterns as right now we provide
+the actual elements transformed.  To apply patterns we really want to do so
+before the transforms are done.  Applying a pattern means tiling the object,
+clipping it with the object.  So the object will be replaced with a recursive
+structure of clipped elements.  Once that is all done the transformation can be
+carried out.  Clipping and Masks should probably be treated the same way.
 
 So:
 
-* Collect and process all CSS style sheets.
-* Collect all SVG objects.
-* For each SVG object, process, passing along the global style sheet object
+* Collect all gradients with ids
+* Compute all stop 'stop-color' and offset where the only two possible sources
+  of values are the style sheet and the in-line properties (and the in-line
+  style?). Also need 'stop-opacity'.  Not clear that 
+* Store gradients (and possibly other things) an ID basis in a named list to be
+  looked up with `url`.
 
-Interface is thus:
+Another option is to process gradients as part of the initial pass.  This has
+the advantage that all properties can be inherited from parent elements (but
+what would those be?  We set a "g" with "x1" values?).  Actually it seems that
+most position elements are not inherited.  That makes sense since the outer
+element would control positioning then.  So are there any things that we would
+want to inherit?  On the whole it doesn't seem adding the wrinkle that we could
+end up with terminal leaves other than matrices.
 
-* `process_file` (with a URL)
-* `process_svg(, style)`
-    * `parse_svg`
-    * `transform_svg`
-    * `style_svg`
+Does this apply to patterns?  Maybe, again unlikely that they will be nested,
+although since they do specify real elements therein they will contain matrices
+of coordinates (i.e. recursive list containing matrices).  We'll want those to
+be resolved normally, but not displayed.  Maybe flatten lops them off?  But it
+does seem for patterns we will actually want to do the normal parsing.
 
-Other operations
+What about clip paths and masks?  Since those are made up of elements we
+probably want them parsed in the normal pass.
 
-* `flatten`
-* `plot`
+So patterns, clip paths, and masks will get all the normal property inherit
+behavior, transform, wherever they are **defined**.  They then need to be
+suppressed in rendering in some way / moved into the URL attribute.
 
-## Transparency
+Gradients though because they don't have terminal elements and we don't want the
+styles applied to the terminal elements (because there are none) need to be
+treated differentially.  So those just get pulled out in a separate stage.
 
-Transparency rules seem to be:
+To summarize, since gradients / patterns / clips, etc seem to inherit properties
+to some extent from their own parents rather than where they are referenced
+(except for transforms which they seem exempted from) it makes most sense to:
 
-* compute transparency of element from:
-    * style sheet
-    * inline style
-    * attribute
-    * winner takes all
-* Look back at pre-computed chain of transparency
+1. Do early processing (coord and style computation)  with them in place
+    * This means non-matrix elements get to be terminal too, temporarily.
+2. Remove them from the tree and into an auxillary list, while applying
+   additional computations that can be done in isolation.
+3. Re-attach them to the tree at the appropriate places.
+    * For patterns that will may mean replacing the referencing object with the
+      clipped pattern
+    * For clip paths it may mean clipping the referencing object
+4. (optional) Apply the transforms
+    * If the pattern was not applied, do we transform the pattern?  Probably not
+      as the only point of not applying the pattern is to make it available to a
+      device that woudl apply it before transformation.
 
-
-May need special tracking of opacity to ensure that we track all of them accrued
-across all classes / elements.  These definitely nest.
+   , including styling.  Once that's done,
+they should be moved to an external list
 
 ## Styles
 

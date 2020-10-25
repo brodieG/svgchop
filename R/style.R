@@ -17,10 +17,41 @@
 ## SVG Display Properties We're Tracking.  Some are cumulative and require
 ## special handling (only transparency ones for the time being).
 
-STYLE.PROPS.NORM <- c('fill', 'stroke', 'stroke-width')
+STYLE.PROPS.NORM <- c(
+  'fill', 'stroke', 'stroke-width', 'stop-color',
+  'stop-opacity'  # should be a cum but we're assuming that doesn't happen
+)
 STYLE.PROPS.CUM <- c('fill-opacity', 'stroke-opacity', 'opacity')
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 
+compute_stop <- function(node, css) {
+
+}
+
+compute_gradient <- function(node, css) {
+  # offset is not a "presentation attribute"
+
+  # linear gradients
+
+  lin.grad <- xml_find_all(node, './/linearGradient')
+
+
+  # radial gradients
+
+  # get all the gradients
+  #
+  # for each stop
+  #
+  # * compute the styles using `parse_inline_style`
+  # * retrieve offset
+  # * return character vector with color, opacity, and offset
+  #
+  # Object should then have:
+  #
+  # * A list with all parsed relevant attributes
+  # * And a list of stops with the stop data
+
+}
 
 ## Retrieve and Parse All CSS Style Sheets
 ##
@@ -259,7 +290,7 @@ parse_inline_style <- function(node, style.prev=style(), style.sheet) {
 }
 parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
   style <- parse_inline_style(node, style.prev, style.sheet)
-  if(is.matrix(node)) {
+  if(inherits(node, 'terminal') || !is.list(node) || !length(node)) {
     attr(node, 'style-computed') <- proc_computed(style)
   } else {
     node[] <- lapply(

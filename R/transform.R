@@ -50,10 +50,10 @@
 #' @param x an "svg_chopped" object as produced by [parse_svg()].
 #' @return x, with coordinates transformed.
 
-transform_coords <- function(x) {
-  vetr(structure(list(), class='svg_chopped'))
+transform_coords <- function(x, apply=TRUE) {
+  vetr(structure(list(), class='svg_chopped'), LGL.1)
   trans.tree <- compute_transform(x)
-  apply_transform(trans.tree)
+  if(apply) apply_transform(trans.tree) else trans.tree
 }
 
 ## Internal Transformation Functions
