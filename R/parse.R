@@ -137,13 +137,14 @@ process_use_node <- function(node.parsed) {
 #' "style-computed" R attribute.  The SVG 1.1 specification is only loosely
 #' followed so do not expect outputs to be exactly the same as in a conforming
 #' SVG rendering engine.  This function is experimental and the API and
-#' structure of the return value may change in future versions.
+#' structure of the return value will likely change in future versions.
 #'
 #' @section Lengths:
 #'
 #' All lengths and coordinates are assumed to be unit-less.  In other words
 #' "px", "em", "cm", "%", etc. values are completely ignored, except for "%"
-#' measures for the "offset" attribute to gradient stops.
+#' measures for the "offset" attribute to gradient stops.  Future releases may
+#' switch to preserving units with e.g. [grid::unit()].
 #'
 #' @section Elements:
 #'

@@ -82,11 +82,14 @@ process_gradient_radial <- function(node) {
 }
 
 parse_stop <- function(node) {
+  pat <- sprintf("^\\s*%s(\\w*)\\s*$", num.pat.core)
   offset <- trimws(xml_attr(node, 'offset'))
-  offset <- if(!grepl(sprintf("^%s$", num.pat.pct), offset)){
+  offset <- if(!grepl(pat, offset)){
     NA
   } else {
-    max(c(min(c(1, as.numeric(sub(num.pat.pct, "\\1", offset)) / 100)), 0))
+    m <- regmatches(offset, regexec(pat, offset))[[1]]
+    val <- if(m[3] == "%") as.numeric(m[2]) / 100 else as.numeric(m[2])
+    max(c(min(c(1, val)), 0))
   }
   structure(offset, class=c('gradient-stop'))
 }
