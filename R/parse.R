@@ -379,8 +379,9 @@ process_svg_node <- function(node.parsed) {
 
 parse_element <- function(node, steps) {
   attrs <- xml_attrs(node)
+  name <- tolower(xml_name(node))
 
-  res <- switch(tolower(xml_name(node)),
+  res <- switch(name,
     path=parse_path(attrs, steps),
     polygon=parse_poly(attrs),
     rect=parse_rect(attrs),
@@ -390,7 +391,7 @@ parse_element <- function(node, steps) {
     stop=parse_stop(node),
     list()
   )
-  if(length(res)) {
+  if(length(res) && name != 'use') {
     class(res) <- unique(c('terminal', class(res)))
   }
   res
