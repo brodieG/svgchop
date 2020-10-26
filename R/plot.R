@@ -119,7 +119,7 @@ plot.svg_chopped <- function(x, url=NULL, ...) {
 
 plot.svg_chopped_list <- function(
   x,
-  ask = prod(par("mfcol")) < length(which) && dev.interactive(),
+  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 ) {
   vetr(structure(list(), class='svg_chopped_list'), LGL.1)

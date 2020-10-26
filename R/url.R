@@ -95,7 +95,7 @@ process_url <- function(node) {
 #' approximate_fill(fill.1, attr(svg, 'url'))
 
 approximate_fill <- function(fill, url) {
-  vetr(CHR.1, structure(list(), class="url-data"))
+  vetr(character(1L), structure(list(), class="url-data"))
   if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", fill)) {
       url.id <- sub(".*#([^\\)]+)\\).*", "\\1", fill)
     obj <- url[[url.id]]
