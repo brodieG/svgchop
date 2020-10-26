@@ -87,13 +87,8 @@ plot.svg_chopped <- function(x, url=NULL, ...) {
     fill <- stroke <- stroke.width <- NA
     if(!is.null(style)) {
       # Fill could be specified via `url(#id)`
-      fill <- if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", style[['fill']])) {
-          url.id <- sub(".*#([^\\)]+)\\).*", "\\1", style[['fill']])
-          stops <- url[[url.id]][['stops']][['color']]
-          rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)
-      } else style[['fill']]
+      fill <- approximate_fill(style[['fill']], url)
       stroke <- style[['stroke']]
-
       fill <- append_alpha(fill, style[['fill-opacity']])
       stroke <- append_alpha(stroke, style[['stroke-opacity']])
       stroke.width <- style[['stroke-width']]

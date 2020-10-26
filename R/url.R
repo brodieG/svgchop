@@ -26,7 +26,7 @@ process_url <- function(node) {
   name <- attr(node, 'xml_name')
   if(is.null(name)) name <- ""
   url.old <- attr(node, 'url')
-  if(is.null(url.old)) url.old <- list()
+  if(is.null(url.old)) url.old <- structure(list(), class='url-data')
   id <- attr(node, 'xml_attrs')[['id']]
   if(is.null(id)) id <- ""
 
@@ -74,15 +74,34 @@ process_url <- function(node) {
 #' The "fill" attribute to SVG elements may be specified in the form "url(#id)"
 #' where "id" is the DOM id of another SVG element.  This is used to implement
 #' complex fills such as gradients and patterns.  This function will attempt to
-#' represent the complex fills with a single color if it can, and return NA
-#' otherwise.
+#' represent the complex fills with a single color if it can based on data from
+#' the url-referenced object.
 #'
+#' Currently only gradients are approximated.  They are approximated by taking
+#' the arithmetic mean of the stop color RGB values.
+#'
+#' @export
+#' @seealso [process_svg()]
 #' @param fill character(1L) a value used as the "fill" attribute of an SVG
 #'   element.
-#' @param url list the gradient, pattern, clip path, and mask objects that may
-#'   be referenced via "url(#id)" in the "fill" attribute.
+#' @param url "url-data" object, typically kept as the "url" attribute of
+#'   "svg_chopped_list" objects.
 #' @return character(1L), a hex color, or NA_character_ if the fill could not
 #'   be approximated by a color.
+#' @examples
+#' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+#' fill.1 <- attr(svg[[1]][[2]], 'style-computed')[['fill']]
+#' fill.1 # A gradient fill
+#' approximate_fill(fill.1, attr(svg, 'url'))
 
 approximate_fill <- function(fill, url) {
+  vetr(CHR.1, structure(list(), class="url-data"))
+  if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", fill)) {
+      url.id <- sub(".*#([^\\)]+)\\).*", "\\1", fill)
+    obj <- url[[url.id]]
+    if(inherits(obj, 'gradient')) {
+      stops <- obj[['stops']][['color']]
+      rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)
+    } else NA_character_
+  } else fill
 }
