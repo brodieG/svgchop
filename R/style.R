@@ -131,11 +131,22 @@ style <- function() {
   as.list(setNames(rep(NA, length(STYLE.PROPS)), STYLE.PROPS))
 }
 
-# Track Computed Styles
-#
-# Normal styles overwrite prior ones.  Cumulative ones need to be tracked so
-# they can have a final computation applied at time of styling.  Currently we
-# only have opacity, which we could recompute as we go along.
+## Append Alpha Hex to 6 Digit Hex
+
+append_alpha <- function(color, alpha) {
+  if(is.character(color) && is.numeric(alpha)) {
+    is.hex <- grepl("^#[0-9a-fA-F]{6}$", color)
+    alpha.hex <- as.hexmode(round(pmin(pmax(0, alpha), 1) * 255))
+    color[is.hex] <- paste0(color[is.hex], toupper(format(alpha.hex, width=2)))
+  }
+  color
+}
+
+## Track Computed Styles
+##
+## Normal styles overwrite prior ones.  Cumulative ones need to be tracked so
+## they can have a final computation applied at time of styling.  Currently we
+## only have opacity, which we could recompute as we go along.
 
 update_style <- function(old, new) {
   vetr(list(), list())
@@ -221,6 +232,19 @@ proc_color <- function(colors) {
 proc_computed <- function(x) {
   # Colors, converting to hex codes
   x[STYLE.PROPS.COLOR] <- lapply(x[STYLE.PROPS.COLOR], proc_color)
+
+  # Defaults / special cases
+  if(is.na(x[['fill']]))
+    x[['fill']] <- structure('#000000', class="default")
+  if(x[['fill']] == 'none') x[['fill']] <- NA_character_
+  if(!is.na(x[['stroke']]) && x[['stroke']] == 'none')
+    x[['stroke']] <- NA_character_
+  if(is.na(x[['stop-color']]))
+    x[['stop-color']] <- structure('#000000', class="default")
+  if(x[['stop-color']] == 'none') x[['stop-color']] <- NA_character_
+  if(is.na(x[['stroke-width']])) 
+    x[['stroke-width']] <- structure("1", class="default")
+  x[['stroke-width']] <- parse_length(x[['stroke-width']])
 
   # Compute total opacity and report it back.  We do not attach it to an RGB hex
   # code b/c we might want to use it separately.

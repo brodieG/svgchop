@@ -68,7 +68,6 @@ plot.svg_chopped <- function(x, url=NULL, ...) {
   plot.window(c(x0, x0 + width), c(y0 + height, y0), asp=1)
 
   # lwd = 1 taken to be 1/96th of an inch
-
   pin <- par('pin')
   asp.p <- pin[2] / pin[1]
   if(asp > asp.p) {
@@ -82,37 +81,19 @@ plot.svg_chopped <- function(x, url=NULL, ...) {
   for(i in seq_along(mats)) {
     mat <- mats[[i]]
     style <- attr(mat, 'style-computed')
-    fill <- stroke <- NA
-    stroke.width <- 1
+    fill <- stroke <- stroke.width <- NA
     if(!is.null(style)) {
-      fill <- if(is.na(style[['fill']])) '#000000'
-        else if (tolower(style[['fill']]) == 'none') NA_character_
-        else if (grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", style[['fill']])) {
-          # assuming fill is a gradient, take average (note URL does not have to
-          # be!)
+      # Fill could be specified via `url(#id)`
+      fill <- if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", style[['fill']])) {
           url.id <- sub(".*#([^\\)]+)\\).*", "\\1", style[['fill']])
           stops <- url[[url.id]][['stops']][['color']]
           rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)
-        } else style[['fill']]
+      } else style[['fill']]
+      stroke <- style[['stroke']]
 
-      stroke <- if(is.na(style[['stroke']])) NA_character_
-        else if (tolower(style[['stroke']]) == 'none') NA
-        else style[['stroke']]
-
-      if(
-        !is.na(fill) && !is.null(style[['fill-opacity']]) &&
-        !is.na(style[['fill-opacity']])
-      ) {
-        fill <- paste0(fill, as.hexmode(round(style[['fill-opacity']] * 255)))
-      }
-      if(
-        !is.na(stroke) && !is.null(style[['stroke-opacity']]) &&
-        !is.na(style[['stroke-opacity']])
-      ) {
-        stroke <- paste0(stroke, as.hexmode(style[['stroke-opacity']] * 255))
-      }
-      if(!is.na(style[['stroke-width']]))
-        stroke.width <- as.numeric(sub("\\D+$", "", style[['stroke-width']]))
+      fill <- append_alpha(fill, style[['fill-opacity']])
+      stroke <- append_alpha(stroke, style[['stroke-opacity']])
+      stroke.width <- style[['stroke-width']]
     }
     stroke.width <- stroke.width / ptolwd
 

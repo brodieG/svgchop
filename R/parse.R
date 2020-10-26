@@ -134,7 +134,28 @@ process_use_node <- function(node.parsed) {
 #' "style-computed" R attribute.  The SVG 1.1 specification is only loosely
 #' followed so do not expect outputs to be exactly the same as in a conforming
 #' SVG rendering engine.  This function is experimental and the API and
-#' structure of the return value will likely change in future versions.
+#' structure of the return value will likely change in future versions.  The
+#' code is optimized neither for speed nor size of output.
+#'
+#' @section Details:
+#'
+#' The primary objective of this function is to compute vertex coordinates for
+#' polygons and polylines that approximate SVG display elements so that they may
+#' be used elsewhere.  In particular, we wrote this code to make it easier to
+#' render extruded SVG objects in 3D with
+#' [`rayrender`](https://cran.r-project.org/package=rayrender).  See the
+#' implementation of the `plot.svg_chopped` for ideas on how to extract the data
+#' for your own use.
+#'
+#' In addition to vertex coordinates, this function will attempt to compute
+#' styles using an approximation of SVG styling and CSS semantics for a
+#' limited set of the styles (see the "Styling" section).
+#'
+#' Almost all the data present in the SVG document is retained as part of the
+#' recursive list structure of the return value.  In particular, the list
+#' "incarnation" of each XML node will have "xml_name" and "xml_attrs"
+#' attributes containing respectively the element name and attributes.  You can
+#' retrieve them and parse them with your own logic if so desired.
 #'
 #' @section Lengths:
 #'
@@ -229,8 +250,8 @@ process_use_node <- function(node.parsed) {
 #' nor affected by any parent element "opacity" values, under the assumption
 #' that "stop" elements are unlikely to be nested.
 #'
-#' "gradientTransform" is computed and attached as the "transform-proc"
-#' attribute.
+#' "gradientTransform" is computed into a transformation matrix, but nothing
+#' else is done with it.
 #'
 #' @section Patterns, Masks, and Clip Paths:
 #'
@@ -258,13 +279,16 @@ process_use_node <- function(node.parsed) {
 #'   dimensions of which are recorded in the "box" attribute.  "svg_chopped"
 #'   objects are recursive lists with `2 x n` numeric matrices or empty lists as
 #'   terminal leaves.  The matrices contain the X-Y coordinates of the ordered
-#'   `n` endpoints of the `n - 1` line segments that the polygon representation
-#'   of the SVG elements comprise.  The empty lists correspond to elements that
-#'   could not be processed or simply branches without a displayable terminal
-#'   object.  The "svg_chopped_list" object may have an "url" attribute which is
-#'   a list named by the ids of "gradient" and other objects that may be
-#'   referenced via "url(#id)" values for "style-computed" attributes (see
-#'   Styling section).
+#'   `n` endpoints of the `n - 1` line segments that the polygon or path
+#'   representation of the SVG elements comprise.  The empty lists correspond to
+#'   elements that could not be processed or simply branches without a
+#'   displayable terminal object.  The "svg_chopped_list" object may have an
+#'   "url" attribute which is a list named by the ids of "gradient" and other
+#'   objects that may be referenced via "url(#id)" values for "style-computed"
+#'   attributes (see Styling section).
+#' @examples
+#' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+#' if(interactive()) plot(svg)
 
 process_svg <- function(file, steps=10, transform=TRUE) {
   vetr(CHR.1, INT.1.POS.STR, LGL.1)
@@ -346,6 +370,7 @@ parse_length <- function(x) {
   res
 }
 ## For lengths that are pasted together; note parse_length IS vectorized
+## e.g. "5 5 5 5"
 parse_lengths <- function(x) {
   vetr(CHR.1)
   parse_length(strsplit(trimws(x), "\\s+")[[1]])
