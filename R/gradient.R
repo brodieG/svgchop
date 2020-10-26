@@ -77,7 +77,7 @@ process_gradient_radial <- function(node) {
       list(cx=cx, cy=cy, fx=fx, fy=fy, fr=fr, stops=process_stops(node)),
       common_grad_attr(node)
     ),
-    class=c('linearGradient', 'gradient')
+    class=c('radialGradient', 'gradient')
   )
 }
 
