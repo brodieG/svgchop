@@ -2,11 +2,14 @@
 % Please edit documentation in R/plot.R
 \name{plot.svg_chopped}
 \alias{plot.svg_chopped}
+\alias{plot.svg_chopped_flat}
 \alias{plot.svg_chopped_list}
 \alias{plot.svg_chopped_list_flat}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
 \method{plot}{svg_chopped}(x, url = NULL, ...)
+
+\method{plot}{svg_chopped_flat}(x, url = NULL, ...)
 
 \method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(x) && dev.interactive(), ...)
 
