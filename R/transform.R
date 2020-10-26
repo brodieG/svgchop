@@ -168,7 +168,7 @@ parse_transform <- function(node, trans.prev=trans()) {
 compute_transform <- function(x, trans.prev=trans()) {
   trans <- parse_transform(x, trans.prev)
   if(is.matrix(x)) {
-    attr(x, 'transform-proc') <- trans
+    attr(x, 'transform-computed') <- trans
     x
   } else {
     x[] <- lapply(x, compute_transform, trans)
@@ -177,7 +177,7 @@ compute_transform <- function(x, trans.prev=trans()) {
 }
 
 apply_transform <- function(x) {
-  trans <- attr(x, 'transform-proc')
+  trans <- attr(x, 'transform-computed')
   res <- if(is.matrix(x) && inherits(trans, 'trans')) {
     (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
   } else  {

@@ -197,7 +197,7 @@ process_use_node <- function(node.parsed) {
 #' through element generations.  It is then applied to the computed coordinates
 #' of the terminal nodes.  You may turn off the application of the transforms by
 #' setting `transform=FALSE`, in which case you will be responsible for
-#' retrieving the transform data from the "transform-proc" attribute of the
+#' retrieving the transform data from the "transform-computed" attribute of the
 #' terminal leaves of the "svg_chopped" objects.  This attribute will be a
 #' "trans" S3 object containing the transformation matrix as the "mx" member and
 #' the commands that were processed to produce that matrix as the "cmds" member.
@@ -243,8 +243,8 @@ process_use_node <- function(node.parsed) {
 #' and stop style is computed based on where they are defined.  "href" or
 #' "xlink:href" attributes are not followed.  Gradients are attached as members
 #' of the "url" attribute of the return value.  All the gradient coordinate
-#' values (e.g. "x", "y", "cx", "cy", ...) are assumed to be specified in [0,
-#' 1], and not as percentages.
+#' values (e.g. "x", "y", "cx", "cy", ...) are assumed to be specified in \[0,
+#' 1\], and not as percentages.
 #'
 #' Unlike with typical opacity attributes "stop-opacity" is not accumulated
 #' nor affected by any parent element "opacity" values, under the assumption

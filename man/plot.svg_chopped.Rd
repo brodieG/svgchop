@@ -5,12 +5,15 @@
 \alias{plot.svg_chopped_list}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
-\method{plot}{svg_chopped}(x, ...)
+\method{plot}{svg_chopped}(x, url = NULL, ...)
 
 \method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(which) && dev.interactive(), ...)
 }
 \arguments{
-\item{x}{an "svg_chopped" or object}
+\item{x}{an "svg_chopped" or "svg_chopped_list" object}
+
+\item{url}{the "url" attribute of the "svg_chopped_list" object to pass on to
+the "svg_chopped" method.}
 
 \item{...}{passed on to \code{\link[=polypath]{polypath()}} and/or \code{\link[=lines]{lines()}}.}
 

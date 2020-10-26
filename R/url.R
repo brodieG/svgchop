@@ -69,3 +69,20 @@ process_url <- function(node) {
   attr(node.new, 'url') <- url.old
   node.new
 }
+#' Approximate Fill
+#'
+#' The "fill" attribute to SVG elements may be specified in the form "url(#id)"
+#' where "id" is the DOM id of another SVG element.  This is used to implement
+#' complex fills such as gradients and patterns.  This function will attempt to
+#' represent the complex fills with a single color if it can, and return NA
+#' otherwise.
+#'
+#' @param fill character(1L) a value used as the "fill" attribute of an SVG
+#'   element.
+#' @param url list the gradient, pattern, clip path, and mask objects that may
+#'   be referenced via "url(#id)" in the "fill" attribute.
+#' @return character(1L), a hex color, or NA_character_ if the fill could not
+#'   be approximated by a color.
+
+approximate_fill <- function(fill, url) {
+}

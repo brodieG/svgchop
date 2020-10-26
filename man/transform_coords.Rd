@@ -4,7 +4,7 @@
 \alias{transform_coords}
 \title{Compute and Apply SVG Transforms to Coordinates}
 \usage{
-transform_coords(x)
+transform_coords(x, apply = TRUE)
 }
 \arguments{
 \item{x}{an "svg_chopped" object as produced by \code{\link[=parse_svg]{parse_svg()}}.}
