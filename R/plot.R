@@ -31,10 +31,15 @@
 #' one.
 #'
 #' The "svg_chopped_list" method will call the "svg_chopped" method for each
-#' item.  If you set `par(mfrow=...)` or similar each element of the list will
-#' be plotted in its own grid spot.
+#' item, passing along the "url-data" object that is attached as the "url"
+#' attribute of the "svg_chopped_list" object.  If you set `par(mfrow=...)` or
+#' similar each element of the list will be plotted in its own grid spot.
+#'
+#' Future versions may switch to `grid` functions and take advantage of
+#' viewports and the implementation of gradients, etc.
 #'
 #' @export
+#' @seealso [process_svg()]
 #' @inheritParams stats::plot.lm
 #' @param x an "svg_chopped" or "svg_chopped_list" object
 #' @param url the "url" attribute of the "svg_chopped_list" object to pass on to
@@ -42,7 +47,49 @@
 #' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
-plot.svg_chopped <- function(x, url=NULL, ...) {
+plot.svg_chopped <- function(x, url=NULL, ...) plot_one(x, url, ...)
+
+#' @export
+#' @rdname plot.svg_chopped
+
+plot.svg_chopped_flat <- function(x, url=NULL, ...) plot_one(x, url, ...)
+
+#' @export
+#' @rdname plot.svg_chopped
+
+plot.svg_chopped_list <- function(
+  x,
+  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
+  ...
+) {
+  vetr(structure(list(), class='svg_chopped_list'), LGL.1)
+  plot_list(x, ask, ...)
+}
+#' @export
+#' @rdname plot.svg_chopped
+
+plot.svg_chopped_list_flat <- function(
+  x,
+  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
+  ...
+) {
+  vetr(structure(list(), class='svg_chopped_list_flat'), LGL.1)
+  plot_list(x, ask, ...)
+}
+
+## Internal: plot either normal or flat chopped_list
+
+plot_list <- function(x, ask, ...) {
+  if (ask) {
+    oask <- devAskNewPage(TRUE)
+    on.exit(devAskNewPage(oask))
+  }
+  lapply(x, plot, url=attr(x, "url"), ...)
+  invisible(x)
+}
+## Internal: plot either normal or flat chopped
+
+plot_one <- function(x, url, ...) {
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
 
@@ -80,7 +127,7 @@ plot.svg_chopped <- function(x, url=NULL, ...) {
   }
   ptolwd <- ppi / 96
 
-  mats <- flatten(x)
+  mats <- if(!inherits(x, 'svg_chopped_flat')) flatten(x) else x
   for(i in seq_along(mats)) {
     mat <- mats[[i]]
     style <- attr(mat, 'style-computed')
@@ -108,27 +155,10 @@ plot.svg_chopped <- function(x, url=NULL, ...) {
       mat <- mat[,idx]
     }
     # plot
-
     if(closed) polypath(t(mat), col=fill, border=stroke, lwd=stroke.width, ...)
     else lines(t(mat), col=stroke, lwd=stroke.width, ...)
   }
   invisible(x)
-}
-#' @export
-#' @rdname plot.svg_chopped
 
-plot.svg_chopped_list <- function(
-  x,
-  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
-  ...
-) {
-  vetr(structure(list(), class='svg_chopped_list'), LGL.1)
-  if (ask) {
-    oask <- devAskNewPage(TRUE)
-    on.exit(devAskNewPage(oask))
-  }
-  lapply(x, plot, url=attr(x, "url"), ...)
-  invisible(x)
 }
-
 

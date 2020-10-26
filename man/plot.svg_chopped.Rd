@@ -3,11 +3,14 @@
 \name{plot.svg_chopped}
 \alias{plot.svg_chopped}
 \alias{plot.svg_chopped_list}
+\alias{plot.svg_chopped_list_flat}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
 \method{plot}{svg_chopped}(x, url = NULL, ...)
 
-\method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(which) && dev.interactive(), ...)
+\method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(x) && dev.interactive(), ...)
+
+\method{plot}{svg_chopped_list_flat}(x, ask = prod(par("mfcol")) < length(x) && dev.interactive(), ...)
 }
 \arguments{
 \item{x}{an "svg_chopped" or "svg_chopped_list" object}
@@ -42,4 +45,10 @@ one.
 The "svg_chopped_list" method will call the "svg_chopped" method for each
 item.  If you set \code{par(mfrow=...)} or similar each element of the list will
 be plotted in its own grid spot.
+
+Future versions may switch to \code{grid} functions and take advantage of
+viewports and the implementation of gradients, etc.
+}
+\seealso{
+\code{\link[=process_svg]{process_svg()}}
 }
