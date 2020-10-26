@@ -185,5 +185,5 @@ svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 if(interactive()) plot(svg)
 }
 \seealso{
-\code{\link[=plot.svg]{plot.svg()}}
+\code{\link[=plot.svg]{plot.svg()}}, \code{\link[=flatten]{flatten()}} for an easier-to-manage data structure.
 }

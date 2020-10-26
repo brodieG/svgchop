@@ -260,7 +260,7 @@ process_use_node <- function(node.parsed) {
 #' support for these instructions may be added in the future.  Or not.
 #'
 #' @export
-#' @seealso [plot.svg()]
+#' @seealso [plot.svg()], [flatten()] for an easier-to-manage data structure.
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #'   xml_text xml_length xml_children xml_attr xml_find_first xml_root
 #'   xml_parents

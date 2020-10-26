@@ -71,4 +71,42 @@ flatten.svg_chopped_list <- function(x, ...) {
   res
 }
 
+#' Subset "svg_chopped_flat" Objects
+#'
+#' Versions of the base subsetting functions that do not drop attributes.  Among
+#' other things, this allows us to subset complex objects and still benefit from
+#' the inspection methods in the package.
+#'
+#' @rdname subset.svg_chopped
+#' @param x an "svg_chopped" or related object
+#' @param i mixed subsetting indices
+#' @export
 
+`[.svg_chopped` <- function(x, i, ...) subset_chop(x, i, ...)
+
+#' @rdname subset.svg_chopped
+#' @export
+
+`[.svg_chopped_list` <- function(x, i, ...) subset_chop(x, i, ...)
+
+#' @rdname subset.svg_chopped
+#' @export
+
+`[.svg_chopped_list_flat` <- function(x, i, ...) subset_chop(x, i, ...)
+
+#' @rdname subset.svg_chopped
+#' @export
+
+`[.svg_chopped_flat` <- function(x, i, ...) subset_chop(x, i, ...)
+
+## Should probably have a common class for all the chopped objects instead of
+## this hack.
+
+subset_chop <- function(x, i, ...) {
+  res <- .subset(x, i, ...)
+  nm <- .subset(names(x), i, ...)
+  attrs <- attributes(x)
+  attributes(res) <- attrs[!names(attrs) == "names"]
+  names(res) <- nm
+  res
+}
