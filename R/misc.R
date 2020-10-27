@@ -50,7 +50,7 @@ flatten.default <- function(x, ...)
 
 flatten_rec <- function(x) {
   if(inherits(x, 'hidden')) list()
-  else if(inherits(x, 'terminal')) setNames(list(x), attr(x, 'xml_name'))
+  else if(!is.list(x)) setNames(list(x), attr(x, 'xml_name'))
   else  unlist(lapply(x, flatten_rec), recursive=FALSE)
 }
 #' @rdname flatten

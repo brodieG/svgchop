@@ -295,7 +295,7 @@ parse_inline_style <- function(node, style.prev=style(), style.sheet) {
 }
 parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
   style <- parse_inline_style(node, style.prev, style.sheet)
-  if(inherits(node, 'terminal') || !is.list(node) || !length(node)) {
+  if(!is.list(node) || !length(node)) {
     attr(node, 'style-computed') <- proc_computed(style)
   } else {
     node[] <- lapply(

@@ -45,7 +45,7 @@ process_url <- function(node) {
       radialGradient=process_gradient_radial(node),
       node
     )
-  } else if (is.list(node) && length(node) && !inherits(node, 'terminal')) {
+  } else if (is.list(node) && length(node)) {
     node.new <- lapply(node, process_url)
     urls.new <- lapply(node.new, attr, 'url')
     node.new <- lapply(node.new,

@@ -426,9 +426,6 @@ parse_element <- function(node, steps) {
     stop=parse_stop(node),
     list()
   )
-  if(length(res) && name != 'use') {
-    class(res) <- unique(c('terminal', class(res)))
-  }
   res
 }
 
