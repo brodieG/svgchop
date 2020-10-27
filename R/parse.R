@@ -335,16 +335,17 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   # compute extents
   get_coords <- function(obj, coord)
     if(is.matrix(obj)) obj[coord,] else lapply(obj, get_coords, coord)
-  w.extents <- lapply(
+  w.attrs <- lapply(
     final,
     function(x) {
       xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
       ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
       attr(x, 'extents') <- list(x=xs, ys=ys)
+      attr(x, 'url') <- url
       x
   } )
   structure(
-    w.extents,
+    w.attrs,
     class='svg_chopped_list',
     url=url
   )

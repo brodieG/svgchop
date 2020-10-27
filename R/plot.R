@@ -42,17 +42,15 @@
 #' @seealso [process_svg()]
 #' @inheritParams stats::plot.lm
 #' @param x an "svg_chopped" or "svg_chopped_list" object
-#' @param url the "url" attribute of the "svg_chopped_list" object to pass on to
-#'   the "svg_chopped" method.
 #' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
-plot.svg_chopped <- function(x, url=NULL, ...) plot_one(x, url, ...)
+plot.svg_chopped <- function(x, ...) plot_one(x, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
-plot.svg_chopped_flat <- function(x, url=NULL, ...) plot_one(x, url, ...)
+plot.svg_chopped_flat <- function(x, ...) plot_one(x, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
@@ -84,12 +82,13 @@ plot_list <- function(x, ask, ...) {
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot, url=attr(x, "url"), ...)
+  lapply(x, plot, ...)
   invisible(x)
 }
 ## Internal: plot either normal or flat chopped
 
-plot_one <- function(x, url, ...) {
+plot_one <- function(x, ...) {
+  url <- attr(x, 'url')
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
 

@@ -7,9 +7,9 @@
 \alias{plot.svg_chopped_list_flat}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
-\method{plot}{svg_chopped}(x, url = NULL, ...)
+\method{plot}{svg_chopped}(x, ...)
 
-\method{plot}{svg_chopped_flat}(x, url = NULL, ...)
+\method{plot}{svg_chopped_flat}(x, ...)
 
 \method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(x) && dev.interactive(), ...)
 
@@ -17,9 +17,6 @@
 }
 \arguments{
 \item{x}{an "svg_chopped" or "svg_chopped_list" object}
-
-\item{url}{the "url" attribute of the "svg_chopped_list" object to pass on to
-the "svg_chopped" method.}
 
 \item{...}{passed on to \code{\link[=polypath]{polypath()}} and/or \code{\link[=lines]{lines()}}.}
 
@@ -46,8 +43,9 @@ inch, and may look bad on devices that don't support "lwd" values less than
 one.
 
 The "svg_chopped_list" method will call the "svg_chopped" method for each
-item.  If you set \code{par(mfrow=...)} or similar each element of the list will
-be plotted in its own grid spot.
+item, passing along the "url-data" object that is attached as the "url"
+attribute of the "svg_chopped_list" object.  If you set \code{par(mfrow=...)} or
+similar each element of the list will be plotted in its own grid spot.
 
 Future versions may switch to \code{grid} functions and take advantage of
 viewports and the implementation of gradients, etc.
