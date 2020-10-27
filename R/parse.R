@@ -287,7 +287,7 @@ process_use_node <- function(node.parsed) {
 #'   the X-Y coordinates of the ordered `n` endpoints of the `n - 1` line
 #'   segments that the polygon or path representation of the SVG elements
 #'   comprise.  The empty lists correspond to elements that could not be
-#'   processed or simply branches without a displayable terminal object.  
+#'   processed or simply branches without a displayable terminal object.
 #'   "svg_chopped_list" and "svg_chopped" object may have an "url" attribute,
 #'   which is a list named by the ids of "gradient" and other objects that may
 #'   be referenced via "url(#id)" values for "style-computed" attributes (see
@@ -443,19 +443,25 @@ parse_element <- function(node, steps) {
 ## easier to see what each element is...
 ##
 ## @param steps
+## @param defs tracks when we're in a def tag
 ## @return A nested list with data.frames containing line segment X-Y coords are
 ##   the leaves.  Branches that end in empty lists are possible.  XML attributes
 ##   and names are retained as R attributes to each node.
 
-parse_node <- function(node, steps) {
-  vetr(structure(list(), class='xml_node'), INT.1.POS.STR)
+parse_node <- function(node, steps, defs=FALSE) {
+  vetr(structure(list(), class='xml_node'), INT.1.POS.STR, LGL.1)
 
   res <- if(xml_length(node, only_elements=TRUE)) {
     # Non-terminal node, recurse
-    lapply(xml_children(node), parse_node, steps=steps)
+    lapply(
+      xml_children(node), parse_node, steps=steps,
+      defs=tolower(xml_name(node)) == 'defs'
+    )
   } else {
     # Parse terminal node
-    parse_element(node, steps)
+    tmp <- parse_element(node, steps)
+    if(defs) class(tmp) <- c('hidden', class(tmp))
+    tmp
   }
   # attach attributes; this should be done before final processing
   attr(res, 'xml_attrs') <- as.list(xml_attrs(node))

@@ -16,12 +16,17 @@
 
 #' Simplify "svg_chopped" Structure
 #'
-#' `flatten` collapses "svg_chopped" recursive structure into a one level list.
+#' `flatten` collapses "svg_chopped" recursive structure by placing all
+#' non-"hidden" terminal nodes into a one level list.  Flattened
+#' "svg_chopped_list" objects will retain distinct elements for each
+#' "svg_chopped" contained therein, so an "svg_chopped_list_flat" object will
+#' have two levels: one for the "svg_chopped_flat" objects, and one for the
+#' visible terminal leaves of those.
+#'
 #' When flattening terminal leaves are retrieved via depth-first recursion into
-#' a single level list for each "svg_chopped" object.  "svg_chopped_list"
-#' objects will retain distinct elements for each "svg_chopped" contained
-#' therein.  Attributes for the "svg_chopped", "svg_chopped_list", and terminal
-#' nodes are retained.
+#' a single level list for each "svg_chopped" object.  Terminal elements
+#' defined inside "defs" will be hidden.  Attributes for the "svg_chopped",
+#' "svg_chopped_list", and terminal nodes are retained.
 #'
 #' For convenience the flat list is named with the numeric index of the element
 #' and the svg element name.  The underlying recursive list is unnamed so we 
@@ -44,11 +49,9 @@ flatten.default <- function(x, ...)
   stop("Default flatten method not implemented")
 
 flatten_rec <- function(x) {
-  if(inherits(x, 'terminal')) {
-    setNames(list(x), attr(x, 'xml_name'))
-  } else {
-    unlist(lapply(x, flatten_rec), recursive=FALSE)
-  }
+  if(inherits(x, 'hidden')) list()
+  else if(inherits(x, 'terminal')) setNames(list(x), attr(x, 'xml_name'))
+  else  unlist(lapply(x, flatten_rec), recursive=FALSE)
 }
 #' @rdname flatten
 #' @export
