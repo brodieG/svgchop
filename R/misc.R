@@ -114,6 +114,46 @@ subset_chop <- function(x, i, ...) {
   res
 }
 
+#' str Method "svg_chopped*" Objects
+#'
+#' Exactly like [utils::str()], except the `give.attr` parameter is set to FALSE
+#' by default instead of TRUE as otherwise the output is overwhelming.  You can
+#' set it explicitly to TRUE to show attributes.
+#'
+#' @seealso [flatten()] to generate a flat version of the tree that may be
+#'   easier to subset.
+#' @export
+#' @inheritParams utils::str
+#' @importFrom utils str
+#' @return NULL, invisibly.
+
+str.svg_chopped <- function(object, give.attr=FALSE, ...) {
+  res <- NextMethod("str", object=object, give.attr=give.attr, ...)
+  message('Attributes suppresssed; set "give.attr = TRUE" to display them')
+  invisible(res)
+}
+#' @rdname str.svg_chopped
+#' @export
+
+str.svg_chopped_list <- function(object, give.attr=FALSE, ...)
+  NextMethod("str", object=object, give.attr=give.attr, ...)
+
+#' @rdname str.svg_chopped
+#' @export
+
+str.svg_chopped_flat <- function(object, give.attr=FALSE, ...) {
+  res <- NextMethod("str", object=object, give.attr=give.attr, ...)
+  message('Attributes suppresssed; set "give.attr = TRUE" to display them')
+  invisible(res)
+}
+#' @rdname str.svg_chopped
+#' @export
+
+str.svg_chopped_list_flat <- function(object, give.attr=FALSE, ...)
+  NextMethod("str", object=object, give.attr=give.attr, ...)
+
+
+
 ## Twisted Pyramid
 ##
 ## To generate the twisting overlapped squares for the tests

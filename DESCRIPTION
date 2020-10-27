@@ -16,7 +16,8 @@ Authors@R: c(
     )
 Imports:
     vetr,
-    xml2
+    xml2,
+    utils
 Suggests:
     unitizer
 License: GPL (>= 2)
