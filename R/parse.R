@@ -32,6 +32,7 @@ parse_poly <- function(x) {
   } else {
     rbind(x=numeric(), y=numeric())
   }
+  attr(coords, "closed") <- TRUE
 }
 ## @inheritParams parse_poly
 
@@ -77,7 +78,8 @@ parse_ellipse <- function(x, steps) {
   lens <- parse_length(x[c('cx', 'cy', 'rx', 'ry')])
   lens[is.na(lens)] <- 0
   angles <- seq(0, 2 * pi, length.out=steps + 1)
-  (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]
+  res <- (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]
+  attr(res, 'closed') <- TRUE
 }
 ## Parse use link
 ##
@@ -125,8 +127,7 @@ process_use_node <- function(node.parsed) {
   attr(node.parsed, 'xml_attrs') <- attrs
   node.parsed
 }
-
-#' Convert SVG Elements to Polygons
+#' Convert SVG Elements to Polygons or Polylines
 #'
 #' Parse and convert SVG elements into polygons.  SVG transforms are applied to
 #' the polygon coordinates, and SVG presentation attributes are computed from
@@ -151,6 +152,30 @@ process_use_node <- function(node.parsed) {
 #' styles using an approximation of SVG styling and CSS semantics for a
 #' limited set of the styles (see the "Styling" section).
 #'
+#' The return value is an "svg_chopped_list" object, a list of
+#' "svg_chopped" objects with some additional meta data attached as attributes.
+#' Because HTML documents may contain multiple top level SVG viewports this
+#' function always returns an "svg_chopped_list", even for the common case where
+#' there is only one viewport.
+#'
+#' Each "svg_chopped" object is a recursive list representing a top-level SVG
+#' viewport.  If the leaves of the tree are known display elements they will
+#' appear as `2 x n` numeric matrices.  The matrices contain the X-Y coordinates
+#' of the ordered `n` endpoints of the `n - 1` line segments that the polygon or
+#' path representation of the SVG elements comprise.  These matrices may have
+#' attributes attached that modify how they should be interpreted.  See
+#' "Elements" section.  If the leaves are not known display elements they will
+#' appear as empty lists.  There may be terminal elements that are neither lists
+#' nor matrices (e.g. gradient "stop"s).
+#'
+#' SVG meta data such as style sheets, gradients, patterns, may be removed from
+#' the recursive structure and either re-inserted as attributes to relevant
+#' child nodes, or stored under the "url" attribute of the "svg_chopped" and
+#' "svg_chopped_list" objects.  This "url" attribute will be the same for the
+#' "svg_chopped_list" object and all its child "svg_chopped" objects.  See the
+#' "Styling", "Gradients", and "Patterns, Masks, and Clip Paths" sections for
+#' more discussion of this.
+#'
 #' Almost all the data present in the SVG document is retained as part of the
 #' recursive list structure of the return value.  In particular, the list
 #' "incarnation" of each XML node will have "xml_name" and "xml_attrs"
@@ -172,6 +197,15 @@ process_use_node <- function(node.parsed) {
 #' not support rounded corners, and "ellipse" does not support "auto" values for
 #' "rx" and "ry" (that is the default, but we assume 0).  "pathLength" is not
 #' supported on any element.
+#'
+#' XML attribute data is processed to compute x and y coordinates for a set of
+#' vertices that approximates the outline of each element.  These are stored as
+#' 2 x n matrices.  The attribute "closed" will be set to a logical vector
+#' representing whether the element should be interpreted as a closed polygon or
+#' as an open "polyline".  "path" elements may contain sub-paths, and the
+#' "closed" vector will contain one entry for each sub-path.  The starting
+#' column in the coordinate matrix for each sub-path is recorded in the "starts"
+#' attribute.
 #'
 #' "g" elements act as containers for child elements and convey their properties
 #' to them.
@@ -278,20 +312,7 @@ process_use_node <- function(node.parsed) {
 #' @param transform TRUE (default) or FALSE whether to apply the transformation
 #'   to the computed element coordinates.
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
-#'   objects.  Each "svg_chopped" object represents a top level SVG viewport the
-#'   dimensions of which are recorded in the "box" attribute.  Because HTML
-#'   documents may contain multiple top level SVG viewports this function always
-#'   returns an "svg_chopped_list", even for the common case where there is only
-#'   one viewport.  "svg_chopped" objects are recursive lists with `2 x n`
-#'   numeric matrices or empty lists as terminal leaves.  The matrices contain
-#'   the X-Y coordinates of the ordered `n` endpoints of the `n - 1` line
-#'   segments that the polygon or path representation of the SVG elements
-#'   comprise.  The empty lists correspond to elements that could not be
-#'   processed or simply branches without a displayable terminal object.
-#'   "svg_chopped_list" and "svg_chopped" object may have an "url" attribute,
-#'   which is a list named by the ids of "gradient" and other objects that may
-#'   be referenced via "url(#id)" values for "style-computed" attributes (see
-#'   Styling section).
+#'   objects.  See "Details".
 #' @examples
 #' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' if(interactive()) plot(svg)

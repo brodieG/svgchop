@@ -281,9 +281,9 @@ path_simplify <- function(path, steps) {
 #'   more than one sub-path, the starting column of sub-paths following the
 #'   first will be stored as the "starts" attribute of the matrix.  Whether the
 #'   (sub)paths are open or closed is recorded as the "closed" attribute.
-#'   (Sub)paths are considered closed if they end in a "Z" or "z" command, or if
-#'   the last coordinate equals the first (in SVG these two are not the same as
-#'   it affects how the line ends are displayed; we ignore that).
+#'   (Sub)paths are considered closed if they end in a "Z" or "z" command.
+#'   (Sub)paths that end at the starting coordinate, but do not end in "Z" or
+#'   "z", are not considered closed.
 
 parse_path <- function(x, steps=20) {
   if(!'d' %in% names(x))
@@ -306,8 +306,7 @@ parse_path <- function(x, steps=20) {
     # compute which paths are closed
     coords <- unname(lapply(cmds.split, path_simplify, steps))
     closed <- unname(
-      vapply(cmds.split, function(x) x[[length(x)]][[1]] == 'Z', TRUE) |
-      vapply(coords, function(x) ncol(x) && all(x[,1] == x[,ncol(x)]), TRUE)
+      vapply(cmds.split, function(x) x[[length(x)]][[1]] == 'Z', TRUE)
     )
     # Compute sub-path starting points
     coords <- if(length(coords) > 1) {
