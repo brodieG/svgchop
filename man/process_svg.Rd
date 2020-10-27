@@ -170,6 +170,9 @@ that "stop" elements are unlikely to be nested.
 
 "gradientTransform" is computed into a transformation matrix, but nothing
 else is done with it.
+
+The \code{plot} method for "svg_chopped" objects will use \code{\link[=approximate_fill]{approximate_fill()}} to
+compute a single color from the gradient data.
 }
 
 \section{Patterns, Masks, and Clip Paths}{

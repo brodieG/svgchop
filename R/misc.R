@@ -110,3 +110,46 @@ subset_chop <- function(x, i, ...) {
   names(res) <- nm
   res
 }
+
+## Twisted Pyramid
+##
+## To generate the twisting overlapped squares for the tests
+##
+## @export
+
+# nocov start
+twisted_pyramid <- function(tiers=10, angle=10, colors=rainbow(tiers)) {
+  outer <- sprintf('
+    <svg viewBox="-55 -55 110 110">
+      <defs>
+        <rect 
+        id="base-rect" width="100" height="100" x="-50" y="-50" 
+        transform="rotate(-%f)"
+        />
+      </defs>
+      %%s
+    </svg>', 
+  angle)
+  templates <- sprintf('
+    <g transform="rotate(%%f) scale(%%f)">
+      <use href="#base-rect" fill="%s"/>
+      %%s
+    </g>',
+    colors
+  )
+  scale <- 1 / (cos((45 - angle) / 180 * pi) * sqrt(2))
+  inside <- Reduce(
+    function(x, y) sprintf(x, angle, scale, y),
+    c(templates, "")
+  )
+  sprintf(outer, inside)
+}
+# nocov end
+
+
+
+
+
+
+
+
