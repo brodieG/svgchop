@@ -91,8 +91,6 @@ dev.off()
   and more generally for supporting open web standards.
 * [MDN](https://developer.mozilla.org/en-US/) for being a fantastic resource for
   web development.
-* Paul Murrell for [`gridBezier`](https://cran.r-project.org/package=gridBezier)
-  with which we convert SVG curves into piecewise linear paths.
 * Jim Hester, Hadley Wickham, etal. for
   [`xml2`](https://cran.r-project.org/package=xml2), which makes
   it easy to extract properties from SVG (among other things).

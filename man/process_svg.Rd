@@ -23,16 +23,19 @@ to the computed element coordinates.}
 \value{
 an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 objects.  Each "svg_chopped" object represents a top level SVG viewport the
-dimensions of which are recorded in the "box" attribute.  "svg_chopped"
-objects are recursive lists with \verb{2 x n} numeric matrices or empty lists as
-terminal leaves.  The matrices contain the X-Y coordinates of the ordered
-\code{n} endpoints of the \code{n - 1} line segments that the polygon or path
-representation of the SVG elements comprise.  The empty lists correspond to
-elements that could not be processed or simply branches without a
-displayable terminal object.  The "svg_chopped_list" object may have an
-"url" attribute which is a list named by the ids of "gradient" and other
-objects that may be referenced via "url(#id)" values for "style-computed"
-attributes (see Styling section).
+dimensions of which are recorded in the "box" attribute.  Because HTML
+documents may contain multiple top level SVG viewports this function always
+returns an "svg_chopped_list", even for the common case where there is only
+one viewport.  "svg_chopped" objects are recursive lists with \verb{2 x n}
+numeric matrices or empty lists as terminal leaves.  The matrices contain
+the X-Y coordinates of the ordered \code{n} endpoints of the \code{n - 1} line
+segments that the polygon or path representation of the SVG elements
+comprise.  The empty lists correspond to elements that could not be
+processed or simply branches without a displayable terminal object.
+"svg_chopped_list" and "svg_chopped" object may have an "url" attribute,
+which is a list named by the ids of "gradient" and other objects that may
+be referenced via "url(#id)" values for "style-computed" attributes (see
+Styling section).
 }
 \description{
 Parse and convert SVG elements into polygons.  SVG transforms are applied to

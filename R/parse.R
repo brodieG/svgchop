@@ -223,19 +223,19 @@ process_use_node <- function(node.parsed) {
 #' Fill and stroke values, with three exceptions, are returned as 6 digit
 #' hex-codes or NA so that it is easy to append alpha values derived from the
 #' opacity values.  Supported color formats are 6 digit hex, 3 digit hex, named
-#' colors in [graphics::colors()], and those in `rgb(x,y,z)` where `x`, `y`, and
-#' `z` are numeric or percentage values as per the CSS spec.  Colors "none" and
-#' "transparent" are both returned as "none" so that they may be distinguished
-#' from unspecified color (those are NA).  `url(#id)` values are returned as is.
-#' Supported external styling such as gradients will be recorded as part of the
-#' "svg_chopped_list" object and may be retrieved with the [svg_url()] function.
+#' colors in [graphics::colors()], and `rgb(x,y,z)` where `x`, `y`, and
+#' `z` are numeric or percentage values as per the CSS spec.  `url(#id)` values
+#' are returned as is.  Supported external styling such as gradients will be
+#' recorded as part of the "svg_chopped_list" object and may be retrieved with
+#' the [svg_url()] function.
 #'
-#' Opacity is accumulated through generations and applied to the terminal
-#' elements as the product of all accumulated opacity values.  If an element
-#' specifies both "opacity" and "stroke-opacity" or "fill-opacity", the latter
-#' two are multiplied with the value of "opacity".  Since the "opacity" value is
-#' thus reflected in "stroke-opacity" and "style-opacity" it is dropped to avoid
-#' confusion.
+#' If an element specifies both "opacity" and "stroke-opacity" or
+#' "fill-opacity", the latter two are multiplied with the value of "opacity".
+#' Since the "opacity" value is thus reflected in "stroke-opacity" and
+#' "style-opacity" it is dropped to avoid confusion.
+#'
+#' Properties that have defaults specified in the spec and are not otherwise
+#' specified in a processed SVG will be those defaults with class "default".
 #'
 #' @section Gradients:
 #'
@@ -279,16 +279,19 @@ process_use_node <- function(node.parsed) {
 #'   to the computed element coordinates.
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 #'   objects.  Each "svg_chopped" object represents a top level SVG viewport the
-#'   dimensions of which are recorded in the "box" attribute.  "svg_chopped"
-#'   objects are recursive lists with `2 x n` numeric matrices or empty lists as
-#'   terminal leaves.  The matrices contain the X-Y coordinates of the ordered
-#'   `n` endpoints of the `n - 1` line segments that the polygon or path
-#'   representation of the SVG elements comprise.  The empty lists correspond to
-#'   elements that could not be processed or simply branches without a
-#'   displayable terminal object.  The "svg_chopped_list" object may have an
-#'   "url" attribute which is a list named by the ids of "gradient" and other
-#'   objects that may be referenced via "url(#id)" values for "style-computed"
-#'   attributes (see Styling section).
+#'   dimensions of which are recorded in the "box" attribute.  Because HTML
+#'   documents may contain multiple top level SVG viewports this function always
+#'   returns an "svg_chopped_list", even for the common case where there is only
+#'   one viewport.  "svg_chopped" objects are recursive lists with `2 x n`
+#'   numeric matrices or empty lists as terminal leaves.  The matrices contain
+#'   the X-Y coordinates of the ordered `n` endpoints of the `n - 1` line
+#'   segments that the polygon or path representation of the SVG elements
+#'   comprise.  The empty lists correspond to elements that could not be
+#'   processed or simply branches without a displayable terminal object.  
+#'   "svg_chopped_list" and "svg_chopped" object may have an "url" attribute,
+#'   which is a list named by the ids of "gradient" and other objects that may
+#'   be referenced via "url(#id)" values for "style-computed" attributes (see
+#'   Styling section).
 #' @examples
 #' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' if(interactive()) plot(svg)
