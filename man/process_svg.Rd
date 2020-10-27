@@ -142,19 +142,19 @@ likely incorrect in many cases.
 Fill and stroke values, with three exceptions, are returned as 6 digit
 hex-codes or NA so that it is easy to append alpha values derived from the
 opacity values.  Supported color formats are 6 digit hex, 3 digit hex, named
-colors in \code{\link[graphics:colors]{graphics::colors()}}, and those in \code{rgb(x,y,z)} where \code{x}, \code{y}, and
-\code{z} are numeric or percentage values as per the CSS spec.  Colors "none" and
-"transparent" are both returned as "none" so that they may be distinguished
-from unspecified color (those are NA).  \verb{url(#id)} values are returned as is.
-Supported external styling such as gradients will be recorded as part of the
-"svg_chopped_list" object and may be retrieved with the \code{\link[=svg_url]{svg_url()}} function.
+colors in \code{\link[graphics:colors]{graphics::colors()}}, and \code{rgb(x,y,z)} where \code{x}, \code{y}, and
+\code{z} are numeric or percentage values as per the CSS spec.  \verb{url(#id)} values
+are returned as is.  Supported external styling such as gradients will be
+recorded as part of the "svg_chopped_list" object and may be retrieved with
+the \code{\link[=svg_url]{svg_url()}} function.
 
-Opacity is accumulated through generations and applied to the terminal
-elements as the product of all accumulated opacity values.  If an element
-specifies both "opacity" and "stroke-opacity" or "fill-opacity", the latter
-two are multiplied with the value of "opacity".  Since the "opacity" value is
-thus reflected in "stroke-opacity" and "style-opacity" it is dropped to avoid
-confusion.
+If an element specifies both "opacity" and "stroke-opacity" or
+"fill-opacity", the latter two are multiplied with the value of "opacity".
+Since the "opacity" value is thus reflected in "stroke-opacity" and
+"style-opacity" it is dropped to avoid confusion.
+
+Properties that have defaults specified in the spec and are not otherwise
+specified in a processed SVG will be those defaults with class "default".
 }
 
 \section{Gradients}{

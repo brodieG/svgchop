@@ -16,7 +16,7 @@
 
 ## ToDo
 
-* Approximate fill
+* Hide defs
 
 * Add the remaining shapes?
 
@@ -31,10 +31,9 @@
 
 * "oddeven" etc. fill rules
 
-* Should have option not to apply transforms, or make it an explicit
-  post-process option in case some rendering interfaces prefer to receive that
-  transform matrix directly.  Applying transform will need to recompute the
-  extents.
+* Check that transform=FALSE actually works (not sure it does).
+
+* Add a mechanism to apply transform ex-post (including recomputing extents).
 
 * When implementing patterns, will need to think about whether to apply them
   truly (i.e. replace target with tessellated and clipped pattern, or just
