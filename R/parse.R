@@ -317,17 +317,17 @@ process_svg <- function(file, steps=10, transform=TRUE) {
 
   # Extract relevant data from XML and convert to nested R list.  Elements
   # coordinates are computed
-  parsed <- lapply(xml, parse_node, steps=steps)
+  tmp <- lapply(xml, parse_node, steps=steps)
 
   # Extract and compute styles for terminal nodes
-  styled <- lapply(parsed, process_css, style.sheet=css)
+  tmp <- lapply(tmp, process_css, style.sheet=css)
 
   # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
   # clip paths, masks, and patterns, although currently only gradients are
   # supported.  These are also extracted from tree into the `url` list.
-  processed <- process_url(styled)
-  url <- attr(processed, 'url')
-  attr(processed, 'url') <- NULL
+  tmp <- process_url(tmp)
+  url <- attr(tmp, 'url')
+  attr(tmp, 'url') <- NULL
 
   # Apply the `url()` elements.  This is most meaningful for clip paths and
   # patterns as we could in theory apply them ourselves here, although probably
@@ -336,13 +336,13 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   # At this time we don't apply any of the url elements directly
 
   # Apply transformations
-  final <- lapply(processed, transform_coords, apply=transform)
+  tmp <- lapply(tmp, transform_coords, apply=transform)
 
   # compute extents
   get_coords <- function(obj, coord)
     if(is.matrix(obj)) obj[coord,] else lapply(obj, get_coords, coord)
-  w.attrs <- lapply(
-    final,
+  tmp <- lapply(
+    tmp,
     function(x) {
       xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
       ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
@@ -351,7 +351,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
       x
   } )
   structure(
-    w.attrs,
+    give_names(tmp),
     class='svg_chopped_list',
     url=url
   )

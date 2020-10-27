@@ -152,6 +152,38 @@ str.svg_chopped_flat <- function(object, give.attr=FALSE, ...) {
 str.svg_chopped_list_flat <- function(object, give.attr=FALSE, ...)
   NextMethod("str", object=object, give.attr=give.attr, ...)
 
+#' Create Names Based on XML Data
+#'
+#' Will recursively traverse lists such as "svg_chopped" object and use the
+#' "xml_name" and "xml_attrs" to create names for the list.  These names are not
+#' intended to be unique, but may be so if elements contain unique "id" XML
+#' attributes.  The purpose of the names is to make the structure of the object
+#' more recognizable when viewed via with e.g. [str.svg_chopped()].
+#'
+#' @export
+#' @param x a list
+#' @return x, but with new names
+
+give_names <- function(x) {
+  if(is.list(x) && length(x)) {
+    x[] <- lapply(x, give_names)
+    names(x) <- vapply(x, make_name, "")
+  }
+  x
+}
+make_name <- function(x) {
+  name <- class <- id <- ""
+  if(!is.null(attr(x, 'xml_name'))) name <- attr(x, 'xml_name')
+  if(!is.null(attr(x, 'xml_attrs'))) {
+    tmp <- attr(x, 'xml_attrs')[['class']]
+    if(is.character(tmp) && length(tmp))
+      class <- paste0(c("", tmp), collapse=".")
+    tmp <- attr(x, 'xml_attrs')[['id']]
+    if(is.character(tmp) && length(tmp))
+      id <- paste0(c("", tmp), collapse="#")
+  }
+  sprintf("%s%s%s", name, id, class)
+}
 
 
 ## Twisted Pyramid
