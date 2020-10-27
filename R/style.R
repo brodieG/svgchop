@@ -19,9 +19,10 @@
 
 STYLE.PROPS.NORM <- c(
   'fill', 'stroke', 'stroke-width', 'stop-color',
-  'stop-opacity'  # should be a cum but we're assuming that doesn't happen
+  'fill-opacity', 'stroke-opacity', 'opacity',
+  'stop-opacity'
 )
-STYLE.PROPS.CUM <- c('fill-opacity', 'stroke-opacity', 'opacity')
+STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 STYLE.PROPS.COLOR <- c('fill', 'stroke', 'stop-color')
 
@@ -247,7 +248,9 @@ proc_computed <- function(x) {
   x[['stroke-width']] <- parse_length(x[['stroke-width']])
 
   # Compute total opacity and report it back.  We do not attach it to an RGB hex
-  # code b/c we might want to use it separately.
+  # code b/c we might want to use it separately.  The `prod` business is
+  # leftover from when we thought we should accumulate opacities, which we don't
+  # do anymore.
   op <- prod(as.numeric(x[['opacity']]), na.rm=TRUE)
   x[['fill-opacity']] <-
     prod(as.numeric(x[['fill-opacity']]), na.rm=TRUE) * op
@@ -271,7 +274,10 @@ parse_inline_style <- function(node, style.prev=style(), style.sheet) {
 
   # Cumulative attributes need to resolve style sheet conflicts now.  Initially
   # we defered computation of class styles to the end, but we have to do it here
-  # for things like transparency.
+  # for things like transparency. UPDATE: this was wrong, it's not clear that
+  # there are actually any style attributes that accumulate this way, so we
+  # could have left it to the end.  For some reason got confused when dealing
+  # with transforms and thinking same thing would happen here.
 
   classes <-
     if(is.null(xml_attr[['class']])) character()

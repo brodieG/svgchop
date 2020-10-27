@@ -108,6 +108,7 @@ parse_transform <- function(node, trans.prev=trans()) {
     if(any(vapply(vals2, anyNA, TRUE)))
       stop('unparseable parameters in SVG transform command')
 
+    cmds.full <- character()
     for(i in seq_along(cmds)) {
       mx.tmp <- diag(3)
       valsi <- vals2[[i]]
@@ -137,7 +138,7 @@ parse_transform <- function(node, trans.prev=trans()) {
         },
         scale={
           if(length(valsi) %in% 1:2) {
-            mx.tmp[1:2,1:2] <- valsi
+            mx.tmp[cbind(1:2, 1:2)] <- valsi
           } else stop('Invalid "scale" transform command')
         },
         skewX={
@@ -159,9 +160,9 @@ parse_transform <- function(node, trans.prev=trans()) {
       )
       mx <- mx %*% mx.tmp
       # for posterity...
-      cmds.full <- sprintf("%s(%s)", cmds, paste0(vals, collapse=", "))
-    }
-  }
+      cmds.full <- c(
+        cmds.full, sprintf("%s(%s)", cmds[[i]], paste0(valsi, collapse=" "))
+  ) } }
   trans(mx, append(trans.prev[['cmds']], list(cmds.full)))
 }
 
