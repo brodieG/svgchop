@@ -37,7 +37,7 @@ STYLE.PROPS.COLOR <- c('fill', 'stroke', 'stop-color')
 
 get_css <- function(xml) {
   parse_css(
-    unlist(lapply(xml_find_all(xml, ".//style"), xml_text))
+    unlist(lapply(xml_find_all(xml, ".//svg:style", NSMAP), xml_text))
   )
 }
 ## Parse a CSS Sheet

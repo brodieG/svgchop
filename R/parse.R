@@ -14,6 +14,15 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
+# We're going to assume that no one is going to provide a different SVG
+# namespace, and if they do, that it's going to be close enough that nothing
+# will go horribly wrong.  Same with xlink.  We do this because of the silly
+# notion of just naming namespace d1, d2, etc., which means we have no idea
+# what namespace d1 actually refers to.
+
+NSMAP <-
+  c(svg="http://www.w3.org/2000/svg", xlink="http://www.w3.org/1999/xlink")
+
 ## @param x named character vector with properties attached to a polygon
 
 parse_poly <- function(x, close=TRUE) {
@@ -107,7 +116,8 @@ parse_use <- function(node, steps) {
   if(!is.na(href) && grepl("^#", href)) {
     ref <- xml_find_first(
       xml_root(node),
-      sprintf('.//*[@id="%s"]', sub("^#", "", href))
+      sprintf('.//svg:*[@id="%s"]', sub("^#", "", href)),
+      ns=NSMAP
     )
     if(is(ref, "xml_missing")) {
       list()
@@ -332,7 +342,7 @@ process_use_node <- function(node.parsed) {
 
 process_svg <- function(file, steps=10, transform=TRUE) {
   vetr(CHR.1, INT.1.POS.STR, LGL.1)
-  xml <- try(xml_ns_strip(read_xml(file)))
+  xml <- try(read_xml(file))
   if(inherits(try, 'try-error'))
     stop(
       "Argument `file` could not be interpreted as an XML file; ",
@@ -343,7 +353,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   # top level svgs, nested ones will just be consumed in recursive traversal
   xml <-
     if(!identical(xml_name(xml), "svg"))
-      xml_find_all(xml,"//svg[not(ancestor::svg)]")
+      xml_find_all(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
     else list(xml)
 
   if(!length(xml))
