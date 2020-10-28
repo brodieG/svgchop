@@ -16,14 +16,14 @@
 
 ## @param x named character vector with properties attached to a polygon
 
-parse_poly <- function(x) {
+parse_poly <- function(x, close=TRUE) {
   if(!"points" %in% names(x)) x[['points']] <- ""
-  raw <- regmatches(x[['points']], gregexpr("-?[0-9.]+", x[['points']]))[[1]]
+  raw <- regmatches(x[['points']], gregexpr(num.pat, x[['points']]))[[1]]
   stopifnot(length(raw) %% 2 == 0)
   coord <- matrix(as.numeric(raw), ncol=2, byrow=TRUE)
   # remove sequential duplicates
   coord <- coord[c(TRUE, rowSums(coord[-1L,] == coord[-nrow(coord),]) < 2),]
-  coords <- if(nrow(coord)) {
+  coords <- if(nrow(coord) && close) {
     # close poly if isn't already closed
     if(any(coord[1,] != coord[nrow(coord),])) {
       coord <- rbind(coord, coord[1,])
@@ -32,8 +32,10 @@ parse_poly <- function(x) {
   } else {
     rbind(x=numeric(), y=numeric())
   }
-  attr(coords, "closed") <- TRUE
+  attr(coords, "closed") <- close
+  coords
 }
+
 ## @inheritParams parse_poly
 
 parse_rect <- function(x) {
@@ -62,6 +64,17 @@ parse_rect <- function(x) {
   p <- paste(xs, ys, sep=",", collapse=" ")
   parse_poly(c(list(points=p), x[!props %in% base.props]))
 }
+parse_line <- function(x) {
+  props <- names(x)
+  if(any(c('pathLength') %in% props))
+    warning('"pathLength" property on "line" not supported')
+
+  base.props <- c('x1', 'y1', 'x2', 'y2')
+  points <- x[base.props]
+  points[is.na(points)] <- 0
+  p <- paste(points[c(1, 3)], points[c(2, 4)], sep=",", collapse=" ")
+  parse_poly(c(list(points=p), x[!props %in% base.props]), close=FALSE)
+}
 parse_circle <- function(x, steps) {
   x[c('rx', 'ry')] <- x['r']
   props <- names(x)
@@ -80,6 +93,7 @@ parse_ellipse <- function(x, steps) {
   angles <- seq(0, 2 * pi, length.out=steps + 1)
   res <- (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]
   attr(res, 'closed') <- TRUE
+  res
 }
 ## Parse use link
 ##
@@ -191,12 +205,11 @@ process_use_node <- function(node.parsed) {
 #'
 #' @section Elements:
 #'
-#' Currently svg "path", "rect", "polygon", "circle", and "ellipse"  elements
-#' are supported to varying degrees.  Every command for "path" in the SVG 1.1
-#' spec is implemented (MZLHVCSQTA, and the relative equivalents).  "rect" does
-#' not support rounded corners, and "ellipse" does not support "auto" values for
-#' "rx" and "ry" (that is the default, but we assume 0).  "pathLength" is not
-#' supported on any element.
+#' The basic elements "line", "rect", "polygon", "polyline", "circle",
+#' "ellipse", and "path" (with all commands in the SVG 1.1 spec) are
+#' implemented.  "rect" does not support rounded corners, and "ellipse" does not
+#' support "auto" values for "rx" and "ry" (that is the default, but we assume
+#' 0).  "pathLength" is not supported on any element.
 #'
 #' XML attribute data is processed to compute x and y coordinates for a set of
 #' vertices that approximates the outline of each element.  These are stored as
@@ -440,6 +453,8 @@ parse_element <- function(node, steps) {
   res <- switch(name,
     path=parse_path(attrs, steps),
     polygon=parse_poly(attrs),
+    polyline=parse_poly(attrs, close=FALSE),
+    line=parse_line(attrs),
     rect=parse_rect(attrs),
     circle=parse_circle(attrs, steps),
     ellipse=parse_ellipse(attrs, steps),
