@@ -150,14 +150,14 @@ process_use_node <- function(node.parsed) {
 #' followed so do not expect outputs to be exactly the same as in a conforming
 #' SVG rendering engine.  This function is experimental and the API and
 #' structure of the return value will likely change in future versions.  The
-#' code is optimized neither for speed nor size of output.
+#' code is optimized neither for speed nor memory use.
 #'
 #' @section Details:
 #'
 #' The primary objective of this function is to compute vertex coordinates for
 #' polygons and polylines that approximate SVG display elements so that they may
-#' be used elsewhere.  In particular, we wrote this code to make it easier to
-#' render extruded SVG objects in 3D with
+#' be used elsewhere.  We wrote this code to make it easier to render extruded
+#' SVG objects in 3D with
 #' [`rayrender`](https://cran.r-project.org/package=rayrender).  See the
 #' implementation of the `plot.svg_chopped` for ideas on how to extract the data
 #' for your own use.
@@ -374,7 +374,9 @@ process_svg <- function(file, steps=10, transform=TRUE) {
 
   # compute extents
   get_coords <- function(obj, coord)
-    if(is.matrix(obj)) obj[coord,] else lapply(obj, get_coords, coord)
+    if(is.matrix(obj)) obj[coord,]
+    else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)
+
   tmp <- lapply(
     tmp,
     function(x) {
@@ -488,7 +490,7 @@ parse_node <- function(node, steps, defs=FALSE) {
     # Non-terminal node, recurse
     lapply(
       xml_children(node), parse_node, steps=steps,
-      defs=tolower(xml_name(node)) == 'defs'
+      defs=defs || tolower(xml_name(node)) == 'defs'
     )
   } else {
     # Parse terminal node

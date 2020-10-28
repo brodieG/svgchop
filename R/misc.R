@@ -51,7 +51,7 @@ flatten.default <- function(x, ...)
 flatten_rec <- function(x) {
   if(inherits(x, 'hidden')) list()
   else if(!is.list(x)) setNames(list(x), attr(x, 'xml_name'))
-  else  unlist(lapply(x, flatten_rec), recursive=FALSE)
+  else  unlist(unname(lapply(x, flatten_rec)), recursive=FALSE)
 }
 #' @rdname flatten
 #' @export
@@ -59,7 +59,8 @@ flatten_rec <- function(x) {
 flatten.svg_chopped <- function(x, ...) {
   res <- flatten_rec(x)
   names <- names(res)
-  attributes(res) <- attributes(x)
+  attrs <- attributes(x)
+  attributes(res) <- attrs[names(attrs) != 'names']
   names(res) <- sprintf("[%s] %s", format(seq_along(names)), names)
   class(res) <- "svg_chopped_flat"
   res
