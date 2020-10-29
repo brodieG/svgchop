@@ -1,3 +1,4 @@
+
 ## Not Supported
 
 * Text
@@ -16,15 +17,17 @@
 
 ## ToDo
 
-* Hide defs
+* More complex example with more:
+    * shapes
+    * transforms, including accumulated ones
+    * styles from classes, ids, and maybe both?
+    * And inline?
+    * evenodd vs not example?
 
-* Add the remaining shapes?
-
-* Think more carefully about how we want to handle path closing.  Should only
-  explicitly closed paths be marked as closed (YES)?  Should open paths be drawn
-  with both a polypath with NA stroke and a line to replicate how they are
-  rendered by SVG renderers (MAYBE - not worth spending a lot of time on the
-  plot method)?
+* Should open paths be drawn with both a polypath with NA stroke and a line to
+  replicate how they are rendered by SVG renderers (MAYBE - not worth spending a
+  lot of time on the plot method)?  Need to distinguish straight lines
+  from things that have an actual area.
 
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.
@@ -39,6 +42,17 @@
   truly (i.e. replace target with tessellated and clipped pattern, or just
   compute the un-transformed pattern).
 
+## Lit Review
+
+On further inspection, seems like there is some stuff we could have used from
+NPM to first compute the "cannonicalized" (C only) shape, and then breaking it
+up:
+
+* https://github.com/mattdesl/svg-mesh-3d
+* https://github.com/jkroso/normalize-svg-path/blob/master/index.js
+* https://github.com/fontello/svgpath
+
+Would have saved re-implementing some stuff.
 
 ## Gradients
 

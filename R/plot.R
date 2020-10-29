@@ -88,9 +88,12 @@ plot_list <- function(x, ask, ...) {
 ## Internal: plot either normal or flat chopped
 
 plot_one <- function(x, ...) {
-  url <- attr(x, 'url')
+  url <- attr(x, 'url')   # gradients, patterns, etc., stored here
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
+
+  # Compute plot dimensions in user units using viewBox info if availble, and if
+  # not from the pre-computed extents attributes
 
   vb <- attr(x, 'viewBox')
   extents <- attr(x, 'extents')
@@ -116,7 +119,8 @@ plot_one <- function(x, ...) {
   plot.new()
   plot.window(c(x0, x0 + width), c(y0 + height, y0), asp=1)
 
-  # lwd = 1 taken to be 1/96th of an inch
+  # Map stroke width to lwd, we assume lwd = 1 taken to be 1/96th of an inch
+  # and compute "pixels" per inch based on most limiting dimension
   pin <- par('pin')
   asp.p <- pin[2] / pin[1]
   if(asp > asp.p) {
@@ -126,6 +130,8 @@ plot_one <- function(x, ...) {
   }
   ptolwd <- ppi / 96
 
+  # Flatten makes it easier to iterate through structure, but also removes all
+  # "hidden elements" so they are not plotted
   mats <- if(!inherits(x, 'svg_chopped_flat')) flatten(x) else x
   for(i in seq_along(mats)) {
     mat <- mats[[i]]
@@ -133,21 +139,29 @@ plot_one <- function(x, ...) {
     fill <- stroke <- stroke.width <- NA
     fill.rule <- 'winding'
     if(!is.null(style)) {
-      # Fill could be specified via `url(#id)`
+      # Fill could be specified via `url(#id)` so we need to translate that if
+      # possible into something the device can recognize.  More complex logic
+      # would be required to specify patterns, or the actual gradient, etc.
       fill <- approximate_fill(style[['fill']], url)
       stroke <- style[['stroke']]
+
+      # Here we apply alpha by generating 8 char hex codes (e.g. #FFFFFFCC)
       fill <- append_alpha(fill, style[['fill-opacity']])
       stroke <- append_alpha(stroke, style[['stroke-opacity']])
+
       stroke.width <- style[['stroke-width']]
       fill.rule <- c(evenodd='evenodd', nonzero='winding')[style[['fill-rule']]]
       if(is.na(fill.rule)) fill.rule <- 'winding'
     }
     stroke.width <- stroke.width / ptolwd
 
-    # Are all paths closed (note lose attributes after starts business)
+    # Retrieve `closed` attribute which designates which sub-paths are closed.
+    # We don't use it here but in the SVG spec it changes how the line butts are
+    # displayed when the start and end-point overlap.
     closed <- all(attr(mat, 'closed'))
 
-    # Handle holes / sub-paths by adding NAs
+    # Split sub-paths using the "starts" attribute.  Sub-paths may create holes
+    # in the polygons.
     if(is.numeric(attr(mat, 'starts'))) {
       idx <- rep(
         seq_len(ncol(mat)),
