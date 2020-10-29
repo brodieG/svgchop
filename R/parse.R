@@ -29,7 +29,7 @@ parse_poly <- function(x, close=TRUE) {
   if(!"points" %in% names(x)) x[['points']] <- ""
   raw <- regmatches(x[['points']], gregexpr(num.pat, x[['points']]))[[1]]
   stopifnot(length(raw) %% 2 == 0)
-  coords <- matrix(as.numeric(raw), ncol=2)
+  coords <- matrix(as.numeric(raw), nrow=2)
   # We used to remove sequential duplicates, but that my cause problems
   # downstream so now we don't anymore
 
