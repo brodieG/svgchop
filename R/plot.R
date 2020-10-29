@@ -131,6 +131,7 @@ plot_one <- function(x, ...) {
     mat <- mats[[i]]
     style <- attr(mat, 'style-computed')
     fill <- stroke <- stroke.width <- NA
+    fill.rule <- 'winding'
     if(!is.null(style)) {
       # Fill could be specified via `url(#id)`
       fill <- approximate_fill(style[['fill']], url)
@@ -138,6 +139,8 @@ plot_one <- function(x, ...) {
       fill <- append_alpha(fill, style[['fill-opacity']])
       stroke <- append_alpha(stroke, style[['stroke-opacity']])
       stroke.width <- style[['stroke-width']]
+      fill.rule <- c(evenodd='evenodd', nonzero='winding')[style[['fill-rule']]]
+      if(is.na(fill.rule)) fill.rule <- 'winding'
     }
     stroke.width <- stroke.width / ptolwd
 

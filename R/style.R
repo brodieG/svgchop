@@ -18,9 +18,10 @@
 ## special handling (only transparency ones for the time being).
 
 STYLE.PROPS.NORM <- c(
-  'fill', 'stroke', 'stroke-width', 'stop-color',
-  'fill-opacity', 'stroke-opacity', 'opacity',
-  'stop-opacity'
+  'fill', 'stroke', 'fill-opacity', 'fill-rule',
+  'stroke-width', 'stroke-opacity',
+  'opacity',
+  'stop-color', 'stop-opacity'
 )
 STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
@@ -251,12 +252,14 @@ proc_computed <- function(x) {
   if(is.na(x[['fill']]))
     x[['fill']] <- structure('#000000', class="default")
   if(x[['fill']] == 'none') x[['fill']] <- NA_character_
+  if(is.na(x[['fill-rule']]))
+    x[['fill-rule']] <- structure("nonzero", class="default")
   if(!is.na(x[['stroke']]) && x[['stroke']] == 'none')
     x[['stroke']] <- NA_character_
   if(is.na(x[['stop-color']]))
     x[['stop-color']] <- structure('#000000', class="default")
   if(x[['stop-color']] == 'none') x[['stop-color']] <- NA_character_
-  if(is.na(x[['stroke-width']])) 
+  if(is.na(x[['stroke-width']]))
     x[['stroke-width']] <- structure("1", class="default")
   x[['stroke-width']] <- parse_length(x[['stroke-width']])
 
