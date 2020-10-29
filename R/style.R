@@ -83,39 +83,42 @@ parse_css <- function(x) {
   m <- regmatches(
     x, gregexec("\\s*([^{]*)\\s*\\{([^}]*?)\\}", x, perl=TRUE)
   )[[1]]
-  if(!length(m) || length(m) %% 3)
-    stop("CSS style sheet not in recognized format.")
 
-  rules <- lapply(m[seq(3, length(m), by=3)], parse_css_rule)
-  selectors <- lapply(m[seq(2, length(m), by=3)], parse_css_selector)
+  res <- if(length(m) && !(length(m) %% 3)) {
+    rules <- lapply(m[seq(3, length(m), by=3)], parse_css_rule)
+    selectors <- lapply(m[seq(2, length(m), by=3)], parse_css_selector)
 
-  # for each rule, we want it linked to the class / id:
-  # order so id selectors are last
-  #
-  # rule_name - class/id - value
-  # rule_name - selector - value
+    # for each rule, we want it linked to the class / id:
+    # order so id selectors are last
+    #
+    # rule_name - class/id - value
+    # rule_name - selector - value
 
-  tmp <- Map(
-    function(rule, selector) {
-      nm <- rep(names(rule), each=length(selector))
-      rl <- rep(unname(rule), each=length(selector))
-      sel <- rep(selector, length(rule))
-      split(data.frame(selector=sel, value=rl), nm)
-    },
-    rules,
-    selectors
-  )
-  res <- setNames(
-    lapply(
-      lapply(STYLE.PROPS, function(x) lapply(tmp, '[[', x)),
-      function(y) {
-        z <- do.call(rbind, y)
-        # make sure ids go last for higher priority during matching
-        z[order(substr(z[['selector']], 1, 1) == "#"),]
-      }
-    ),
-    STYLE.PROPS
-  )
+    tmp <- Map(
+      function(rule, selector) {
+        nm <- rep(names(rule), each=length(selector))
+        rl <- rep(unname(rule), each=length(selector))
+        sel <- rep(selector, length(rule))
+        split(data.frame(selector=sel, value=rl), nm)
+      },
+      rules,
+      selectors
+    )
+    setNames(
+      lapply(
+        lapply(STYLE.PROPS, function(x) lapply(tmp, '[[', x)),
+        function(y) {
+          z <- do.call(rbind, y)
+          # make sure ids go last for higher priority during matching
+          z[order(substr(z[['selector']], 1, 1) == "#"),]
+        }
+      ),
+      STYLE.PROPS
+    )
+  } else {
+    warning("CSS style sheet not in recognized format.")
+    list()
+  }
   structure(res, class="css")
 }
 parse_css_rule <- function(x) {
