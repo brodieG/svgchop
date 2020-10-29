@@ -26,6 +26,19 @@ STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 STYLE.PROPS.COLOR <- c('fill', 'stroke', 'stop-color')
 
+#' Report What Styles Are Computed
+#'
+#' `svgchop` computes a small subset of style attributess based on element
+#' attributes, CSS style sheets, and inheritance.  This function returns which
+#' styles receive that treatment.
+#'
+#' @return character names of styles computed by `svgchop`
+#' @export
+#' @examples
+#' styles_computed()
+
+styles_computed <- function() STYLE.PROPS
+
 ## Retrieve and Parse All CSS Style Sheets
 ##
 ## Operating under the assumption that any style sheet, anywhere on the page

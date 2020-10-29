@@ -257,11 +257,12 @@ process_use_node <- function(node.parsed) {
 #'
 #' @section Styling:
 #'
-#' Style attributes attached directly to elements, whether as "style" attributes
-#' or explicitly as e.g. a "fill" attribute, are parsed and interpreted.  CSS
-#' styles are also processed, but support is limited to direct match
-#' lookups on ASCII class-only and id-only selectors (i.e. no hierarchies,
-#' properties, etc.).
+#' Some style attributes attached directly to elements, whether as "style"
+#' attributes or explicitly as e.g. a "fill" attribute, are parsed and
+#' interpreted.  CSS styles are also processed, but support is limited to direct
+#' match lookups on ASCII class-only and id-only selectors (i.e. no hierarchies,
+#' properties, etc.).  [styles_computed()] returns a list of the styles that
+#' `svgchop` currently computes.
 #'
 #' CSS support is likely to be particularly fragile as the CSS parsing is regex
 #' based and only simple ASCII-only class and id selectors are supported.
@@ -316,7 +317,8 @@ process_use_node <- function(node.parsed) {
 #' support for these instructions may be added in the future.  Or not.
 #'
 #' @export
-#' @seealso [plot.svg()], [flatten()] for an easier-to-manage data structure.
+#' @seealso [plot.svg()], [flatten()] for an easier-to-manage data structure,
+#'   [styles_computed()] for what styles are actively processed.
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #'   xml_text xml_length xml_children xml_attr xml_find_first xml_root
 #'   xml_parents
