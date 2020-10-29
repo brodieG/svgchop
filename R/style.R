@@ -132,13 +132,16 @@ parse_css_rule <- function(x) {
   setNames(m[seq(3, length(m), by=3)], m[seq(2, length(m), by=3)])
 }
 parse_css_selector <- function(x) {
+  x <- trimws(x)
   sel <- strsplit(x, ",")[[1]]
   m <- regmatches(
-    sel, regexec("^\\h*\\*?(?:([.#][0-9a-zA-Z_\\-]+))", sel)
+    sel, regexec("^\\h*\\*?(?:([.#][0-9a-zA-Z_\\-]+|\\*))", sel, perl=TRUE)
   )
-  if(!all(lengths(m) == 2))
-    stop("CSS selector not in recognized format.")
+  bad <- lengths(m) != 2
+  if(any(bad))
+    warning("CSS selector \"", trimws(x), "\" contains unrecognized tokens.")
 
+  m[bad] <- replicate(sum(bad), character(2), simplify=FALSE)
   vapply(m, '[', "", 2)
 }
 
