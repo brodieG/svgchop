@@ -153,11 +153,16 @@ plot_one <- function(x, ...) {
       idx[duplicated(idx)] <- NA
       mat <- mat[,idx]
     }
-    # plot
-    if(closed) polypath(t(mat), col=fill, border=stroke, lwd=stroke.width, ...)
-    else lines(t(mat), col=stroke, lwd=stroke.width, ...)
+    # We use polypath for the fill, and lines for the stroke; whether a polygon
+    # looks closed or not will be a matter of the lines forming a closed
+    # outline.
+
+    if(ncol(mat) > 2) {
+      m <- t(mat)
+      polypath(m, col=fill, border=NA, rule=fill.rule, ...)
+      lines(m, col=stroke, lwd=stroke.width, ...)
+    }
   }
   invisible(x)
-
 }
 

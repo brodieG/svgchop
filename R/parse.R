@@ -29,18 +29,14 @@ parse_poly <- function(x, close=TRUE) {
   if(!"points" %in% names(x)) x[['points']] <- ""
   raw <- regmatches(x[['points']], gregexpr(num.pat, x[['points']]))[[1]]
   stopifnot(length(raw) %% 2 == 0)
-  coord <- matrix(as.numeric(raw), ncol=2, byrow=TRUE)
-  # remove sequential duplicates
-  coord <- coord[c(TRUE, rowSums(coord[-1L,] == coord[-nrow(coord),]) < 2),]
-  coords <- if(nrow(coord) && close) {
-    # close poly if isn't already closed
-    if(any(coord[1,] != coord[nrow(coord),])) {
-      coord <- rbind(coord, coord[1,])
-    }
-    rbind(x=coord[,1], y=coord[,2])
-  } else {
-    rbind(x=numeric(), y=numeric())
-  }
+  coords <- matrix(as.numeric(raw), ncol=2)
+  # We used to remove sequential duplicates, but that my cause problems
+  # downstream so now we don't anymore
+
+  # Close poly if isn't already closed
+  if(ncol(coords) && close && any(coords[,1] != coords[,1]))
+    coord <- cbind(coord, coord[,1])
+
   attr(coords, "closed") <- close
   coords
 }
