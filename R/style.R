@@ -167,7 +167,7 @@ parse_css_selector <- function(x) {
   # additional generated values re-inserted into the vector in the right order
   postfix <- as.list(good[3,])
   postfix.wild <- !nzchar(good[3,])
-  postfix[postfix.wild] <- list(c("#*", ".*"))
+  postfix[postfix.wild] <- list(c(".*", "#*"))
   p.lens <- lengths(postfix)
   good.cat <- paste0(rep(good[2,], p.lens), unlist(postfix))
 
@@ -239,6 +239,7 @@ compute_prop <- function(
   # element and id, and finally any specified via inline css
   search <- c(
     'prop',
+    '*.*', '*#*',
     paste0(rep_len("*.", length(classes)), classes),
     paste0(rep_len("*#", length(id)), id),
     paste0(rep_len(sprintf("%s.", name), length(classes)), classes),
