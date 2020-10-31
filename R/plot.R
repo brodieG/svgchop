@@ -174,7 +174,7 @@ plot_one <- function(x, ...) {
     # looks closed or not will be a matter of the lines forming a closed
     # outline.
 
-    if(ncol(mat) > 2) {
+    if(ncol(mat) > 1) {
       m <- t(mat)
       polypath(m, col=fill, border=NA, rule=fill.rule, ...)
       lines(m, col=stroke, lwd=stroke.width, ...)
