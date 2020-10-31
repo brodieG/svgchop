@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 100 100"
+     width="500px" height="500px"
+     >
+<defs>
+  <style><![CDATA[
+      *              {fill-opacity: .5; stroke: black;}
+      polyline       {stroke: blue; stroke-width: 2;}
+      #frame         {fill: transparent;}
+      #circ-ctrl     {fill: red; fill-opacity: 1;}
+      #circ-end      {fill: blue; fill-opacity: 1;}
+      line           {stroke: green;}
+      .circle-scaled {fill: blue;}
+      .no-fill       {fill: none;}
+      #random-poly   {fill: green;}
+      .polygon       {fill: red;}
+    ]]>
+  </style>
+  <rect id="rect-base" x="20" y="20" width="60" height="60"/>
+  <circle id="circ-base" cx="50" cy="50" r="30"/>
+  <circle id="circ-ctrl" r="3"/>
+  <circle id="circ-end" r="3"/>
+  <line id="line-base" x1="20" y1="20" x2="80" y2="80"/>
+  <ellipse id="ellipse-base" cx="50" cy="50"/>
+</defs>
+
+<rect id="frame" width="100" height="100" stroke="blue"/>
+<g transform="scale(.3333333333)">
+  <g id="row-1">
+    <use xlink:href="#rect-base" />
+    <use xlink:href="#rect-base" transform="rotate(45 50 50)"/>
+    <g transform="translate(100 0)">
+      <use fill="pink" xlink:href="#circ-base"/>
+      <use
+        class="circle-scaled"
+        fill="pink"
+        xlink:href="#circ-base"
+        transform="translate(50 50) scale(.25 1) translate(-50 -50)"/>
+      <use
+        class="circle-scaled"
+        fill="pink"
+        style="fill: gold"
+        xlink:href="#circ-base"
+        transform="translate(50 50) scale(1 .25) translate(-50 -50)"/>
+    </g>
+    <g transform="translate(200 0)">
+      <use xlink:href="#line-base"/>
+    </g>
+  </g>
+  <g id="row-2" transform="translate(0 100)">
+    <polyline points="20,20 40,60 60,20 80,80" stroke="blue"/>
+    <g transform="translate(100 0)">
+      <polyline class="no-fill" points="20,20 40,60 60,20 80,80" stroke="blue"/>
+    </g>
+    <g transform="translate(200 0)">
+      <use fill="pink" xlink:href="#circ-base"/>
+      <ellipse
+        cx="50" cy="50" rx="7.5" ry="30"
+        transform="rotate(45 50 50)"
+        fill="orange"
+        />
+      <ellipse
+        cx="50" cy="50" ry="7.5" rx="30"
+        transform="rotate(45 50 50)"
+        fill="silver"/>
+        <!--
+        -->
+    </g>
+  </g>
+  <g id="row-3" transform="translate(0 200)">
+    <g id="funky-path">
+      <path d="M20 50C10 5 70 70 80 50S60 40 80 20"/>
+      <use xlink:href='#circ-ctrl' x="10" y="5" />
+      <use xlink:href='#circ-ctrl' x="70" y="70" />
+      <use xlink:href='#circ-ctrl' x="60" y="40" />
+      <use xlink:href='#circ-end' x="20" y="50" />
+      <use xlink:href='#circ-end' x="80" y="50" />
+      <use xlink:href='#circ-end' x="80" y="20" />
+    </g>
+    <g transform="translate(100 0)">
+      <g transform="translate(50, 0) scale(.5 1)">
+        <path d="M20 50C10 5 70 70 80 50S60 40 80 20Z"/>
+        <use xlink:href='#circ-ctrl' x="10" y="5" />
+        <use xlink:href='#circ-ctrl' x="70" y="70" />
+        <use xlink:href='#circ-ctrl' x="60" y="40" />
+        <use xlink:href='#circ-end' x="20" y="50" />
+        <use xlink:href='#circ-end' x="80" y="50" />
+        <use xlink:href='#circ-end' x="80" y="20" />
+      </g>
+      <g transform="translate(50 0) scale(.5 1) matrix(-1 0 0 1 1 1)">
+        <path d="M20 50C10 5 70 70 80 50S60 40 80 20Z"/>
+        <use xlink:href='#circ-ctrl' x="10" y="5" />
+        <use xlink:href='#circ-ctrl' x="70" y="70" />
+        <use xlink:href='#circ-ctrl' x="60" y="40" />
+        <use xlink:href='#circ-end' x="20" y="50" />
+        <use xlink:href='#circ-end' x="80" y="50" />
+        <use xlink:href='#circ-end' x="80" y="20" />
+      </g>
+    </g>
+    <g transform="translate(200 0)">
+      <polygon id="random-poly" points="20,20 80,50 20,80 40,50"/>
+    </g>
+  </g>
+  <!--
+  </g>
+  -->
+</g>
+</svg>
+

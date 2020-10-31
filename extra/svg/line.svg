@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 100 100"
+     width="500px" height="500px"
+     >
+  <defs>
+    <style><![CDATA[
+        *                   {fill-opacity: .5; stroke: black;}
+        line                {stroke: green;}
+        /* a more challenging {one} */
+        #id-1, line.cl-2,
+        bad .selector       {stroke: red;
+                            stroke-opacity: 0.3
+                            }
+
+      ]]>
+    </style>
+    <line id="line-base" x1="20" y1="20" x2="80" y2="80"/>
+  </defs>
+  <use xlink:href="#line-base"/>
+  <line id="id-1" x1="20" y1="20" x2="80" y2="80" transform='translate(0 5)'/>
+  <line
+    class="cl-2" x1="20" y1="20" x2="80" y2="80" transform='translate(0 -5)'
+  />
+</svg>
