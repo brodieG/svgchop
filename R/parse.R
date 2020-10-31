@@ -90,10 +90,12 @@ parse_ellipse <- function(x, steps) {
   if(any(c('pathLength') %in% props))
     warning('"pathLength" property "circle/ellipse"')
 
-  # this is not quite right, ellipses default to 'auto' rx and ry, which we
-  # don't support.  It's right for circles though
+  # Unspecified attributes set to 0.  this is not quite right, ellipses default
+  # to 'auto' rx and ry, which we don't support.  It's right for circles though.
 
-  lens <- parse_length(x[c('cx', 'cy', 'rx', 'ry')])
+  key.props <- setNames(rep("0", 4), c('cx', 'cy', 'rx', 'ry'))
+  x <- c(x, key.props[!names(key.props) %in% props])
+  lens <- parse_length(unname(x[c('cx', 'cy', 'rx', 'ry')]))
   lens[is.na(lens)] <- 0
   angles <- seq(0, 2 * pi, length.out=steps + 1)
   res <- (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]

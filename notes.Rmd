@@ -17,6 +17,9 @@
 
 ## ToDo
 
+* Do we want to parse width/height so that stroke width ends up reasonable?
+  Need to handle cases where aspect ratio of width/height 
+
 * Named colors not the same as HTML named colors.
 
 * More complex example with more:
@@ -35,6 +38,9 @@
 
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.
+
+* Include mixed units in the "not supported" alerts, or maybe just non-pixel
+  units.
 
 * "oddeven" etc. fill rules
 
