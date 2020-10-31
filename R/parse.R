@@ -34,8 +34,8 @@ parse_poly <- function(x, close=TRUE) {
   # downstream so now we don't anymore
 
   # Close poly if isn't already closed
-  if(ncol(coords) && close && any(coords[,1] != coords[,1]))
-    coord <- cbind(coord, coord[,1])
+  if(ncol(coords) && close && any(coords[,1] != coords[,-1]))
+    coords <- cbind(coords, coords[,1])
 
   attr(coords, "closed") <- close
   coords
@@ -59,12 +59,16 @@ parse_rect <- function(x) {
     stop('"rect" can only be processed if all base properties are numeric')
 
   xs <- c(
-    coords['x'], coords['x'] + coords['width'],
-    coords['x'] + coords['width'], coords['x']
+    coords['x'],
+    coords['x'] + coords['width'],
+    coords['x'] + coords['width'],
+    coords['x']
   )
   ys <- c(
-    coords['y'], coords['y'],
-    coords['y'] + coords['height'], coords['y'] + coords['height']
+    coords['y'],
+    coords['y'],
+    coords['y'] + coords['height'],
+    coords['y'] + coords['height']
   )
   p <- paste(xs, ys, sep=",", collapse=" ")
   parse_poly(c(list(points=p), x[!props %in% base.props]))
