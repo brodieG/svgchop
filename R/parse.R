@@ -259,13 +259,25 @@ process_use_node <- function(node.parsed) {
 #'
 #' Some style attributes attached directly to elements, whether as "style"
 #' attributes or explicitly as e.g. a "fill" attribute, are parsed and
-#' interpreted.  CSS styles are also processed, but support is limited to direct
-#' match lookups on ASCII class-only and id-only selectors (i.e. no hierarchies,
-#' properties, etc.).  [styles_computed()] returns a list of the styles that
-#' `svgchop` currently computes.
+#' interpreted.  Some CSS styles are also processed (see [styles_computed()] for
+#' supported styled), but selector matching is limited to direct match lookups
+#' on class-only and id-only selectors (i.e. no hierarchies, properties, etc.).
+#' For example, the following selectors are supported:
 #'
-#' CSS support is likely to be particularly fragile as the CSS parsing is regex
-#' based and only simple ASCII-only class and id selectors are supported.
+#' * "*"
+#' * "*.class"
+#' * "rect.class"
+#' * "rect#id"
+#' * ".class"
+#' * "#id"
+#'
+#' Here are some examples of things that **do not** work:
+#'
+#' * "g class"        (element of class "class" a descendant of a "g" element)
+#' * "*.class.klass"  (two classes)
+#'
+#' Style sheets are parsed with regex, so parsing may fail if you have
+#' particularly pathological text therein.
 #'
 #' Styles, classes, and ids are accumulated through element generations and
 #' computed into the "styles-computed" attribute of the terminal nodes, which is
@@ -392,6 +404,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
       ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
       attr(x, 'extents') <- list(x=xs, ys=ys)
       attr(x, 'url') <- url
+      attr(x, 'css') <- css
       x
   } )
   structure(
