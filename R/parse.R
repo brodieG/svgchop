@@ -410,7 +410,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   structure(
     give_names(tmp),
     class='svg_chopped_list',
-    url=url
+    url=url, css=css
   )
 }
 num.pat.core <- "(-?\\d*\\.?\\d+)"
