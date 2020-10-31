@@ -17,12 +17,16 @@
 
 ## ToDo
 
+* Named colors not the same as HTML named colors.
+
 * More complex example with more:
     * shapes
     * transforms, including accumulated ones
     * styles from classes, ids, and maybe both?
     * And inline?
     * evenodd vs not example?
+
+* Do we actually support `use_svg`
 
 * Should open paths be drawn with both a polypath with NA stroke and a line to
   replicate how they are rendered by SVG renderers (MAYBE - not worth spending a

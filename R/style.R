@@ -165,6 +165,7 @@ parse_css_selector <- function(x) {
   # infer "*" if unspecified class/id selector and generate both the class and
   # id selector.  Most of the complication that follows is trying to get the
   # additional generated values re-inserted into the vector in the right order
+  # UPDATE: it's not obvious that we need "*.*" and "*#*"?
   postfix <- as.list(good[3,])
   postfix.wild <- !nzchar(good[3,])
   postfix[postfix.wild] <- list(c(".*", "#*"))
@@ -223,6 +224,7 @@ update_style <- function(old, new) {
 compute_prop <- function(
   x, style.prev, inline, props, style.sheet, classes, id, name
 ) {
+  # if(x == 'stroke') browser()
   prop <- props[x]
   inline <- inline[x]
   css <- style.sheet[[x]]
@@ -239,7 +241,7 @@ compute_prop <- function(
   # element and id, and finally any specified via inline css
   search <- c(
     'prop',
-    '*.*', '*#*',
+    '*.*', '*#*', 'line.*', 'line#*',
     paste0(rep_len("*.", length(classes)), classes),
     paste0(rep_len("*#", length(id)), id),
     paste0(rep_len(sprintf("%s.", name), length(classes)), classes),
