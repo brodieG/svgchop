@@ -21,9 +21,9 @@ described by the "d" attribute of the path SVG element \code{x}.  If there is
 more than one sub-path, the starting column of sub-paths following the
 first will be stored as the "starts" attribute of the matrix.  Whether the
 (sub)paths are open or closed is recorded as the "closed" attribute.
-(Sub)paths are considered closed if they end in a "Z" or "z" command, or if
-the last coordinate equals the first (in SVG these two are not the same as
-it affects how the line ends are displayed; we ignore that).
+(Sub)paths are considered closed if they end in a "Z" or "z" command.
+(Sub)paths that end at the starting coordinate, but do not end in "Z" or
+"z", are not considered closed.
 }
 \description{
 Parses the "d" path attribute into X-Y coordinates of line segments collected

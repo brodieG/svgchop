@@ -2,7 +2,7 @@
 % Please edit documentation in R/parse.R
 \name{process_svg}
 \alias{process_svg}
-\title{Convert SVG Elements to Polygons}
+\title{Convert SVG Elements to Polygons or Polylines}
 \usage{
 process_svg(file, steps = 10, transform = TRUE)
 }
@@ -22,20 +22,7 @@ to the computed element coordinates.}
 }
 \value{
 an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
-objects.  Each "svg_chopped" object represents a top level SVG viewport the
-dimensions of which are recorded in the "box" attribute.  Because HTML
-documents may contain multiple top level SVG viewports this function always
-returns an "svg_chopped_list", even for the common case where there is only
-one viewport.  "svg_chopped" objects are recursive lists with \verb{2 x n}
-numeric matrices or empty lists as terminal leaves.  The matrices contain
-the X-Y coordinates of the ordered \code{n} endpoints of the \code{n - 1} line
-segments that the polygon or path representation of the SVG elements
-comprise.  The empty lists correspond to elements that could not be
-processed or simply branches without a displayable terminal object.
-"svg_chopped_list" and "svg_chopped" object may have an "url" attribute,
-which is a list named by the ids of "gradient" and other objects that may
-be referenced via "url(#id)" values for "style-computed" attributes (see
-Styling section).
+objects.  See "Details".
 }
 \description{
 Parse and convert SVG elements into polygons.  SVG transforms are applied to
@@ -45,15 +32,15 @@ style sheets, inline styles and attributes, and are attached as the
 followed so do not expect outputs to be exactly the same as in a conforming
 SVG rendering engine.  This function is experimental and the API and
 structure of the return value will likely change in future versions.  The
-code is optimized neither for speed nor size of output.
+code is optimized neither for speed nor memory use.
 }
 \section{Details}{
 
 
 The primary objective of this function is to compute vertex coordinates for
 polygons and polylines that approximate SVG display elements so that they may
-be used elsewhere.  In particular, we wrote this code to make it easier to
-render extruded SVG objects in 3D with
+be used elsewhere.  We wrote this code to make it easier to render extruded
+SVG objects in 3D with
 \href{https://cran.r-project.org/package=rayrender}{\code{rayrender}}.  See the
 implementation of the \code{plot.svg_chopped} for ideas on how to extract the data
 for your own use.
@@ -61,6 +48,30 @@ for your own use.
 In addition to vertex coordinates, this function will attempt to compute
 styles using an approximation of SVG styling and CSS semantics for a
 limited set of the styles (see the "Styling" section).
+
+The return value is an "svg_chopped_list" object, a list of
+"svg_chopped" objects with some additional meta data attached as attributes.
+Because HTML documents may contain multiple top level SVG viewports this
+function always returns an "svg_chopped_list", even for the common case where
+there is only one viewport.
+
+Each "svg_chopped" object is a recursive list representing a top-level SVG
+viewport.  If the leaves of the tree are known display elements they will
+appear as \verb{2 x n} numeric matrices.  The matrices contain the X-Y coordinates
+of the ordered \code{n} endpoints of the \code{n - 1} line segments that the polygon or
+path representation of the SVG elements comprise.  These matrices may have
+attributes attached that modify how they should be interpreted.  See
+"Elements" section.  If the leaves are not known display elements they will
+appear as empty lists.  There may be terminal elements that are neither lists
+nor matrices (e.g. gradient "stop"s).
+
+SVG meta data such as style sheets, gradients, patterns, may be removed from
+the recursive structure and either re-inserted as attributes to relevant
+child nodes, or stored under the "url" attribute of the "svg_chopped" and
+"svg_chopped_list" objects.  This "url" attribute will be the same for the
+"svg_chopped_list" object and all its child "svg_chopped" objects.  See the
+"Styling", "Gradients", and "Patterns, Masks, and Clip Paths" sections for
+more discussion of this.
 
 Almost all the data present in the SVG document is retained as part of the
 recursive list structure of the return value.  In particular, the list
@@ -81,12 +92,20 @@ switch to preserving units with e.g. \code{\link[grid:unit]{grid::unit()}}.
 \section{Elements}{
 
 
-Currently svg "path", "rect", "polygon", "circle", and "ellipse"  elements
-are supported to varying degrees.  Every command for "path" in the SVG 1.1
-spec is implemented (MZLHVCSQTA, and the relative equivalents).  "rect" does
-not support rounded corners, and "ellipse" does not support "auto" values for
-"rx" and "ry" (that is the default, but we assume 0).  "pathLength" is not
-supported on any element.
+The basic elements "line", "rect", "polygon", "polyline", "circle",
+"ellipse", and "path" (with all commands in the SVG 1.1 spec) are
+implemented.  "rect" does not support rounded corners, and "ellipse" does not
+support "auto" values for "rx" and "ry" (that is the default, but we assume
+0).  "pathLength" is not supported on any element.
+
+XML attribute data is processed to compute x and y coordinates for a set of
+vertices that approximates the outline of each element.  These are stored as
+2 x n matrices.  The attribute "closed" will be set to a logical vector
+representing whether the element should be interpreted as a closed polygon or
+as an open "polyline".  "path" elements may contain sub-paths, and the
+"closed" vector will contain one entry for each sub-path.  The starting
+column in the coordinate matrix for each sub-path is recorded in the "starts"
+attribute.
 
 "g" elements act as containers for child elements and convey their properties
 to them.
@@ -123,38 +142,53 @@ the commands that were processed to produce that matrix as the "cmds" member.
 \section{Styling}{
 
 
-Style attributes attached directly to elements, whether as "style" attributes
-or explicitly as e.g. a "fill" attribute, are parsed and interpreted.  CSS
-styles are also processed, but support is limited to direct match
-lookups on ASCII class-only and id-only selectors (i.e. no hierarchies,
-properties, etc.).
+A subset of the \href{https://www.w3.org/TR/SVG11/styling.html#SVGStylingProperties}{SVG 1.1 styling properties}
+is explicitly computed from the SVG data (see \code{\link[=styles_computed]{styles_computed()}} for the
+list).  Values are taken from the properties defined in-line in the SVG
+elements or its ancestors, CSS style sheets, and in-line "style" properties.
+CSS selector support is limited to direct match lookups on
+"<element>.<class>" or "<element>#<id>" where "*" may be used as a wild card.
+Selector hierarchies, properties, or anything other than basic selectors is
+not supported.  For example, the following selectors are supported:
+\itemize{
+\item "*"
+\item "*.class"
+\item "rect.class"
+\item "rect#id"
+\item ".class"
+\item "#id"
+}
 
-CSS support is likely to be particularly fragile as the CSS parsing is regex
-based and only simple ASCII-only class and id selectors are supported.
+But these are not:
+\itemize{
+\item "g class"        (element of class "class" a descendant of a "g" element)
+\item "*.class.klass"  (two classes)
+}
+
+Style sheets are parsed with regex, so parsing may fail if you have
+particularly pathological text therein.
 
 Styles, classes, and ids are accumulated through element generations and
 computed into the "styles-computed" attribute of the terminal nodes, which is
 a list with scalar elements representing the computed style values.  Missing
-or uncomputable styles are reported as NA.  The computation is \emph{intended} to
-mimic how browsers would interpret style, although on a limited basis that is
-likely incorrect in many cases.
+or uncomputable styles are reported as NA, except in the cases where the spec
+defines default values or it is convenient for us to assert a default.
+Default values will have class "default".  The computation is an
+approximation of what the spec mandates.
 
 Fill and stroke values, with three exceptions, are returned as 6 digit
 hex-codes or NA so that it is easy to append alpha values derived from the
 opacity values.  Supported color formats are 6 digit hex, 3 digit hex, named
-colors in \code{\link[graphics:colors]{graphics::colors()}}, and \code{rgb(x,y,z)} where \code{x}, \code{y}, and
-\code{z} are numeric or percentage values as per the CSS spec.  \verb{url(#id)} values
-are returned as is.  Supported external styling such as gradients will be
-recorded as part of the "svg_chopped_list" object and may be retrieved with
-the \code{\link[=svg_url]{svg_url()}} function.
+colors in \code{\link[=svg_colors_all]{svg_colors_all()}} (the 147 named SVG 1.1 colors), and \code{rgb(x,y,z)}
+where \code{x}, \code{y}, and \code{z} are numeric or percentage values as per the CSS spec.
+\verb{url(#id)} values are returned as is.  Supported external styling such as
+gradients will be recorded as part of the "svg_chopped_list" object and may
+be retrieved with the \code{\link[=svg_url]{svg_url()}} function.
 
 If an element specifies both "opacity" and "stroke-opacity" or
 "fill-opacity", the latter two are multiplied with the value of "opacity".
 Since the "opacity" value is thus reflected in "stroke-opacity" and
 "style-opacity" it is dropped to avoid confusion.
-
-Properties that have defaults specified in the spec and are not otherwise
-specified in a processed SVG will be those defaults with class "default".
 }
 
 \section{Gradients}{
@@ -191,5 +225,6 @@ svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 if(interactive()) plot(svg)
 }
 \seealso{
-\code{\link[=plot.svg]{plot.svg()}}, \code{\link[=flatten]{flatten()}} for an easier-to-manage data structure.
+\code{\link[=plot.svg]{plot.svg()}}, \code{\link[=flatten]{flatten()}} for an easier-to-manage data structure,
+\code{\link[=styles_computed]{styles_computed()}} for what styles are actively processed.
 }

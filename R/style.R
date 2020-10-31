@@ -27,6 +27,27 @@ STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 STYLE.PROPS.COLOR <- c('fill', 'stroke', 'stop-color')
 
+web.colors <- readRDS(system.file('extdata/web-colors.RDS', package='svgchop'))
+
+#' SVG Color to Hex Code Mapping
+#'
+#' A list of the 147 known SVG colors from the
+#' [W3C SVG 1.1. Spec](https://www.w3.org/TR/SVG11/types.html#ColorKeywords).
+#'
+#' @param character of color keywords (names).
+#' @return character vector named with color and with the 6 digit RGB hex code
+#'   as the value.  Unmatched color names return NA.
+#' @examples
+#' svg_colors(c('green', 'plum', 'NOT A REAL COLOR))
+#' length(svg_colors_all()) # 147 named colors
+
+svg_colors <- function(colors) web.colors[tolower(colors)]
+
+#' @rdname svg_colors
+#' @export
+
+svg_colors_all <- function() web.colors
+
 #' Report What Styles Are Computed
 #'
 #' `svgchop` computes a small subset of style attributess based on element
@@ -283,10 +304,10 @@ proc_color <- function(colors) {
   not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
   colors[tolower(colors) == 'transparent'] <- 'none'
   none <- tolower(colors) == 'none'
-  not.color <- not.hex & !is.url & !tolower(colors) %in% colors()
+  not.color <- not.hex & !is.url & !tolower(colors) %in% names(svg_colors_all())
   colors[not.color & !none] <- NA_character_
   colors[!not.color & !none & !is.url] <-
-    rgb(t(col2rgb(colors[!not.color & !none & !is.url])), maxColorValue=255)
+    svg_colors(colors[!not.color & !none & !is.url])
 
   colors
 }

@@ -259,12 +259,16 @@ process_use_node <- function(node.parsed) {
 #'
 #' @section Styling:
 #'
-#' Some style attributes attached directly to elements, whether as "style"
-#' attributes or explicitly as e.g. a "fill" attribute, are parsed and
-#' interpreted.  Some CSS styles are also processed (see [styles_computed()] for
-#' supported styled), but selector matching is limited to direct match lookups
-#' on class-only and id-only selectors (i.e. no hierarchies, properties, etc.).
-#' For example, the following selectors are supported:
+#' A subset of the [SVG 1.1 styling
+#' properties](https://www.w3.org/TR/SVG11/styling.html#SVGStylingProperties)
+#' is explicitly computed from the SVG data (see [styles_computed()] for the
+#' list).  Values are taken from the properties defined in-line in the SVG
+#' elements or its ancestors, CSS style sheets, and in-line "style" properties.
+#' CSS selector support is limited to direct match lookups on
+#' "&#lt;element&gt;.&lt;class&gt;" or "&lt;element&gt;#&lt;id&gt;" where "*"
+#' may be used as a wild card.  Selector hierarchies, properties, or anything
+#' other than basic selectors is not supported.  For example, the following
+#' selectors are supported:
 #'
 #' * "*"
 #' * "*.class"
@@ -273,7 +277,7 @@ process_use_node <- function(node.parsed) {
 #' * ".class"
 #' * "#id"
 #'
-#' Here are some examples of things that **do not** work:
+#' But these are not:
 #'
 #' * "g class"        (element of class "class" a descendant of a "g" element)
 #' * "*.class.klass"  (two classes)
@@ -284,26 +288,24 @@ process_use_node <- function(node.parsed) {
 #' Styles, classes, and ids are accumulated through element generations and
 #' computed into the "styles-computed" attribute of the terminal nodes, which is
 #' a list with scalar elements representing the computed style values.  Missing
-#' or uncomputable styles are reported as NA.  The computation is _intended_ to
-#' mimic how browsers would interpret style, although on a limited basis that is
-#' likely incorrect in many cases.
+#' or uncomputable styles are reported as NA, except in the cases where the spec
+#' defines default values or it is convenient for us to assert a default.
+#' Default values will have class "default".  The computation is an
+#' approximation of what the spec mandates.
 #'
 #' Fill and stroke values, with three exceptions, are returned as 6 digit
 #' hex-codes or NA so that it is easy to append alpha values derived from the
 #' opacity values.  Supported color formats are 6 digit hex, 3 digit hex, named
-#' colors in [graphics::colors()], and `rgb(x,y,z)` where `x`, `y`, and
-#' `z` are numeric or percentage values as per the CSS spec.  `url(#id)` values
-#' are returned as is.  Supported external styling such as gradients will be
-#' recorded as part of the "svg_chopped_list" object and may be retrieved with
-#' the [svg_url()] function.
+#' colors in [svg_colors_all()] (the 147 named SVG 1.1 colors), and `rgb(x,y,z)`
+#' where `x`, `y`, and `z` are numeric or percentage values as per the CSS spec.
+#' `url(#id)` values are returned as is.  Supported external styling such as
+#' gradients will be recorded as part of the "svg_chopped_list" object and may
+#' be retrieved with the [svg_url()] function.
 #'
 #' If an element specifies both "opacity" and "stroke-opacity" or
 #' "fill-opacity", the latter two are multiplied with the value of "opacity".
 #' Since the "opacity" value is thus reflected in "stroke-opacity" and
 #' "style-opacity" it is dropped to avoid confusion.
-#'
-#' Properties that have defaults specified in the spec and are not otherwise
-#' specified in a processed SVG will be those defaults with class "default".
 #'
 #' @section Gradients:
 #'
