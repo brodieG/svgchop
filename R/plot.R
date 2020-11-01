@@ -137,26 +137,19 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   vp.width <- attr(x, 'width')
   vp.height <- attr(x, 'height')
   vp.both <- FALSE
-
-  if(is.na(vp.width) && is.na(vp.height)) {
-    vp.width <- width
-    vp.height <- height
-  } else if (is.na(vp.width) && !is.na(vp.height)) {
-    if(isTRUE(attr(x, 'wh.pct')['height'])) {
-      vp.height <- vp.height / 100 * ppi * pin[2]
-    }
-    vp.width <- vp.height / height * width
-  } else if (is.na(vp.height) && !is.na(vp.width)) {
-    if(isTRUE(attr(x, 'wh.pct')['width'])) {
-      vp.width <- vp.width / 100 * ppi * pin[1]
-    }
-    vp.height <- vp.width / width * height
-  } else {
-    vp.both <- TRUE
-    if(isTRUE(attr(x, 'wh.pct')['height']))
-      vp.height <- vp.height / 100 * ppi * pin[2]
-    if(isTRUE(attr(x, 'wh.pct')['width']))
-      vp.width <- vp.width / 100 * ppi * pin[1]
+  vp.pct <- attr(x, 'wh.pct')
+  if(is.null(vp.pct) || anyNA(vp.pct)) vp.pct <- c(width=FALSE, height=FALSE)
+  if(is.na(vp.width)) {
+    vp.width <- ppi * pin[1]
+    vp.pct['width'] <- TRUE   # Not strictly necessary
+  } else if(vp.pct['width']) {
+    vp.width <- vp.width / 100 * ppi * pin[1]
+  }
+  if(is.na(vp.height)) {
+    vp.height <- ppi * pin[2]
+    vp.pct['height'] <- TRUE   # Not strictly necessary
+  } else if(vp.pct['height']) {
+    vp.height <- vp.height / 100 * ppi * pin[2]
   }
   # Based on most constrained dimension, compute display pixels to user pixels
   vpp.to.usrp <- 1   # ratio of viewport pixels to viewbox pixels
@@ -167,21 +160,10 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   height.p <- pin[2] * ppi
 
   if(has.vb) {
-    if(vp.both) {
-      # this could be min too, or averge, need to pick something
-      vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
-      asp <- (vp.height / height) / (vp.width / width)
-
-      # Scaling only happens if we have both viewBox and fully defined viewport.
-      # This is for now ignoring any preserveAspectRatio values.
-      # https://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute
-      width.p <- (width / vp.width) * pin[1] * ppi
-      height.p <- (height / vp.height) * pin[2] * ppi
-    } else if (!is.na(attr(x, 'width'))) {
-      vpp.to.usrp <- vp.width / width
-    } else if (!is.na(attr(x, 'height'))) {
-      vpp.to.usrp <- vp.height / height
-    }
+    vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
+    asp <- (vp.height / height) / (vp.width / width)
+    width.p <- (width / vp.width) * pin[1] * ppi
+    height.p <- (height / vp.height) * pin[2] * ppi
   }
   # Figure out the actul plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
