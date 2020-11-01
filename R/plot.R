@@ -105,12 +105,14 @@ plot.svg_chopped_list_flat <- function(
 
 compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   vetr(
-    structure(list(), class='svg_chopped'),
+    structure(list(), class='svg_chopped') ||
+    structure(list(), class='svg_chopped_flat'),
     pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR
   )
   # Start with viewBox width and height
   vb <- attr(x, 'viewBox')
   extents <- attr(x, 'extents')
+  has.vb <- FALSE
 
   if(
     !is.null(vb) && is.numeric(vb) && !anyNA(vb) && length(vb) == 4 &&
@@ -120,6 +122,7 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
     y0 <- vb[2]
     width <- vb[3]
     height <- vb[4]
+    has.vb <- TRUE
   } else if(
     !is.null(extents) &&
     isTRUE(vet(list(numeric(2), numeric(2)), extents))
@@ -133,6 +136,7 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   # Compute viewport width and height in pixels
   vp.width <- attr(x, 'width')
   vp.height <- attr(x, 'height')
+  vp.both <- FALSE
 
   if(is.na(vp.width) && is.na(vp.height)) {
     vp.width <- width
@@ -148,29 +152,40 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
     }
     vp.height <- vp.width / width * height
   } else {
+    vp.both <- TRUE
     if(isTRUE(attr(x, 'wh.pct')['height']))
       vp.height <- vp.height / 100 * ppi * pin[2]
     if(isTRUE(attr(x, 'wh.pct')['width']))
       vp.width <- vp.width / 100 * ppi * pin[1]
   }
-  # Based on most constrained dimension, compute disply pixels to user pixels
+  # Based on most constrained dimension, compute display pixels to user pixels
   vpp.to.usrp <- 1   # ratio of viewport pixels to viewbox pixels
   asp <- 1
-  if(is.finite(vp.width) && is.finite(vp.height)) {
-    # this could be min too, or averge, need to pick something
-    vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
-    asp <- vp.height / vp.width
-  } else if (is.finite(vp.width)) {
-    vpp.to.usrp <- vp.width / width
-  } else if (is.finite(vp.height)) {
-    vpp.to.usrp <- vp.height / height
-  } else stop("Internal Error: both dimensions infinite for viewport.")
 
+  # Without scaling max plotting area defined by dimensions and ppi
+  height.p <- min(c(vp.height, pin[2] * ppi))
+  width.p <- min(c(vp.width, pin[1] * ppi))
+
+  if(has.vb) {
+    if(vp.both) {
+      # this could be min too, or averge, need to pick something
+      vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
+      asp <- vp.height / vp.width
+
+      # Scaling only happens if we have both viewBox and fully defined viewport.
+      # This is for now ignoring any preserveAspectRatio values.
+      # https://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute
+      width.p <- width * pin[1] * ppi / vp.width
+      height.p <- height * pin[2] * ppi / vp.height
+
+    } else if (!is.na(attr(x, 'width'))) {
+      vpp.to.usrp <- vp.width / width
+    } else if (!is.na(attr(x, 'height'))) {
+      vpp.to.usrp <- vp.height / height
+    }
+  }
   # Figure out the actul plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
-
-  width.p <- width * pin[1] * ppi / vp.width
-  height.p <- height * pin[2] * ppi / vp.height
 
   list(
     plot.lim=list(x=c(x0, x0 + width.p), y=c(y0, y0 + height.p)),
