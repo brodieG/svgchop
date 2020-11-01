@@ -17,32 +17,26 @@
 
 ## ToDo
 
-* Do we want to parse width/height so that stroke width ends up reasonable?
-  Need to handle cases where aspect ratio of width/height 
+* Scaling transformations should be applied to stroke.  This is complicated
+  because stroke is dimensionless (generate polygon coordinates for the stroke?
+  Will be super slow, but an option).
 
-* Named colors not the same as HTML named colors.
+* steps should be per 180 degrees of arc
 
-* More complex example with more:
-    * shapes
-    * transforms, including accumulated ones
-    * styles from classes, ids, and maybe both?
-    * And inline?
-    * evenodd vs not example?
+* Should svg dimensions to viewbox mismatches lead to transformations?  Yes,
+  probably can just add a scale transform.  Or maybe no, it is the
+  responsibility of the display device to do the transform?  The latter is
+  tempting for now, but the former will be better if we have nested viewports.
+  Maybe grid can still handle the viewport business.  Either way, probably can
+  just ignore this for now.
 
 * Do we actually support `use_svg`
-
-* Should open paths be drawn with both a polypath with NA stroke and a line to
-  replicate how they are rendered by SVG renderers (MAYBE - not worth spending a
-  lot of time on the plot method)?  Need to distinguish straight lines
-  from things that have an actual area.
 
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.
 
 * Include mixed units in the "not supported" alerts, or maybe just non-pixel
   units.
-
-* "oddeven" etc. fill rules
 
 * Check that transform=FALSE actually works (not sure it does).
 

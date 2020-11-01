@@ -210,10 +210,18 @@ process_use_node <- function(node.parsed) {
 #'
 #' @section Lengths:
 #'
-#' All lengths and coordinates are assumed to be unit-less.  In other words
-#' "px", "em", "cm", "%", etc. values are completely ignored, except for "%"
-#' measures for the "offset" attribute to gradient stops.  Future releases may
-#' switch to preserving units with e.g. [grid::unit()].
+#' All lengths and coordinates are assumed to be unit-less except for the
+#' "width" and "height" attributes on the top-level SVG elements, and the
+#' "offset" attribute for gradient stops.  In other words for most elements
+#' "px", "em", "cm", "%", etc. values are completely ignored with all lengths
+#' assumed to be in user coordinate system units.
+#'
+#' The "width" and "height" attributes of the top-level SVG elements will be
+#' interpreted as display device percentages if "%" units are used, or pixels if
+#' they are not.  The "offset" attribute to gradient stops will be interpreted
+#' as percentages if "%" units are used, or as unit-less numbers otherwise.
+#'
+#' Future releases may switch to preserving units with e.g. [grid::unit()].
 #'
 #' @section Elements:
 #'
@@ -260,6 +268,9 @@ process_use_node <- function(node.parsed) {
 #' terminal leaves of the "svg_chopped" objects.  This attribute will be a
 #' "trans" S3 object containing the transformation matrix as the "mx" member and
 #' the commands that were processed to produce that matrix as the "cmds" member.
+#'
+#' Stroke widths are not transformed.  A possible implementation would be to
+#' generate a polygon in the shape of the stroke, but we don't do that.
 #'
 #' @section Styling:
 #'
@@ -410,7 +421,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
     function(x) {
       xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
       ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
-      attr(x, 'extents') <- list(x=xs, ys=ys)
+      attr(x, 'extents') <- list(x=xs, y=ys)
       attr(x, 'url') <- url
       attr(x, 'css') <- css
       x
@@ -422,8 +433,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   )
 }
 num.pat.core <- "(-?\\d*\\.?\\d+)"
-num.pat <- sprintf("%s\\w*", num.pat.core)
-num.pat.pct <- sprintf("%s%%", num.pat.core)
+num.pat <- sprintf("%s(?:\\w|%%)*", num.pat.core)
 
 ## Vectorized, parses lengths dropping units.
 
@@ -441,6 +451,11 @@ parse_length <- function(x) {
     )
   res
 }
+
+is_pct <- function(x) {
+  vetr(character())
+  grepl(sprintf("^\\s*%s%%\\s*$", num.pat.core), x)
+}
 ## For lengths that are pasted together; note parse_length IS vectorized
 ## e.g. "5 5 5 5"
 parse_lengths <- function(x) {
@@ -455,6 +470,10 @@ process_svg_node <- function(node.parsed) {
 
   if('width' %in% names(attrs)) width <- parse_length(attrs[['width']])
   if('height' %in% names(attrs)) height <- parse_length(attrs[['height']])
+  wh.pct <- c(width=FALSE, height=FALSE)
+  if(!is.na(width)) wh.pct['width'] <- is_pct(attrs[['width']])
+  if(!is.na(height)) wh.pct['height'] <- is_pct(attrs[['height']])
+
   if('x' %in% names(attrs)) x <- parse_length(attrs[['x']])
   if('y' %in% names(attrs)) y <- parse_length(attrs[['y']])
 
@@ -473,7 +492,7 @@ process_svg_node <- function(node.parsed) {
     node.parsed,
     class='svg_chopped',
     viewBox=viewbox,
-    x=x, y=y, width=width, height=width
+    x=x, y=y, width=width, height=height, wh.pct=wh.pct
   )
 }
 

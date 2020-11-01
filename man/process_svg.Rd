@@ -83,10 +83,18 @@ retrieve them and parse them with your own logic if so desired.
 \section{Lengths}{
 
 
-All lengths and coordinates are assumed to be unit-less.  In other words
-"px", "em", "cm", "\%", etc. values are completely ignored, except for "\%"
-measures for the "offset" attribute to gradient stops.  Future releases may
-switch to preserving units with e.g. \code{\link[grid:unit]{grid::unit()}}.
+All lengths and coordinates are assumed to be unit-less except for the
+"width" and "height" attributes on the top-level SVG elements, and the
+"offset" attribute for gradient stops.  In other words for most elements
+"px", "em", "cm", "\%", etc. values are completely ignored with all lengths
+assumed to be in user coordinate system units.
+
+The "width" and "height" attributes of the top-level SVG elements will be
+interpreted as display device percentages if "\%" units are used, or pixels if
+they are not.  The "offset" attribute to gradient stops will be interpreted
+as percentages if "\%" units are used, or as unit-less numbers otherwise.
+
+Future releases may switch to preserving units with e.g. \code{\link[grid:unit]{grid::unit()}}.
 }
 
 \section{Elements}{
@@ -137,6 +145,9 @@ retrieving the transform data from the "transform-computed" attribute of the
 terminal leaves of the "svg_chopped" objects.  This attribute will be a
 "trans" S3 object containing the transformation matrix as the "mx" member and
 the commands that were processed to produce that matrix as the "cmds" member.
+
+Stroke widths are not transformed.  A possible implementation would be to
+generate a polygon in the shape of the stroke, but we don't do that.
 }
 
 \section{Styling}{
