@@ -163,7 +163,7 @@ parse_css_rule <- function(x) {
 }
 parse_css_selector <- function(x) {
   x <- trimws(x)
-  sel <- strsplit(x, ",")[[1]]
+  sel <- if(nzchar(x)) strsplit(x, ",")[[1]] else x
   # Actual rule also include <U+00A0> and higher; we approximate that by
   # allowing all digits and word characters, but that will be incomplete.
   # Also, this will match the first element in an ancestry chain.
