@@ -146,8 +146,9 @@ terminal leaves of the "svg_chopped" objects.  This attribute will be a
 "trans" S3 object containing the transformation matrix as the "mx" member and
 the commands that were processed to produce that matrix as the "cmds" member.
 
-Stroke widths are not transformed.  A possible implementation would be to
-generate a polygon in the shape of the stroke, but we don't do that.
+The rendering agent will be responsible for scaling stroke.  For
+\code{\link[=plot.svg_chopped]{plot.svg_chopped()}} we use the average of the absolute scaling factors from
+the computed transformation matrix.
 }
 
 \section{Styling}{

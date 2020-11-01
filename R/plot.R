@@ -40,7 +40,6 @@
 #'
 #' @export
 #' @seealso [process_svg()]
-#' @inheritParams stats::plot.lm
 #' @param x an "svg_chopped" or "svg_chopped_list" object.
 #' @param ask TRUE or FALSE whether to prompt to display more plots when
 #'   plotting an "svg_chopped_list" with multiple elements that don't fit in the
@@ -79,50 +78,32 @@ plot.svg_chopped_list_flat <- function(
   plot_list(x, ppi=ppi, ask=ask, ...)
 }
 
-#' Viewport Data
+#' Compute Display Parameters for Device
 #'
-#' The width and height of the viewbox
-#' The width and height of the SVG
-#' The width and height of the device window
-#' 
-#' Device window does not affect anything unless in scale mode.  We could infer
-#' this from width and height specified as %.  Or just let the user specify.
+#' Computes how the dimensions of the display device in user coordinates, the
+#' aspect ratio of user coordinates relative to device coordinates, and the user
+#' coordinates "ppi" (this is taken to be the higher of the X or Y ppi, which
+#' may not be the same if the aspect ratio is not 1).
 #'
-#' Width and height of the viewBox relative to the SVG will affect the aspect
-#' ratio.  We should probably use the largest user pixels per lwd ratio of the
-#' width and height when ASP is not 1.
-#' 
-#' Cases:
-#'
-#' * Adjust for scaling
-#' * SVG width / height 
-#'     * in pixels
-#'     * in percent
-#'     * in units (assume pixels)
-#'     * mixed
-#'     * unspecified means user pixels are display pixels
-#'     * if in percent, convert to pixels
-#'     * if both width/height unspecified, use user pixels
-#'     * if one is specified fit using user aspect ratio
-#'
-#'     * whatever it is, assuming 96ppi, 
-#'
-#' * SVG width / height in percent
-#' * 
-#' 
+#' This information can be used by a rendering function such as
+#' [plot.svg_chopped()] to scale and position the output.
 #'
 #' @export
 #' @param x an "svg_chopped" object
 #' @param pin numeric length 2 width and height of the plot area in inches.
-#' @param scale TRUE or FALSE (default) whether units should be scaled to fit
-#'   the viewbox in the display.  Aspect ratio will be preserved.
-#' @param integer how many "pixels" per display inch we should assume.
-#' @return numeric vector containing:
-#' * aspect ratio
-#' * user points per inch
-#' * displayable user point ranges
+#' @param ppi numeric device resolution in pixels per inch; if rendered SVGs
+#'   look larger or smaller than in your browser you may need to adjust this
+#'   setting.
+#' @param scale TRUE (currently unsupported) or FALSE (default) whether units
+#'   should be scaled to fit the viewbox in the display.  Aspect ratio will be
+#'   preserved.
+#' @return a list containing elements:
+#' * "plot.lim": a list with the x and y plot limits in user coordinates.
+#' * "asp": numeric(1) the height/width ratio of each pixel in the plot (not the
+#'   actual aspect ratio of the plot).
+#' * "uppi": numeric(1) the user-pixels per inch.
 
-compute_display_params <- function(x, pin=par('pin'), scale=FALSE, ppi=96) {
+compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   vetr(
     structure(list(), class='svg_chopped'),
     pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR
@@ -193,7 +174,8 @@ compute_display_params <- function(x, pin=par('pin'), scale=FALSE, ppi=96) {
 
   list(
     plot.lim=list(x=c(x0, x0 + width.p), y=c(y0, y0 + height.p)),
-    asp=asp, pixel.ratio=vpp.to.usrp
+    asp=asp,
+    uppi=max(c(width.p / pin[1], height.p / pin[2]))
   )
 }
 ## Internal: plot either normal or flat chopped_list
@@ -244,7 +226,13 @@ plot_one <- function(x, ppi, ...) {
       fill.rule <- c(evenodd='evenodd', nonzero='winding')[style[['fill-rule']]]
       if(is.na(fill.rule)) fill.rule <- 'winding'
     }
-    stroke.width <- stroke.width * d.params[['pixel.ratio']]
+    # Scale stroke width to account for user coordinates and transforms
+    stroke.width <-
+      stroke.width *
+      # user - display conversion
+      ppi / d.params[['uppi']] * 96 / ppi *
+      # approximate scaling from transformation
+      mean(abs(attr(mat, 'transform-computed')[['mx']][c(1,5)]))
 
     # Retrieve `closed` attribute which designates which sub-paths are closed.
     # We don't use it here but in the SVG spec it changes how the line butts are

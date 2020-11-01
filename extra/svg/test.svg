@@ -1,26 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 150 150"><defs>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" width="500px">
+<defs>
 </defs>
-  <g opacity=".5">
-  <rect width="100" height="100" stroke="blue" fill="none"/>
-  <!--<circle id="circ-base" cx="50" cy="50" r="30"/>-->
-  <circle
-    id="circ-base" cx="50" cy="50" r="30" fill="#CCC"
-    />
-  <circle
-    id="circ-base" cx="50" cy="50" r="30"
-    transform="translate(50 50) scale(.25, 1) translate(-50 -50)"/>
-  <circle
-    cx="50" cy="50" r="30" fill="red" transform="scale(.25, 1)"
-  />
   <!--
-  <g transform="translate(50, 50)">
-    <g transform="scale(.25, 1)">
-      <g transform="translate(-50, -50)">
-        <circle cx="50" cy="50" r="30" fill="red"/>
-      </g>
-    </g>
-  </g>
+  <line x1="20" y1="50" x2="80" y2="50" stroke="blue" stroke-width="2"/>
   -->
-  </g>
+  <rect width="100" height="100" x="0" y="0" stroke="blue" stroke-width="2"/>
 </svg>
 

@@ -17,9 +17,14 @@
 
 ## ToDo
 
+* Still trying to figure out what stroke width is exactly, both via lwd, and for
+  SVG as we can't get them to match.
+
 * Scaling transformations should be applied to stroke.  This is complicated
   because stroke is dimensionless (generate polygon coordinates for the stroke?
-  Will be super slow, but an option).
+  Will be super slow, but an option).  Actually, we really need to scale the
+  stroke, otherwise this doesn't work.
+
 
 * steps should be per 180 degrees of arc
 
