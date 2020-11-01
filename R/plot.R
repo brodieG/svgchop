@@ -162,22 +162,21 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   vpp.to.usrp <- 1   # ratio of viewport pixels to viewbox pixels
   asp <- 1
 
-  # Without scaling max plotting area defined by dimensions and ppi
-  height.p <- min(c(vp.height, pin[2] * ppi))
-  width.p <- min(c(vp.width, pin[1] * ppi))
+  # Need to compute the plot dimensions corresponding to pin in user coordinates
+  width.p <- pin[1] * ppi
+  height.p <- pin[2] * ppi
 
   if(has.vb) {
     if(vp.both) {
       # this could be min too, or averge, need to pick something
       vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
-      asp <- vp.height / vp.width
+      asp <- (vp.height / height) / (vp.width / width)
 
       # Scaling only happens if we have both viewBox and fully defined viewport.
       # This is for now ignoring any preserveAspectRatio values.
       # https://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute
-      width.p <- width * pin[1] * ppi / vp.width
-      height.p <- height * pin[2] * ppi / vp.height
-
+      width.p <- (width / vp.width) * pin[1] * ppi
+      height.p <- (height / vp.height) * pin[2] * ppi
     } else if (!is.na(attr(x, 'width'))) {
       vpp.to.usrp <- vp.width / width
     } else if (!is.na(attr(x, 'height'))) {
