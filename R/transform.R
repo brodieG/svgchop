@@ -130,8 +130,8 @@ parse_transform <- function(node, trans.prev=trans()) {
           # 3 params means translate -> rotate -> untranslate
           if(length(valsi) == 3) {
             trans1 <- trans2 <- diag(3)
-            trans1[3, 1:2] <- valsi[2:3]
-            trans2[3, 1:2] <- -valsi[2:3]
+            trans1[1:2, 3] <- valsi[2:3]
+            trans2[1:2, 3] <- -valsi[2:3]
             mx.tmp <- trans1 %*% mx.tmp %*% trans2
           } else if(length(valsi) != 1)
             stop('Invalid "rotate" transform command')
