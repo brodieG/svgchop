@@ -147,9 +147,10 @@ is explicitly computed from the SVG data (see \code{\link[=styles_computed]{styl
 list).  Values are taken from the properties defined in-line in the SVG
 elements or its ancestors, CSS style sheets, and in-line "style" properties.
 CSS selector support is limited to direct match lookups on
-"<element>.<class>" or "<element>#<id>" where "*" may be used as a wild card.
-Selector hierarchies, properties, or anything other than basic selectors is
-not supported.  For example, the following selectors are supported:
+"&#lt;element>.<class>" or "<element>#<id>" where "*"
+may be used as a wild card.  Selector hierarchies, properties, or anything
+other than basic selectors is not supported.  For example, the following
+selectors are supported:
 \itemize{
 \item "*"
 \item "*.class"

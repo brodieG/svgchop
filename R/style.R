@@ -34,11 +34,12 @@ web.colors <- readRDS(system.file('extdata/web-colors.RDS', package='svgchop'))
 #' A list of the 147 known SVG colors from the
 #' [W3C SVG 1.1. Spec](https://www.w3.org/TR/SVG11/types.html#ColorKeywords).
 #'
+#' @export
 #' @param character of color keywords (names).
 #' @return character vector named with color and with the 6 digit RGB hex code
 #'   as the value.  Unmatched color names return NA.
 #' @examples
-#' svg_colors(c('green', 'plum', 'NOT A REAL COLOR))
+#' svg_colors(c('green', 'plum', 'NOT A REAL COLOR'))
 #' length(svg_colors_all()) # 147 named colors
 
 svg_colors <- function(colors) web.colors[tolower(colors)]
