@@ -414,7 +414,7 @@ process_svg <- function(file, steps=10, transform=TRUE) {
 
   # compute extents
   get_coords <- function(obj, coord)
-    if(is.matrix(obj)) obj[coord,]
+    if(is.matrix(obj) && !inherits(obj, 'hidden')) obj[coord,]
     else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)
 
   tmp <- lapply(
