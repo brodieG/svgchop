@@ -262,7 +262,7 @@ compute_prop <- function(
   # element and id, and finally any specified via inline css
   search <- c(
     'prop',
-    '*.*', '*#*', 'line.*', 'line#*',
+    '*.*', '*#*', sprintf('%s.*', name), sprintf('%s#*', name),
     paste0(rep_len("*.", length(classes)), classes),
     paste0(rep_len("*#", length(id)), id),
     paste0(rep_len(sprintf("%s.", name), length(classes)), classes),
