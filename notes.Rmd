@@ -17,24 +17,6 @@
 
 ## ToDo
 
-* Still trying to figure out what stroke width is exactly, both via lwd, and for
-  SVG as we can't get them to match.
-
-* Scaling transformations should be applied to stroke.  This is complicated
-  because stroke is dimensionless (generate polygon coordinates for the stroke?
-  Will be super slow, but an option).  Actually, we really need to scale the
-  stroke, otherwise this doesn't work.
-
-
-* steps should be per 180 degrees of arc
-
-* Should svg dimensions to viewbox mismatches lead to transformations?  Yes,
-  probably can just add a scale transform.  Or maybe no, it is the
-  responsibility of the display device to do the transform?  The latter is
-  tempting for now, but the former will be better if we have nested viewports.
-  Maybe grid can still handle the viewport business.  Either way, probably can
-  just ignore this for now.
-
 * Do we actually support `use_svg`
 
 * Add a "not supported" condition and generally let the code run through to the

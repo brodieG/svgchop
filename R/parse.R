@@ -315,8 +315,8 @@ process_use_node <- function(node.parsed) {
 #' colors in [svg_colors_all()] (the 147 named SVG 1.1 colors), and `rgb(x,y,z)`
 #' where `x`, `y`, and `z` are numeric or percentage values as per the CSS spec.
 #' `url(#id)` values are returned as is.  Supported external styling such as
-#' gradients will be recorded as part of the "svg_chopped_list" object and may
-#' be retrieved with the [svg_url()] function.
+#' gradients will be recorded in the "url" attribute of the "svg_chopped_list"
+#' and "svg_chopoped" objects.
 #'
 #' If an element specifies both "opacity" and "stroke-opacity" or
 #' "fill-opacity", the latter two are multiplied with the value of "opacity".

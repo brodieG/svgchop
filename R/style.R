@@ -246,7 +246,7 @@ update_style <- function(old, new) {
 compute_prop <- function(
   x, style.prev, inline, props, style.sheet, classes, id, name
 ) {
-  # if(x == 'stroke') browser()
+  # if(x == 'stop-color') browser()
   prop <- props[x]
   inline <- inline[x]
   css <- style.sheet[[x]]
@@ -307,8 +307,8 @@ proc_color <- function(colors) {
   none <- tolower(colors) == 'none'
   not.color <- not.hex & !is.url & !tolower(colors) %in% names(svg_colors_all())
   colors[not.color & !none] <- NA_character_
-  colors[!not.color & !none & !is.url] <-
-    svg_colors(colors[!not.color & !none & !is.url])
+  colors[!not.color & !none & !is.url & not.hex] <-
+    svg_colors(colors[!not.color & !none & !is.url & not.hex])
 
   colors
 }
