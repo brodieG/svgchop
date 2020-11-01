@@ -7,21 +7,34 @@
 \alias{plot.svg_chopped_list_flat}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
-\method{plot}{svg_chopped}(x, ...)
+\method{plot}{svg_chopped}(x, ppi = 96, ...)
 
-\method{plot}{svg_chopped_flat}(x, ...)
+\method{plot}{svg_chopped_flat}(x, ppi = 96, ...)
 
-\method{plot}{svg_chopped_list}(x, ask = prod(par("mfcol")) < length(x) && dev.interactive(), ...)
+\method{plot}{svg_chopped_list}(
+  x,
+  ppi = 96,
+  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
+  ...
+)
 
-\method{plot}{svg_chopped_list_flat}(x, ask = prod(par("mfcol")) < length(x) && dev.interactive(), ...)
+\method{plot}{svg_chopped_list_flat}(
+  x,
+  ppi = 96,
+  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
+  ...
+)
 }
 \arguments{
-\item{x}{an "svg_chopped" or "svg_chopped_list" object}
+\item{x}{an "svg_chopped" or "svg_chopped_list" object.}
+
+\item{ppi}{numeric pixels per inch to assume for calculations.}
 
 \item{...}{passed on to \code{\link[=polypath]{polypath()}} and/or \code{\link[=lines]{lines()}}.}
 
-\item{ask}{logical; if \code{TRUE}, the user is \emph{ask}ed before
-    each plot, see \code{\link{par}(ask=.)}.}
+\item{ask}{TRUE or FALSE whether to prompt to display more plots when
+plotting an "svg_chopped_list" with multiple elements that don't fit in the
+current plotting grid.}
 }
 \value{
 \code{x}, invisibly

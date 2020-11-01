@@ -41,38 +41,42 @@
 #' @export
 #' @seealso [process_svg()]
 #' @inheritParams stats::plot.lm
-#' @param x an "svg_chopped" or "svg_chopped_list" object
+#' @param x an "svg_chopped" or "svg_chopped_list" object.
+#' @param ask TRUE or FALSE whether to prompt to display more plots when
+#'   plotting an "svg_chopped_list" with multiple elements that don't fit in the
+#'   current plotting grid.
+#' @param ppi numeric pixels per inch to assume for calculations.
 #' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
-plot.svg_chopped <- function(x, ...) plot_one(x, ...)
+plot.svg_chopped <- function(x, ppi=96, ...) plot_one(x, ppi, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
-plot.svg_chopped_flat <- function(x, ...) plot_one(x, ...)
+plot.svg_chopped_flat <- function(x, ppi=96, ...) plot_one(x, ppi, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
 plot.svg_chopped_list <- function(
-  x,
+  x, ppi=96,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 ) {
-  vetr(structure(list(), class='svg_chopped_list'), LGL.1)
-  plot_list(x, ask, ...)
+  vetr(structure(list(), class='svg_chopped_list'), INT.1.POS.STR, LGL.1)
+  plot_list(x, ppi=ppi, ask=ask, ...)
 }
 #' @export
 #' @rdname plot.svg_chopped
 
 plot.svg_chopped_list_flat <- function(
-  x,
+  x, ppi=96,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 ) {
-  vetr(structure(list(), class='svg_chopped_list_flat'), LGL.1)
-  plot_list(x, ask, ...)
+  vetr(structure(list(), class='svg_chopped_list_flat'), INT.1.POS.STR, LGL.1)
+  plot_list(x, ppi=ppi, ask=ask, ...)
 }
 
 #' Viewport Data
@@ -184,8 +188,8 @@ compute_display_params <- function(x, pin=par('pin'), scale=FALSE, ppi=96) {
   # Figure out the actul plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
 
-  width.p <- width * min(c(1, pin[1] * ppi / vp.width))
-  height.p <- height * min(c(1, pin[2] * ppi / vp.height))
+  width.p <- width * pin[1] * ppi / vp.width
+  height.p <- height * pin[2] * ppi / vp.height
 
   list(
     plot.lim=list(x=c(x0, x0 + width.p), y=c(y0, y0 + height.p)),
@@ -194,17 +198,17 @@ compute_display_params <- function(x, pin=par('pin'), scale=FALSE, ppi=96) {
 }
 ## Internal: plot either normal or flat chopped_list
 
-plot_list <- function(x, ask, ...) {
+plot_list <- function(x, ppi, ask, ...) {
   if (ask) {
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot, ...)
+  lapply(x, plot, ppi=ppi, ...)
   invisible(x)
 }
 ## Internal: plot either normal or flat chopped
 
-plot_one <- function(x, ...) {
+plot_one <- function(x, ppi, ...) {
   url <- attr(x, 'url')   # gradients, patterns, etc., stored here
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
@@ -213,7 +217,7 @@ plot_one <- function(x, ...) {
   # not from the pre-computed extents attributes
 
   plot.new()
-  d.params <- compute_display_params(x)
+  d.params <- compute_display_params(x, ppi=ppi)
   lim <- d.params[['plot.lim']]
   plot.window(lim[['x']], rev(lim[['y']]), asp=d.params[['asp']])
 
