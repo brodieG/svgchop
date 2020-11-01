@@ -115,20 +115,37 @@ plot_one <- function(x, ...) {
     y0 <- extents[[2]][1]
   } else stop("Dimensions corrupted.")
 
-  asp <- height / width
+  # If a viewport width or height is specified, use that information
+  vp.width <- attr(x, 'width')
+  vp.height <- attr(x, 'height')
+  vpp.to.usrp <- 1   # ratio of viewport pixels to viewbox pixels
+  asp <- 1
+
+  if(!is.na(vp.width) && !is.na(vp.height) && all(c(vp.width, vp.height) > 0)) {
+    vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
+    asp <- vp.height / vp.width
+  } else {
+    vp.width <- width
+    vp.height <- height
+    vpp.to.usrp <-
+      if (!is.na(vp.width) && vp.width > 0) vp.width / width
+      else if (!is.na(vp.height) && vp.height > 0) vp.height / height
+      else 1
+  }
   plot.new()
-  plot.window(c(x0, x0 + width), c(y0 + height, y0), asp=1)
+  plot.window(c(x0, x0 + width), c(y0 + height, y0), asp=asp)
 
   # Map stroke width to lwd, we assume lwd = 1 taken to be 1/96th of an inch
   # and compute "pixels" per inch based on most limiting dimension
+  asp.net <- height / width * asp
   pin <- par('pin')
   asp.p <- pin[2] / pin[1]
-  if(asp > asp.p) {
+  if(asp.net > asp.p) {
     ppi <- height / pin[2]
   } else {
     ppi <- width / pin[1]
   }
-  ptolwd <- ppi / 96
+  ptolwd <- ppi / 96 * vpp.to.usrp
 
   # Flatten makes it easier to iterate through structure, but also removes all
   # "hidden elements" so they are not plotted
