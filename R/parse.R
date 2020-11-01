@@ -101,7 +101,7 @@ parse_ellipse <- function(x, steps) {
   x <- c(x, key.props[!names(key.props) %in% props])
   lens <- parse_length(unname(x[c('cx', 'cy', 'rx', 'ry')]))
   lens[is.na(lens)] <- 0
-  angles <- seq(0, 2 * pi, length.out=steps + 1)
+  angles <- seq(0, 2 * pi, length.out=(steps * 2) + 1)
   res <- (lens[3:4] * rbind(cos(angles), sin(angles))) + lens[1:2]
   attr(res, 'closed') <- TRUE
   res
@@ -359,7 +359,7 @@ process_use_node <- function(node.parsed) {
 #'   Bézier curves, arcs, ellipses, and circles.  For Bézier curves, it is how
 #'   many segment each individual curve gets, so sequences of Bézier curves will
 #'   get that many for each curve in the sequence.  For arcs, ellipses, and
-#'   circles, it is how many segments per 360 degrees of arc.  The hope is that
+#'   circles, it is how many segments per 180 degrees of arc.  The hope is that
 #'   in the future this parameter will be deprecated in favor of tolerance
 #'   based ones.
 #' @param transform TRUE (default) or FALSE whether to apply the transformation

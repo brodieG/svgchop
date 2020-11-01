@@ -110,7 +110,7 @@ arc_to_line_seg <- function(x0, y0, middle, xn, yn, steps) {
   angles <- params[['angles']] / 180 * pi
   theta <- seq(
     params[['angles']][1], params[['angles']][1] + params[['angles']][2],
-    length.out=ceiling(abs(angles[2]) / (2 * pi)) * steps + 1
+    length.out=ceiling(abs(angles[2]) / (pi)) * steps + 1
   ) / 180 * pi
   # generate points on arc
   phir <- middle[3]/180*pi

@@ -13,7 +13,7 @@ process_svg(file, steps = 10, transform = TRUE)
 Bézier curves, arcs, ellipses, and circles.  For Bézier curves, it is how
 many segment each individual curve gets, so sequences of Bézier curves will
 get that many for each curve in the sequence.  For arcs, ellipses, and
-circles, it is how many segments per 360 degrees of arc.  The hope is that
+circles, it is how many segments per 180 degrees of arc.  The hope is that
 in the future this parameter will be deprecated in favor of tolerance
 based ones.}
 
