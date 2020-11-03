@@ -17,7 +17,12 @@
 
 ## ToDo
 
-* Do we actually support `use_svg`
+* Preserve aspect ratio when both width/height are 100%?  That seems to be the
+  default based on fill-rule.svg.
+
+* Examples subsetting the flattened list and plotting part of the thing.
+
+* Scale to fit so that we can resize things
 
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.

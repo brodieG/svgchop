@@ -195,8 +195,8 @@ opacity values.  Supported color formats are 6 digit hex, 3 digit hex, named
 colors in \code{\link[=svg_colors_all]{svg_colors_all()}} (the 147 named SVG 1.1 colors), and \code{rgb(x,y,z)}
 where \code{x}, \code{y}, and \code{z} are numeric or percentage values as per the CSS spec.
 \verb{url(#id)} values are returned as is.  Supported external styling such as
-gradients will be recorded as part of the "svg_chopped_list" object and may
-be retrieved with the \code{\link[=svg_url]{svg_url()}} function.
+gradients will be recorded in the "url" attribute of the "svg_chopped_list"
+and "svg_chopoped" objects.
 
 If an element specifies both "opacity" and "stroke-opacity" or
 "fill-opacity", the latter two are multiplied with the value of "opacity".
