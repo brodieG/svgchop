@@ -120,15 +120,15 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   ) {
     x0 <- vb[1]
     y0 <- vb[2]
-    width <- vb[3]
-    height <- vb[4]
+    vb.width <- vb[3]
+    vb.height <- vb[4]
     has.vb <- TRUE
   } else if(
     !is.null(extents) &&
     isTRUE(vet(list(numeric(2), numeric(2)), extents))
   ) {
-    width <- diff(extents[[1]])
-    height <- diff(extents[[2]])
+    vb.width <- diff(extents[[1]])
+    vb.ight <- diff(extents[[2]])
     x0 <- extents[[1]][1]
     y0 <- extents[[2]][1]
   } else stop("Dimensions corrupted.")
@@ -153,25 +153,32 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   }
   # Based on most constrained dimension, compute display pixels to user pixels
   vpp.to.usrp <- 1   # ratio of viewport pixels to viewbox pixels
-  asp <- 1
 
-  # Need to compute the plot dimensions corresponding to pin in user coordinates
-  width.p <- pin[1] * ppi
-  height.p <- pin[2] * ppi
+  # Aspect ratio is only 1, unless preserveAspectRatio is not 'meet', and we
+  # don't currenlty support anything other than meet.
+  asp <- 1
+  uppi <- ppi
+  dev.width <- lim.width <- pin[1] * ppi
+  dev.height <- lim.height <- pin[2] * ppi
 
   if(has.vb) {
-    vpp.to.usrp <- max(c(vp.width / width, vp.height / height))
-    asp <- (vp.height / height) / (vp.width / width)
-    width.p <- (width / vp.width) * pin[1] * ppi
-    height.p <- (height / vp.height) * pin[2] * ppi
+    if(vp.height / vp.width > vb.height / vb.width) {
+      uppi <- ppi * vb.width / vp.width
+      lim.width <- vb.width
+      lim.height <- vb.width * vp.width / vp.height
+    } else {
+      uppi <- ppi * vb.height / vp.height
+      lim.height <- vb.height
+      lim.width <- vb.width * vp.width / vp.width
+    }
   }
   # Figure out the actul plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
 
   list(
-    plot.lim=list(x=c(x0, x0 + width.p), y=c(y0, y0 + height.p)),
+    plot.lim=list(x=c(x0, x0 + lim.width), y=c(y0, y0 + lim.height)),
     asp=asp,
-    uppi=max(c(width.p / pin[1], height.p / pin[2]))
+    uppi=uppi  # for stroke width calcs
   )
 }
 ## Internal: plot either normal or flat chopped_list
