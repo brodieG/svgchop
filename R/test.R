@@ -133,7 +133,7 @@ svg_gallery_compare <- function(
     png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
     plot(svg, ppi=ppi)
-    dev.off()    # this reset old parameter
+    dev.off()    # this resets old parameters
 
     cat(sprintf("<td><img src='%s' />", f), file=out, append=TRUE)
   }
