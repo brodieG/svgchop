@@ -116,7 +116,8 @@ svg_gallery_compare <- function(
     } else if (is.na(w) && is.na(h))
       stop("Internal Error: contact maintainer.")
 
-    # set viewbox to extents if not set
+    # set viewbox to extents if not set in the original SVG, and write back the
+    # modified SVG to a tempfile for eventual inclusion into the gallery
     if(is.na(xml_attr(svg.node, 'viewBox'))) {
       ext <- attr(svg[[1]], 'extents')
       xml_attr(svg.node, 'viewBox') <- paste(
@@ -126,13 +127,14 @@ svg_gallery_compare <- function(
     svg.tmp <- tempfile()
     write_xml(xml, svg.tmp)
     file.append(out, svg.tmp)
+    svg <- process_svg(svg.tmp, ...)
     unlink(svg.tmp)
 
     png(f, width=w, height=h, res=ppi)
-    old.par <- par(mai=numeric(4))
-    on.exit(par(old.par))
+    par(mai=numeric(4))
     plot(svg, ppi=ppi)
-    dev.off()
+    dev.off()    # this reset old parameter
+
     cat(sprintf("<td><img src='%s' />", f), file=out, append=TRUE)
   }
   cat("</table></body></html>\n", file=out, append=TRUE)

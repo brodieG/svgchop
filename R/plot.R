@@ -103,32 +103,30 @@ plot.svg_chopped_list_flat <- function(
 #'   actual aspect ratio of the plot).
 #' * "uppi": numeric(1) the user-pixels per inch.
 
-
 compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   vetr(
     structure(list(), class='svg_chopped') ||
     structure(list(), class='svg_chopped_flat'),
     pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR
   )
-  # viewbox info
-  vb <- compute_vb_dim(x)
-
   # Compute viewport width and height in pixels
   vp.width <- attr(x, 'width')
   vp.height <- attr(x, 'height')
   vp.both <- FALSE
   vp.pct <- attr(x, 'wh.pct')
-  if(is.null(vp.pct) || anyNA(vp.pct)) vp.pct <- c(width=FALSE, height=FALSE)
+  if(is.null(vp.pct)) vp.pct <- c(width=FALSE, height=FALSE)
   if(is.na(vp.width)) {
-    vp.width <- ppi * pin[1]
-    vp.pct['width'] <- TRUE   # Not strictly necessary
-  } else if(vp.pct['width']) {
-    vp.width <- vp.width / 100 * ppi * pin[1]
+    vp.width <- 100
+    vp.pct['width'] <- TRUE
   }
   if(is.na(vp.height)) {
-    vp.height <- ppi * pin[2]
-    vp.pct['height'] <- TRUE   # Not strictly necessary
-  } else if(vp.pct['height']) {
+    vp.height <- 100
+    vp.pct['height'] <- TRUE
+  }
+  if(vp.pct['width']) {
+    vp.width <- vp.width / 100 * ppi * pin[1]
+  }
+  if(vp.pct['height']) {
     vp.height <- vp.height / 100 * ppi * pin[2]
   }
   # Based on most constrained dimension, compute display pixels to user pixels
@@ -140,6 +138,9 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   uppi <- ppi
   dev.width <- lim.width <- pin[1] * ppi
   dev.height <- lim.height <- pin[2] * ppi
+
+  # viewbox info
+  vb <- compute_vb_dim(x)
 
   if(vb$has.vb) {
     if(vp.height / vp.width > vb$height / vb$width) {

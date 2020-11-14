@@ -420,8 +420,13 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   tmp <- lapply(
     tmp,
     function(x) {
-      xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
-      ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
+      xall <- unlist(lapply(x, get_coords, 1))
+      yall <- unlist(lapply(x, get_coords, 2))
+      # default size of an SVG embedded in HTML (stand-alones vary in size
+      # depending on browser, but are often 100vh or some such so require device
+      # info
+      xs <- if(length(xall)) range(xall) else c(0, 300)
+      ys <- if(length(yall)) range(yall) else c(0, 150)
       attr(x, 'extents') <- list(x=xs, y=ys)
       attr(x, 'url') <- url
       attr(x, 'css') <- css
