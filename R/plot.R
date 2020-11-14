@@ -103,35 +103,15 @@ plot.svg_chopped_list_flat <- function(
 #'   actual aspect ratio of the plot).
 #' * "uppi": numeric(1) the user-pixels per inch.
 
+
 compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   vetr(
     structure(list(), class='svg_chopped') ||
     structure(list(), class='svg_chopped_flat'),
     pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR
   )
-  # Start with viewBox width and height
-  vb <- attr(x, 'viewBox')
-  extents <- attr(x, 'extents')
-  has.vb <- FALSE
-
-  if(
-    !is.null(vb) && is.numeric(vb) && !anyNA(vb) && length(vb) == 4 &&
-    all(vb[3:4] > 0)
-  ) {
-    x0 <- vb[1]
-    y0 <- vb[2]
-    vb.width <- vb[3]
-    vb.height <- vb[4]
-    has.vb <- TRUE
-  } else if(
-    !is.null(extents) &&
-    isTRUE(vet(list(numeric(2), numeric(2)), extents))
-  ) {
-    vb.width <- diff(extents[[1]])
-    vb.ight <- diff(extents[[2]])
-    x0 <- extents[[1]][1]
-    y0 <- extents[[2]][1]
-  } else stop("Dimensions corrupted.")
+  # viewbox info
+  vb <- compute_vb_dim(x)
 
   # Compute viewport width and height in pixels
   vp.width <- attr(x, 'width')
@@ -161,26 +141,54 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   dev.width <- lim.width <- pin[1] * ppi
   dev.height <- lim.height <- pin[2] * ppi
 
-  if(has.vb) {
-    if(vp.height / vp.width > vb.height / vb.width) {
-      uppi <- ppi * vb.width / vp.width
-      lim.width <- vb.width
-      lim.height <- vb.width * vp.width / vp.height
+  if(vb$has.vb) {
+    if(vp.height / vp.width > vb$height / vb$width) {
+      uppi <- ppi * vb$width / vp.width
+      lim.width <- vb$width
+      lim.height <- vb$height * (vp.height / vp.width) / (vb$height / vb$width)
     } else {
-      uppi <- ppi * vb.height / vp.height
-      lim.height <- vb.height
-      lim.width <- vb.width * vp.width / vp.width
+      uppi <- ppi * vb$height / vp.height
+      lim.height <- vb$height
+      lim.width <- vb$width * (vb$height / vb$width) / (vp.height / vp.width)
     }
   }
   # Figure out the actul plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
 
   list(
-    plot.lim=list(x=c(x0, x0 + lim.width), y=c(y0, y0 + lim.height)),
+    plot.lim=list(x=c(vb$x, vb$x + lim.width), y=c(vb$y, vb$y + lim.height)),
     asp=asp,
     uppi=uppi  # for stroke width calcs
   )
 }
+compute_vb_dim <- function(x) {
+  # Start with viewBox width and height
+  vb <- attr(x, 'viewBox')
+  extents <- attr(x, 'extents')
+  has.vb <- FALSE
+
+  if(
+    !is.null(vb) && is.numeric(vb) && !anyNA(vb) && length(vb) == 4 &&
+    all(vb[3:4] > 0)
+  ) {
+    x0 <- vb[1]
+    y0 <- vb[2]
+    vb.width <- vb[3]
+    vb.height <- vb[4]
+    has.vb <- TRUE
+  } else if(
+    !is.null(extents) &&
+    isTRUE(vet(list(numeric(2), numeric(2)), extents))
+  ) {
+    vb.width <- diff(extents[[1]])
+    vb.height <- diff(extents[[2]])
+    x0 <- extents[[1]][1]
+    y0 <- extents[[2]][1]
+  } else stop("Dimensions corrupted.")
+
+  list(width=vb.width, height=vb.height, x=x0, y=y0, has.vb=has.vb)
+}
+
 ## Internal: plot either normal or flat chopped_list
 
 plot_list <- function(x, ppi, ask, ...) {

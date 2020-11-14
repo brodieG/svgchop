@@ -2,8 +2,9 @@
 https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths
 
 Post 2010 so CC0
--->
 <svg width="325" height="325" xmlns="http://www.w3.org/2000/svg">
+-->
+<svg width="100%" xmlns="http://www.w3.org/2000/svg">
   <path d="M 80 80
            A 45 45, 0, 0, 0, 125 125
            L 125 80 Z" fill="green"/>
