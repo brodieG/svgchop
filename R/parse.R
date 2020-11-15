@@ -355,6 +355,9 @@ process_use_node <- function(node.parsed) {
 #' [polyclip::polylineoffset()], and then retrieve the clipping path from the
 #' "clip-path" attribute to apply it yourself.
 #'
+#' "clip-path" attributes on "clipPath" elements are not followed, which is a
+#' departure from the spec.
+#'
 #' @section Patterns, Masks, and Clip Paths:
 #'
 #' These are collected under the "url" attribute of the return value, and while

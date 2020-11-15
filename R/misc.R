@@ -57,7 +57,7 @@ flatten_rec <- function(x) {
 
 flatten_rec2 <- function(x) {
   if(is.matrix(x)) list(x)
-  else unlist(unname(lapply(x, flatten_rec)), recursive=FALSE)
+  else unlist(unname(lapply(x, flatten_rec2)), recursive=FALSE)
 }
 #' @rdname flatten
 #' @export

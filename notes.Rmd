@@ -25,6 +25,16 @@ it, but when we do it will not work for clipping lines?  Really, for clipping
 lines we need to generate a polygon in the shape of the line with
 `polyclip::polylineoffset` which we can then clip.
 
+Clip-paths must accumulate unlike other styles, and thus must be preserved at
+each containing element so that they may be transformed and applied properly.
+So all transformations must happen first before clip-paths are applied.  That
+actually works better, because we can then easily compute the extents before
+clipping which is what we're supposed to do anyway.
+
+This then raises an interesting question for styles, as clip-path does not
+inherit.  So we need a set of not-inherited properties that get attached to the
+current element.
+
 ## Gradients
 
 Gradients (and perhaps others) support hrefs to acquire stops from other
@@ -51,6 +61,10 @@ gradient with the stops, and resumes normal parsing.
 * CSS transforms
 
 ## ToDo
+
+* Clipping
+    * "clip-rule" support.
+    * Warn about 'objectBoundingBox'
 
 * `approximate_fill` should become `approximate_color` and for gradients should
   approximate the opacity too, not just the color.
