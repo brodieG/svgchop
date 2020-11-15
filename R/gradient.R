@@ -62,7 +62,7 @@ process_gradient_radial <- function(node) {
   cx <- cy <- .5
   fr <- 0
 
-  attrs <- attr(node, 'xml_attr')
+  attrs <- attr(node, 'xml_attrs')
   if(!is.null(attrs[['cx']])) cx <- parse_length(attrs[['cx']])
   if(!is.null(attrs[['cy']])) cy <- parse_length(attrs[['cy']])
   if(!is.null(attrs[['fr']])) fr <- parse_length(attrs[['fr']])
