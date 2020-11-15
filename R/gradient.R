@@ -82,7 +82,7 @@ process_gradient_radial <- function(node) {
 }
 
 parse_stop <- function(node) {
-  pat <- sprintf("^\\s*%s(\\w*)\\s*$", num.pat.core)
+  pat <- sprintf("^\\s*%s(\\S*)\\s*$", num.pat.core)
   offset <- trimws(xml_attr(node, 'offset'))
   offset <- if(!grepl(pat, offset)){
     NA
