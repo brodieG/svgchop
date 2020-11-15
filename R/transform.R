@@ -103,7 +103,10 @@ parse_transform <- function(node, trans.prev=trans()) {
     cmds <- proc1[seq_len(nrow(cs))]
     vals <- proc1[seq_len(nrow(cs)) + nrow(cs)]
     vals2 <- lapply(
-      regmatches(vals, gregexpr("-?[0-9]*\\.?[0-9]+", vals)), as.numeric
+      regmatches(
+        vals,
+        gregexpr("-?[0-9]*\\.?[0-9]+(?:e[+-][0-9]+)?", vals)
+      ), as.numeric
     )
     if(any(vapply(vals2, anyNA, TRUE)))
       stop('unparseable parameters in SVG transform command')

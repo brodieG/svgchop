@@ -1,3 +1,11 @@
+## Gradients
+
+Gradients (and perhaps others) support hrefs to acquire stops from other
+elements.
+
+In those cases the gradients become terminal elements, so we can probably have
+specialized handling for them in `parse_element`, that then eventually finds the
+gradient with the stops, and resumes normal parsing.
 
 ## Not Supported
 
@@ -16,6 +24,12 @@
 * CSS transforms
 
 ## ToDo
+
+* get rid of xml reference in `process_gradient_`
+
+* Recursive gradient href.
+
+* Number scientific notation beyond transform matrices.
 
 * Preserve aspect ratio when both width/height are 100%?  That seems to be the
   default based on fill-rule.svg.

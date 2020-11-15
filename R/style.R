@@ -203,7 +203,7 @@ parse_css_selector <- function(x) {
 }
 
 style <- function() {
-  as.list(setNames(rep(NA, length(STYLE.PROPS)), STYLE.PROPS))
+  as.list(setNames(rep(NA_character_, length(STYLE.PROPS)), STYLE.PROPS))
 }
 
 ## Append Alpha Hex to 6 Digit Hex

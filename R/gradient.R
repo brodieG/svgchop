@@ -23,7 +23,7 @@ common_grad_attr <- function(x) {
     # computed now; will have ot figure out how it interacts with transform
     # application.
     gradientTransform <-
-      parse_transform(structure(NULL, transform=attrs[['gradientTransform']]))
+      parse_transform(structure(list(), transform=attrs[['gradientTransform']]))
   }
   if(!is.null(attrs[['spreadMethod']]))
     spreadMethod <- attrs[['spreadMethod']]
@@ -62,7 +62,7 @@ process_gradient_radial <- function(node) {
   cx <- cy <- .5
   fr <- 0
 
-  attrs <- attr(node, 'xml_attr')
+  attrs <- attr(node, 'xml_attrs')
   if(!is.null(attrs[['cx']])) cx <- parse_length(attrs[['cx']])
   if(!is.null(attrs[['cy']])) cy <- parse_length(attrs[['cy']])
   if(!is.null(attrs[['fr']])) fr <- parse_length(attrs[['fr']])
@@ -82,7 +82,7 @@ process_gradient_radial <- function(node) {
 }
 
 parse_stop <- function(node) {
-  pat <- sprintf("^\\s*%s(\\w*)\\s*$", num.pat.core)
+  pat <- sprintf("^\\s*%s(\\S*)\\s*$", num.pat.core)
   offset <- trimws(xml_attr(node, 'offset'))
   offset <- if(!grepl(pat, offset)){
     NA
@@ -93,3 +93,33 @@ parse_stop <- function(node) {
   }
   structure(offset, class=c('gradient-stop'))
 }
+
+# Gradients That Reference Others
+#
+# A gradient ends up being terminal usual because it references another one with
+# stops via href.  Any attributes not specified in the parent are replaced with
+# those of the child.  Stops are also added.
+#
+# Note the node is an xml node in this case.  We need to record all the top
+# level attributes, then merge them and the child stops
+
+
+parse_gradient_terminal <- function(node) {
+
+  # steps don't matter, and `parse_use` adds a wrapping list because `use`
+  # element sare supposed to be a wrapper.  For gradients we actually want the
+  # wrapping layer to preserve its attributes.
+
+  parsed <- parse_use(node, steps=5)[[1L]]
+  # Collapse all the gradient layers untill all that is left is the stops
+
+  while(isTRUE(grepl('Gradient$', attr(parsed[[1L]], 'xml_name')))) {
+    out.attr <- attr(parsed, 'xml_attrs')
+    out.name <- attr(parsed, 'xml_name')
+    parsed <- parsed[[1L]]
+    attr(parsed, 'xml_name') <- out.name
+    attr(parsed, 'xml_attrs')[names(out.attr)] <- out.attr
+  }
+  parsed
+}
+
