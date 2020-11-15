@@ -183,9 +183,16 @@ compute_transform <- function(x, trans.prev=trans()) {
 apply_transform <- function(x) {
   trans <- attr(x, 'transform-computed')
   res <- if(!is.list(x)) {
-    if(is.matrix(x) && inherits(trans, 'trans'))
+    tmp <- if(is.matrix(x) && inherits(trans, 'trans')) {
       (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
-    else x
+    } else x
+    # Also apply transform to clip path if present
+    if(inherits(trans, 'trans') && is.matrix(attr(x, 'clip-path'))) {
+      clip <- (trans[['mx']] %*% rbind(attr(x, 'clip-path'), 1))[-3,,drop=FALSE]
+      attributes(clip) <- attributes(attr(x, 'clip-path'))
+      attr(tmp, 'clip-path') <- clip
+    }
+    tmp
   } else  {
     lapply(x, apply_transform)
   }

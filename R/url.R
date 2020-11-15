@@ -73,6 +73,19 @@ process_url <- function(node, transform=TRUE) {
   attr(node.new, 'url') <- url.old
   node.new
 }
+## Given an id in form 
+##
+## @param x an href of form `url(#id)`
+## @param url the object containing all eligible URL-referenceable objects
+
+is_url_ref <- function(x) grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", x)
+get_url_obj <- function(x, url) {
+   obj <- if(is_url_ref(x)) {
+    url.id <- sub(".*#([^\\)]+)\\).*", "\\1", x)
+    obj <- url[[url.id]]
+  }
+}
+
 #' Approximate Fill
 #'
 #' The "fill" attribute to SVG elements may be specified in the form "url(#id)"
@@ -100,9 +113,7 @@ process_url <- function(node, transform=TRUE) {
 
 approximate_fill <- function(fill, url) {
   vetr(character(1L), structure(list(), class="url-data"))
-  if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", fill)) {
-      url.id <- sub(".*#([^\\)]+)\\).*", "\\1", fill)
-    obj <- url[[url.id]]
+  if(!is.null(obj <- get_url_obj(fill, url))) {
     if(inherits(obj, 'gradient')) {
       stops <- obj[['stops']][['color']]
       rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)

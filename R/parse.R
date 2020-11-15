@@ -347,6 +347,14 @@ process_use_node <- function(node.parsed) {
 #' The `plot` method for "svg_chopped" objects will use [approximate_fill()] to
 #' compute a single color from the gradient data.
 #'
+#' Clip paths are computed and attached as the "clip-path" attribute of the
+#' terminal leaves.  If `clip` is set to TRUE (default), then the clip path will
+#' be applied to the elements, but this will only work well with polygons.  To
+#' handle this properly for open paths and similar you will need to run with
+#' `clip = FALSE`, make polygons in the shapes of the open paths, e.g. with
+#' [polyclip::polylineoffset()], and then retrieve the clipping path from the
+#' "clip-path" attribute to apply it yourself.
+#'
 #' @section Patterns, Masks, and Clip Paths:
 #'
 #' These are collected under the "url" attribute of the return value, and while
@@ -369,6 +377,8 @@ process_use_node <- function(node.parsed) {
 #'   based ones.
 #' @param transform TRUE (default) or FALSE whether to apply the transformation
 #'   to the computed element coordinates.
+#' @param clip TRUE or FALSE (default) whether to apply clipping paths to the
+#'   output.  See "Gradients, Patterns, Masks, and Clip Paths".
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 #'   objects.  See "Details".
 #' @examples
@@ -412,13 +422,9 @@ process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   # patterns as we could apply them here
   #
   # At this time we ony apply clipping
+  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
 
-  ## apply transformations to url elements; this may not be robust to url
-  ## elements that are inside the document proper?
-
-  # tmp <- lapply(tmp, apply_clip, url=url)
-
-  # Apply transformations to normal elements
+  # Apply transformations
   tmp <- lapply(tmp, transform_coords, apply=transform)
 
   # compute extents
