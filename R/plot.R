@@ -228,7 +228,7 @@ plot_one <- function(x, ppi, ...) {
       # possible into something the device can recognize.  More complex logic
       # would be required to specify patterns, or the actual gradient, etc.
       fill <- approximate_fill(style[['fill']], url)
-      stroke <- style[['stroke']]
+      stroke <- approximate_fill(style[['stroke']], url)
 
       # Here we apply alpha by generating 8 char hex codes (e.g. #FFFFFFCC)
       fill <- append_alpha(fill, style[['fill-opacity']])
