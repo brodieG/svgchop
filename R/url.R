@@ -38,7 +38,7 @@ process_url <- function(node) {
     name %in%
     c('linearGradient', 'radialGradient', 'pattern', 'clipPath', 'mask')
   ) {
-    node.new <- node
+    node.new <- structure(list(), class='hidden')
     url.old[[id]] <- switch(
       name,
       linearGradient=process_gradient_linear(node),
