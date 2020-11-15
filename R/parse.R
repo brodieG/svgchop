@@ -323,7 +323,12 @@ process_use_node <- function(node.parsed) {
 #' Since the "opacity" value is thus reflected in "stroke-opacity" and
 #' "style-opacity" it is dropped to avoid confusion.
 #'
-#' @section Gradients:
+#' @section Gradients, Patterns, Masks, and Clip Paths:
+#'
+#' All SVG elements that are intended to be referenced via `url(#id)` from
+#' within other elements are extracted from the SVG tree and stored as the "url"
+#' attribute to the "svg_chopped" and "svg_chopped_list" objects.  In their
+#' place will be an empty list.
 #'
 #' Both linear and radial gradients have limited support.  Gradients are parsed
 #' and stop style is computed based on where they are defined.  "href" or
@@ -370,7 +375,7 @@ process_use_node <- function(node.parsed) {
 #' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' if(interactive()) plot(svg)
 
-process_svg <- function(file, steps=10, transform=TRUE) {
+process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   vetr(CHR.1, INT.1.POS.STR, LGL.1)
   xml <- try(read_xml(file))
   if(inherits(try, 'try-error'))
@@ -399,17 +404,21 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
   # clip paths, masks, and patterns, although currently only gradients are
   # supported.  These are also extracted from tree into the `url` list.
-  tmp <- process_url(tmp)
+  tmp <- process_url(tmp, transform=transform)
   url <- attr(tmp, 'url')
   attr(tmp, 'url') <- NULL
 
   # Apply the `url()` elements.  This is most meaningful for clip paths and
-  # patterns as we could in theory apply them ourselves here, although probably
-  # on an optional basis should we want the graphical device to do the work.
+  # patterns as we could apply them here
   #
-  # At this time we don't apply any of the url elements directly
+  # At this time we ony apply clipping
 
-  # Apply transformations
+  ## apply transformations to url elements; this may not be robust to url
+  ## elements that are inside the document proper?
+
+  # tmp <- lapply(tmp, apply_clip, url=url)
+
+  # Apply transformations to normal elements
   tmp <- lapply(tmp, transform_coords, apply=transform)
 
   # compute extents

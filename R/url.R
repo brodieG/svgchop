@@ -20,7 +20,7 @@
 ## referenced by other elements with the `url(#id)` expression in certain
 ## attributes.
 
-process_url <- function(node) {
+process_url <- function(node, transform=TRUE) {
   # Looking for things with xml_name in the known elements
 
   name <- attr(node, 'xml_name')
@@ -43,6 +43,7 @@ process_url <- function(node) {
       name,
       linearGradient=process_gradient_linear(node),
       radialGradient=process_gradient_radial(node),
+      clipPath=process_clip_path(node, transform),
       node
     )
   } else if (is.list(node) && length(node)) {
@@ -65,7 +66,10 @@ process_url <- function(node) {
     url.old[names(urls.new)] <- urls.new
   } else node.new <- node
 
-  attributes(node.new) <- attributes(node)
+  old.attrs <- names(attributes(node))[
+    !names(attributes(node)) %in% names(attributes(node.new))
+  ]
+  attributes(node.new)[old.attrs] <- attributes(node)[old.attrs]
   attr(node.new, 'url') <- url.old
   node.new
 }
