@@ -504,7 +504,10 @@ process_svg_node <- function(node.parsed) {
 
 parse_element <- function(node, steps) {
   attrs <- xml_attrs(node)
-  name <- tolower(xml_name(node))
+  name <- xml_name(node)
+
+  # If we're dealing with gardients here, means that they don't have their own
+  # stops so have to get others.
 
   res <- switch(name,
     path=parse_path(attrs, steps),
@@ -516,9 +519,21 @@ parse_element <- function(node, steps) {
     ellipse=parse_ellipse(attrs, steps),
     use=parse_use(node, steps),
     stop=parse_stop(node),
+    linearGradient=parse_gradient_terminal(node),
+    radialGradient=parse_gradient_terminal(node),
     list()
   )
   res
+}
+# Required because some elements (e.g. gradients) will come back with the xml
+# attrs already set.
+
+merge_xml_attrs <- function(x, attrs) {
+  attrs.new <- attr(x, 'xml_attrs')
+  if(is.null(attrs.new)) attrs.new <- list()
+  attrs.new[names(attrs)] <- attrs
+  attr(x, 'xml_attrs') <- attrs.new
+  x
 }
 
 ## Parse a Node and All It's Children
@@ -553,7 +568,8 @@ parse_node <- function(node, steps, defs=FALSE) {
     tmp
   }
   # attach attributes; this should be done before final processing
-  attr(res, 'xml_attrs') <- as.list(xml_attrs(node))
+
+  res <- merge_xml_attrs(res, xml_attrs(node))
   attr(res, 'xml_name') <- xml_name(node)
   switch(
     tolower(xml_name(node)),

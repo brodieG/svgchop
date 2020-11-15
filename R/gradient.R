@@ -93,3 +93,33 @@ parse_stop <- function(node) {
   }
   structure(offset, class=c('gradient-stop'))
 }
+
+# Gradients That Reference Others
+#
+# A gradient ends up being terminal usual because it references another one with
+# stops via href.  Any attributes not specified in the parent are replaced with
+# those of the child.  Stops are also added.
+#
+# Note the node is an xml node in this case.  We need to record all the top
+# level attributes, then merge them and the child stops
+
+
+parse_gradient_terminal <- function(node) {
+
+  # steps don't matter, and `parse_use` adds a wrapping list because `use`
+  # element sare supposed to be a wrapper.  For gradients we actually want the
+  # wrapping layer to preserve its attributes.
+
+  parsed <- parse_use(node, steps=5)[[1L]]
+  # Collapse all the gradient layers untill all that is left is the stops
+
+  while(isTRUE(grepl('Gradient$', attr(parsed[[1L]], 'xml_name')))) {
+    out.attr <- attr(parsed, 'xml_attrs')
+    out.name <- attr(parsed, 'xml_name')
+    parsed <- parsed[[1L]]
+    attr(parsed, 'xml_name') <- out.name
+    attr(parsed, 'xml_attrs')[names(out.attr)] <- out.attr
+  }
+  parsed
+}
+
