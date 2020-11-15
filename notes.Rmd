@@ -27,9 +27,13 @@ lines we need to generate a polygon in the shape of the line with
 
 Clip-paths must accumulate unlike other styles, and thus must be preserved at
 each containing element so that they may be transformed and applied properly.
-So all transformations must happen first before clip-paths are applied.  That
-actually works better, because we can then easily compute the extents before
-clipping which is what we're supposed to do anyway.
+So all transformations must happen first before clip-paths are applied.
+
+Thus a change we still need to make is add clip-path retrieval to the transform
+process.
+
+That actually works better, because we can then easily compute the extents
+before clipping which is what we're supposed to do anyway.
 
 This then raises an interesting question for styles, as clip-path does not
 inherit.  So we need a set of not-inherited properties that get attached to the
@@ -66,8 +70,9 @@ gradient with the stops, and resumes normal parsing.
     * "clip-rule" support.
     * Warn about 'objectBoundingBox'
 
-* `approximate_fill` should become `approximate_color` and for gradients should
-  approximate the opacity too, not just the color.
+* `approximate_fill`:
+    * should become `approximate_color`
+    * gradients should approximate the opacity too, not just the color.
 
 * Number scientific notation beyond transform matrices.
 

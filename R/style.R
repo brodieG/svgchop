@@ -28,6 +28,11 @@ STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
 STYLE.PROPS.COLOR <- c('fill', 'stroke', 'stop-color')
 
+## These are not passed on and are attached directly as an attribute to the
+## object
+
+STYLE.PROPS.NO.INHERIT <- c('clip-path')
+
 web.colors <- readRDS(system.file('extdata/web-colors.RDS', package='svgchop'))
 
 #' SVG Color to Hex Code Mapping
@@ -221,8 +226,9 @@ append_alpha <- function(color, alpha) {
 ## Track Computed Styles
 ##
 ## Normal styles overwrite prior ones.  Cumulative ones need to be tracked so
-## they can have a final computation applied at time of styling.  Currently we
-## only have opacity, which we could recompute as we go along.
+## they can have a final computation applied at time of styling.  There are 
+## currently no cumulative styles (and it may have been an error to implement
+## them).
 
 update_style <- function(old, new) {
   vetr(list(), list())
@@ -388,6 +394,11 @@ parse_inline_style <- function(node, style.prev=style(), style.sheet) {
 }
 parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
   style <- parse_inline_style(node, style.prev, style.sheet)
+  # Peel off no-inherit styles. This is not a good implementation.
+  style.no.inherit <- style[STYLE.PROPS.NO.INHERIT]
+  style[STYLE.PROPS.NO.INHERIT] <-
+    rep(NA_character_, length(STYLE.PROPS.NO.INHERIT))
+
   if(!is.list(node) || !length(node)) {
     attr(node, 'style-computed') <- proc_computed(style)
   } else {
@@ -395,7 +406,9 @@ parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
       node, parse_inline_style_rec, style.prev=style, style.sheet=style.sheet
     )
   }
-  node
+  # re-attach the no inherit styles directly as attributes.
+  attributes(node)[STYLE.PROPS.NO.INHERIT] <- style.no.inherit
+  no
 }
 ## Determine What Styles Apply to Each Element
 ##

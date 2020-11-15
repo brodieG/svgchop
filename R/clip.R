@@ -137,7 +137,7 @@ process_clip_path <- function(node, transform=FALSE) {
 ## http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Classes/Clipper/Methods/Execute.htm
 
 apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
-  clip.path <- attr(node, 'style-computed')[['clip-path']]
+  clip.path <- attr(node, 'clip-path')
   clip <- if(!is.null(clip.path) && !is.na(clip.path)) {
     obj <- get_url_obj(clip.path, url)
     if(!is.null(obj) && length(prev.clip)) {
