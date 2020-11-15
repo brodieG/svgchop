@@ -23,7 +23,7 @@ common_grad_attr <- function(x) {
     # computed now; will have ot figure out how it interacts with transform
     # application.
     gradientTransform <-
-      parse_transform(structure(NULL, transform=attrs[['gradientTransform']]))
+      parse_transform(structure(list(), transform=attrs[['gradientTransform']]))
   }
   if(!is.null(attrs[['spreadMethod']]))
     spreadMethod <- attrs[['spreadMethod']]
