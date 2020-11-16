@@ -183,12 +183,12 @@ compute_transform <- function(x, trans.prev=trans()) {
 apply_transform <- function(x) {
   trans <- attr(x, 'transform-computed')
   res <- if(!is.list(x)) {
-    tmp <- if(is.matrix(x) && inherits(trans, 'trans')) {
+    tmp <- if(is.matrix(x) && ncol(x) && inherits(trans, 'trans')) {
       (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
     } else x
     # Also apply transform to clip path if present
     clip.dat <- as_svg_chop_mx(attr(x, 'clip-path'), closed=FALSE)
-    if(inherits(trans, 'trans') && is.matrix(clip.dat)) {
+    if(inherits(trans, 'trans') && is.matrix(clip.dat) && ncol(clip.dat)) {
       clip <- (trans[['mx']] %*% rbind(clip.dat, 1))[-3,,drop=FALSE]
       attributes(clip) <- attributes(clip.dat)
       attr(tmp, 'clip-path') <- clip
