@@ -421,14 +421,14 @@ process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   url <- attr(tmp, 'url')
   attr(tmp, 'url') <- NULL
 
+  # Apply transformations
+  tmp <- lapply(tmp, transform_coords, apply=transform)
+
   # Apply the `url()` elements.  This is most meaningful for clip paths and
   # patterns as we could apply them here
   #
   # At this time we ony apply clipping
   tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
-
-  # Apply transformations
-  tmp <- lapply(tmp, transform_coords, apply=transform)
 
   # compute extents
   get_coords <- function(obj, coord)
