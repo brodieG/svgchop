@@ -69,6 +69,8 @@ gradient with the stops, and resumes normal parsing.
 * Clipping
     * "clip-rule" support.
     * Warn about 'objectBoundingBox'
+    * Ensure all clip paths are stored as matrices, and only on the terminal
+      leaves.
 
 * `approximate_fill`:
     * should become `approximate_color`

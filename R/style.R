@@ -226,7 +226,7 @@ append_alpha <- function(color, alpha) {
 ## Track Computed Styles
 ##
 ## Normal styles overwrite prior ones.  Cumulative ones need to be tracked so
-## they can have a final computation applied at time of styling.  There are 
+## they can have a final computation applied at time of styling.  There are
 ## currently no cumulative styles (and it may have been an error to implement
 ## them).
 
@@ -407,8 +407,13 @@ parse_inline_style_rec <- function(node, style.prev=style(), style.sheet) {
     )
   }
   # re-attach the no inherit styles directly as attributes.
-  attributes(node)[STYLE.PROPS.NO.INHERIT] <- style.no.inherit
-  no
+  no.inh.val <- vapply(
+    style.no.inherit, function(x) !is.null(x) && !is.na(x), FALSE
+  )
+  attributes(node)[STYLE.PROPS.NO.INHERIT[no.inh.val]] <-
+    style.no.inherit[no.inh.val]
+
+  node
 }
 ## Determine What Styles Apply to Each Element
 ##

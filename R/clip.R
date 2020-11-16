@@ -20,7 +20,8 @@
 ## closed explicitly or not.
 
 as_polyclip_poly <- function(mx) {
-  res <- if(!length(attr(mx, 'starts'))) {
+  starts <- attr(mx, 'starts')
+  res <- if(!length(starts)) {
     list(x=mx[1,], y=mx[2,])
   } else {
     pieces <- cumsum(seq_len(ncol(mx)) %in% starts)
