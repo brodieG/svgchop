@@ -66,11 +66,19 @@ gradient with the stops, and resumes normal parsing.
 
 ## ToDo
 
+* `attach_url`:
+    * Need to make sure all url objects that need to be transformed are attached
+      to the tree.
+
 * Clipping
     * "clip-rule" support.
     * Warn about 'objectBoundingBox'
     * Ensure all clip paths are stored as matrices, and only on the terminal
       leaves.
+    * How clip links style and transform and clip is a mess.  The problem is
+      clip paths are subject to transformation, but they can be attached to
+      non-terminal leaves, so all the logic that focused on terminal based
+      branching now requires and exception to handle clip-paths (urgh).
 
 * `approximate_fill`:
     * should become `approximate_color`

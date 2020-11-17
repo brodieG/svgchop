@@ -139,16 +139,15 @@ process_clip_path <- function(node, transform=FALSE) {
 
 apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
   clip.path <- attr(node, 'clip-path')
-  clip <- if(!is.null(clip.path) && !is.na(clip.path)) {
-    obj <- get_url_obj(clip.path, url)
-    if(!is.null(obj) && length(prev.clip)) {
+  clip <- if(is.list(clip.path)) {
+    if(!is.null(clip.path) && length(prev.clip)) {
       tmp <- polyclip::polyclip(
-        prev.clip, obj,
-        fillA=attr(prev.clip, 'fill-rule'), fillB=attr(obj, 'fill-rule')
+        prev.clip, clip.path,
+        fillA=attr(prev.clip, 'fill-rule'), fillB=attr(clip.path, 'fill-rule')
       )
       attr(tmp, 'fill-rule') <- 'evenodd'
       tmp
-    } else obj
+    } else clip.path
   } else prev.clip
 
   res <- if(!is.list(node)) {

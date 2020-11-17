@@ -421,6 +421,11 @@ process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   url <- attr(tmp, 'url')
   attr(tmp, 'url') <- NULL
 
+  # We need to attach some URL objects to the tree, in particular clip-paths so
+  # that they may be transformed correctly.  Can only do this once all url
+  # references are resolved above.
+  tmp <- lapply(tmp, attach_url, url=url)
+
   # Apply transformations
   tmp <- lapply(tmp, transform_coords, apply=transform)
 

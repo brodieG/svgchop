@@ -73,7 +73,23 @@ process_url <- function(node, transform=TRUE) {
   attr(node.new, 'url') <- url.old
   node.new
 }
-## Given an id in form 
+## Attach URL Objects To Tree
+##
+## Right now we only attach clip-paths so they may be transformed.
+
+attach_url <- function(node, url) {
+  clip.path <- attr(node, 'clip-path')
+  if(!is.null(clip.path) && !is.na(clip.path)) {
+    obj <- get_url_obj(clip.path, url)
+    if(!is.null(obj))  attr(node, 'clip-path') <- obj
+  }
+  if(is.list(node) && length(node)) {
+    node[] <- lapply(node, attach_url, url=url)
+  }
+  node
+}
+
+## Given an id in form `url(#id)` Retrieve Corresponding Object
 ##
 ## @param x an href of form `url(#id)`
 ## @param url the object containing all eligible URL-referenceable objects
