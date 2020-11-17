@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="200" height="200">
+<defs>
+    <!--
+    <g transform="translate(-100, -100)">
+    <clipPath id="cut">
+        <rect
+          id='rect1' width="100" height="100" x="100" y="50"
+         />
+    </clipPath>
+    </g>
+    -->
+    <clipPath id="cut" transform="translate(-100 -100)">
+        <path id='path1'
+        d='M100 50h100v100h-100' />
+        <!--
+        <rect
+          id='rect1' width="100" height="100" x="100" y="50"
+         />
+         -->
+    </clipPath>
+</defs>
+    <!--
+    <circle
+      class="consumption"
+      transform="translate(100,100)" 
+      clip-path="url(#cut)" 
+      r="50"
+    >
+    -->
+    <circle
+      class="consumption"
+      r="50"
+      fill="green" fill-opacity=".3"
+    />
+    <circle
+      class="consumption"
+      clip-path="url(#cut)" 
+      transform="translate(100,100)"
+      r="50"
+    />
+    <use xlink:href='#path1' fill='red' fill-opacity=".3" />
+</svg>

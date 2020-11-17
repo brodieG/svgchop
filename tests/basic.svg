@@ -1,3 +1,5 @@
+<!--
+     Original version of the file in inst/svg with global styles for testing whether those worked.  Couldn't sue those on the test file because we combined them into one big html page -->
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
      viewBox="0 0 100 100"
@@ -5,25 +7,28 @@
      >
 <defs>
   <style><![CDATA[
+      *              {fill-opacity: .5; stroke: black;}
+      polyline       {stroke: blue; stroke-width: 2;}
       #frame         {fill: transparent;}
       #circ-ctrl     {fill: red; fill-opacity: 1;}
       #circ-end      {fill: blue; fill-opacity: 1;}
-      line.basic     {stroke: green;}
+      line           {stroke: green;}
       .circle-scaled {fill: blue;}
       .no-fill       {fill: none;}
       #random-poly   {fill: green;}
+      .polygon       {fill: red;}
     ]]>
   </style>
   <rect id="rect-base" x="20" y="20" width="60" height="60"/>
   <circle id="circ-base" cx="50" cy="50" r="30"/>
   <circle id="circ-ctrl" r="3"/>
   <circle id="circ-end" r="3"/>
-  <line id="line-base" class="basic" x1="20" y1="20" x2="80" y2="80"/>
+  <line id="line-base" x1="20" y1="20" x2="80" y2="80"/>
   <ellipse id="ellipse-base" cx="50" cy="50"/>
 </defs>
 
-<rect id="frame" x="1" y="1" width="98" height="98" stroke="blue"/>
-<g transform="scale(.3333333333)" style="fill-opacity: .5; stroke: black;">
+<rect id="frame" width="100" height="100" stroke="blue"/>
+<g transform="scale(.3333333333)">
   <g id="row-1">
     <use xlink:href="#rect-base" />
     <use xlink:href="#rect-base" transform="rotate(45 50 50)"/>

@@ -323,7 +323,12 @@ process_use_node <- function(node.parsed) {
 #' Since the "opacity" value is thus reflected in "stroke-opacity" and
 #' "style-opacity" it is dropped to avoid confusion.
 #'
-#' @section Gradients:
+#' @section Gradients, Patterns, Masks, and Clip Paths:
+#'
+#' All SVG elements that are intended to be referenced via `url(#id)` from
+#' within other elements are extracted from the SVG tree and stored as the "url"
+#' attribute to the "svg_chopped" and "svg_chopped_list" objects.  In their
+#' place will be an empty list.
 #'
 #' Both linear and radial gradients have limited support.  Gradients are parsed
 #' and stop style is computed based on where they are defined.  "href" or
@@ -341,6 +346,17 @@ process_use_node <- function(node.parsed) {
 #'
 #' The `plot` method for "svg_chopped" objects will use [approximate_fill()] to
 #' compute a single color from the gradient data.
+#'
+#' Clip paths are computed and attached as the "clip-path" attribute of the
+#' terminal leaves.  If `clip` is set to TRUE (default), then the clip path will
+#' be applied to the elements, but this will only work well with polygons.  To
+#' handle this properly for open paths and similar you will need to run with
+#' `clip = FALSE`, make polygons in the shapes of the open paths, e.g. with
+#' [polyclip::polylineoffset()], and then retrieve the clipping path from the
+#' "clip-path" attribute to apply it yourself.
+#'
+#' "clip-path" attributes on "clipPath" elements are not followed, which is a
+#' departure from the spec.
 #'
 #' @section Patterns, Masks, and Clip Paths:
 #'
@@ -364,13 +380,15 @@ process_use_node <- function(node.parsed) {
 #'   based ones.
 #' @param transform TRUE (default) or FALSE whether to apply the transformation
 #'   to the computed element coordinates.
+#' @param clip TRUE or FALSE (default) whether to apply clipping paths to the
+#'   output.  See "Gradients, Patterns, Masks, and Clip Paths".
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 #'   objects.  See "Details".
 #' @examples
 #' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' if(interactive()) plot(svg)
 
-process_svg <- function(file, steps=10, transform=TRUE) {
+process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   vetr(CHR.1, INT.1.POS.STR, LGL.1)
   xml <- try(read_xml(file))
   if(inherits(try, 'try-error'))
@@ -399,18 +417,23 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
   # clip paths, masks, and patterns, although currently only gradients are
   # supported.  These are also extracted from tree into the `url` list.
-  tmp <- process_url(tmp)
+  tmp <- process_url(tmp, transform=transform)
   url <- attr(tmp, 'url')
   attr(tmp, 'url') <- NULL
 
-  # Apply the `url()` elements.  This is most meaningful for clip paths and
-  # patterns as we could in theory apply them ourselves here, although probably
-  # on an optional basis should we want the graphical device to do the work.
-  #
-  # At this time we don't apply any of the url elements directly
+  # We need to attach some URL objects to the tree, in particular clip-paths so
+  # that they may be transformed correctly.  Can only do this once all url
+  # references are resolved above.
+  tmp <- lapply(tmp, attach_url, url=url)
 
   # Apply transformations
   tmp <- lapply(tmp, transform_coords, apply=transform)
+
+  # Apply the `url()` elements.  This is most meaningful for clip paths and
+  # patterns as we could apply them here
+  #
+  # At this time we ony apply clipping
+  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
 
   # compute extents
   get_coords <- function(obj, coord)
@@ -420,8 +443,13 @@ process_svg <- function(file, steps=10, transform=TRUE) {
   tmp <- lapply(
     tmp,
     function(x) {
-      xs <- range(c(0, unlist(lapply(x, get_coords, 1))))
-      ys <- range(c(0, unlist(lapply(x, get_coords, 2))))
+      xall <- unlist(lapply(x, get_coords, 1))
+      yall <- unlist(lapply(x, get_coords, 2))
+      # default size of an SVG embedded in HTML (stand-alones vary in size
+      # depending on browser, but are often 100vh or some such so require device
+      # info
+      xs <- if(length(xall)) range(xall) else c(0, 300)
+      ys <- if(length(yall)) range(yall) else c(0, 150)
       attr(x, 'extents') <- list(x=xs, y=ys)
       attr(x, 'url') <- url
       attr(x, 'css') <- css
@@ -499,7 +527,10 @@ process_svg_node <- function(node.parsed) {
 
 parse_element <- function(node, steps) {
   attrs <- xml_attrs(node)
-  name <- tolower(xml_name(node))
+  name <- xml_name(node)
+
+  # If we're dealing with gardients here, means that they don't have their own
+  # stops so have to get others.
 
   res <- switch(name,
     path=parse_path(attrs, steps),
@@ -511,9 +542,21 @@ parse_element <- function(node, steps) {
     ellipse=parse_ellipse(attrs, steps),
     use=parse_use(node, steps),
     stop=parse_stop(node),
+    linearGradient=parse_gradient_terminal(node),
+    radialGradient=parse_gradient_terminal(node),
     list()
   )
   res
+}
+# Required because some elements (e.g. gradients) will come back with the xml
+# attrs already set.
+
+merge_xml_attrs <- function(x, attrs) {
+  attrs.new <- attr(x, 'xml_attrs')
+  if(is.null(attrs.new)) attrs.new <- list()
+  attrs.new[names(attrs)] <- attrs
+  attr(x, 'xml_attrs') <- attrs.new
+  x
 }
 
 ## Parse a Node and All It's Children
@@ -548,7 +591,8 @@ parse_node <- function(node, steps, defs=FALSE) {
     tmp
   }
   # attach attributes; this should be done before final processing
-  attr(res, 'xml_attrs') <- as.list(xml_attrs(node))
+
+  res <- merge_xml_attrs(res, xml_attrs(node))
   attr(res, 'xml_name') <- xml_name(node)
   switch(
     tolower(xml_name(node)),
