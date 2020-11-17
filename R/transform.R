@@ -171,7 +171,7 @@ parse_transform <- function(node, trans.prev=trans()) {
 
 compute_transform <- function(x, trans.prev=trans()) {
   trans <- parse_transform(x, trans.prev)
-  if(!is.list(x) || !length(x)) {
+  if(!is.list(x) || !length(x) || is.list(attr(x, 'clip-path'))) {
     attr(x, 'transform-computed') <- trans
     x
   }
@@ -191,8 +191,9 @@ apply_transform <- function(x) {
       if(is.matrix(x) && ncol(x) && inherits(trans, 'trans')) {
         (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
       } else x
-    }
-    if(!is.null(clip) && !is.na(clip)) {
+    } else x
+
+    if(is.list(clip) && length(clip[[1]])) {
       clip.dat <- as_svg_chop_mx(clip, closed=FALSE)
       clip.trans <- (trans[['mx']] %*% rbind(clip.dat, 1))[-3,,drop=FALSE]
       clip <- as_polyclip_poly(clip.trans)
