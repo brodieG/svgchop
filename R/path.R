@@ -258,10 +258,7 @@ path_simplify <- function(path, steps) {
     )
     # nocov end
   }
-  # Create data frame and add 'start' attribute to designate sub-paths
-  res <- rbind(x=xs, y=ys)
-  attr(res, 'starts') <- which(cmd == 'M' & seq_along(cmd) > 1)
-  res
+  rbind(x=xs, y=ys)
 }
 #' Convert SVG Path to Line Segments
 #'
@@ -303,14 +300,16 @@ parse_path <- function(x, steps=20) {
     cmds.cmds <- vapply(cmds.abs, '[[', "", 1)
     cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
 
-    # compute which paths are closed
+    # Simplify to x,y coords
     coords <- unname(lapply(cmds.split, path_simplify, steps))
+
+    # compute which paths are closed
     closed <- unname(
       vapply(cmds.split, function(x) x[[length(x)]][[1]] == 'Z', TRUE)
     )
     # Compute sub-path starting points
     coords <- if(length(coords) > 1) {
-      starts <- vapply(coords, ncol, 0)
+      starts <- cumsum(vapply(coords, ncol, 0))
       starts <- starts[-length(starts)] + 1L
       coords <- do.call(cbind, coords)
       attr(coords, 'starts') <- starts

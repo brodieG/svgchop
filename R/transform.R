@@ -103,7 +103,10 @@ parse_transform <- function(node, trans.prev=trans()) {
     cmds <- proc1[seq_len(nrow(cs))]
     vals <- proc1[seq_len(nrow(cs)) + nrow(cs)]
     vals2 <- lapply(
-      regmatches(vals, gregexpr("-?[0-9]*\\.?[0-9]+", vals)), as.numeric
+      regmatches(
+        vals,
+        gregexpr("-?[0-9]*\\.?[0-9]+(?:e[+-][0-9]+)?", vals)
+      ), as.numeric
     )
     if(any(vapply(vals2, anyNA, TRUE)))
       stop('unparseable parameters in SVG transform command')
@@ -168,26 +171,40 @@ parse_transform <- function(node, trans.prev=trans()) {
 
 compute_transform <- function(x, trans.prev=trans()) {
   trans <- parse_transform(x, trans.prev)
-  if(!is.list(x) || !length(x)) {
+  if(!is.list(x) || !length(x) || is.list(attr(x, 'clip-path'))) {
     attr(x, 'transform-computed') <- trans
     x
-  } else {
+  }
+  if(is.list(x) && length(x)) {
     x[] <- lapply(x, compute_transform, trans)
   }
   x
 }
 
 apply_transform <- function(x) {
-  trans <- attr(x, 'transform-computed')
-  res <- if(!is.list(x)) {
-    if(is.matrix(x) && inherits(trans, 'trans'))
-      (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
-    else x
-  } else  {
-    lapply(x, apply_transform)
+  attrs <- attributes(x)
+  trans <- attrs[['transform-computed']]
+  clip <- attrs[['clip-path']]
+
+  if(inherits(trans, 'trans')) {
+    x <- if(!is.list(x)) {
+      if(is.matrix(x) && ncol(x) && inherits(trans, 'trans')) {
+        (trans[['mx']] %*% rbind(x, 1))[-3,,drop=FALSE]
+      } else x
+    } else x
+
+    if(is.list(clip) && length(clip[[1]])) {
+      clip.dat <- as_svg_chop_mx(clip, closed=FALSE)
+      clip.trans <- (trans[['mx']] %*% rbind(clip.dat, 1))[-3,,drop=FALSE]
+      clip <- as_polyclip_poly(clip.trans)
+    }
   }
-  attributes(res) <- attributes(x)
-  res
+  if(is.list(x) && length(x)) {
+    x[] <- lapply(x, apply_transform)
+  }
+  attrs[['clip-path']] <- clip
+  attributes(x) <- attrs
+  x
 }
 
 

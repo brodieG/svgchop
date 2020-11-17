@@ -1,3 +1,52 @@
+## Clip Paths
+
+How are transforms applied to clip paths?  Do we transform clip path elements
+first?  Probably.  Should it be transform clip paths, apply, then transform
+clipped object?
+
+clipPaths are applied prior to any transformations on the object.
+
+So from experiments it seems we want to transform the clipPaths, apply them,
+then transform the resulting objects.  Nested transforms outside of the
+clipPaths don't seem to apply, but they do seem to apply to starting from a
+transform on the clipPath proper down to the contained elements.
+
+One major issue is that we can use polyclip to clip, but in order for things to
+look right we need to clip the fill and the borders differently.  Fill can be
+clipped normally, but stroke cannot.  For the stroke, the real issue is we can't
+just do point in polygon; we need to generate a new point that is at the
+intersection of the clip path and the stroke.  This point should exist, and
+should be the first point.  Aah, but that's fine, because `pointinpolygon`
+reports whether it is on the boundary.  So:
+
+Actually, let's not worry about this.  We'll compute the clip polygon correctly
+in matrix format that will get transformed, etc, and optionally we will apply
+it, but when we do it will not work for clipping lines?  Really, for clipping
+lines we need to generate a polygon in the shape of the line with
+`polyclip::polylineoffset` which we can then clip.
+
+Clip-paths must accumulate unlike other styles, and thus must be preserved at
+each containing element so that they may be transformed and applied properly.
+So all transformations must happen first before clip-paths are applied.
+
+Thus a change we still need to make is add clip-path retrieval to the transform
+process.
+
+That actually works better, because we can then easily compute the extents
+before clipping which is what we're supposed to do anyway.
+
+This then raises an interesting question for styles, as clip-path does not
+inherit.  So we need a set of not-inherited properties that get attached to the
+current element.
+
+## Gradients
+
+Gradients (and perhaps others) support hrefs to acquire stops from other
+elements.
+
+In those cases the gradients become terminal elements, so we can probably have
+specialized handling for them in `parse_element`, that then eventually finds the
+gradient with the stops, and resumes normal parsing.
 
 ## Not Supported
 
@@ -17,12 +66,30 @@
 
 ## ToDo
 
-* Preserve aspect ratio when both width/height are 100%?  That seems to be the
-  default based on fill-rule.svg.
+* `attach_url`:
+    * Need to make sure all url objects that need to be transformed are attached
+      to the tree.
+
+* Clipping
+    * "clip-rule" support.
+    * Warn about 'objectBoundingBox'
+    * Ensure all clip paths are stored as matrices, and only on the terminal
+      leaves.
+    * How clip links style and transform and clip is a mess.  The problem is
+      clip paths are subject to transformation, but they can be attached to
+      non-terminal leaves, so all the logic that focused on terminal based
+      branching now requires and exception to handle clip-paths (urgh).
+
+* `approximate_fill`:
+    * should become `approximate_color`
+    * gradients should approximate the opacity too, not just the color.
+
+* Number scientific notation beyond transform matrices.
 
 * Examples subsetting the flattened list and plotting part of the thing.
 
-* Scale to fit so that we can resize things
+* Scale to fit so that we can resize things (exists in gallery, should be a plot
+  option e.g. for Tomek Car).
 
 * Add a "not supported" condition and generally let the code run through to the
   extent possible.
@@ -30,13 +97,16 @@
 * Include mixed units in the "not supported" alerts, or maybe just non-pixel
   units.
 
-* Check that transform=FALSE actually works (not sure it does).
+* Check that transform=FALSE actually works (not sure it does), complicated by
+  the separate transform of clip paths and display elements.
 
 * Add a mechanism to apply transform ex-post (including recomputing extents).
 
 * When implementing patterns, will need to think about whether to apply them
   truly (i.e. replace target with tessellated and clipped pattern, or just
-  compute the un-transformed pattern).
+  compute the un-transformed pattern).  Probably the latter, relying on the
+  display device to apply the pattern (maybe, this works for e.g. the new grid
+  device, but will not for rayrender).
 
 ## Lit Review
 
