@@ -133,8 +133,8 @@ approximate_color <- function(color, url) {
     if(inherits(obj, 'gradient')) {
       color <- obj[['stops']][['color']]
       rgb.col <- rgb(t(round(rowMeans(col2rgb(color)))), maxColorValue=255)
-      if(is.numeric(obj[['stops']])) {
-        opacity <- mean(obj[['opacity']])
+      if(is.numeric(obj[['stops']][['opacity']])) {
+        opacity <- mean(obj[['stops']][['opacity']])
         attr(rgb.col, 'opacity') <- opacity
       }
       rgb.col

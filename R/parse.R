@@ -464,6 +464,7 @@ process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
 num.pat.core <- "(-?\\d*\\.?\\d+)"
 num.pat <- sprintf("%s(?:\\w|%%)*", num.pat.core)
 
+
 ## Vectorized, parses lengths dropping units.
 
 parse_length <- function(x) {
@@ -485,6 +486,26 @@ is_pct <- function(x) {
   vetr(character())
   grepl(sprintf("^\\s*%s%%\\s*$", num.pat.core), x)
 }
+# Convert to numeric accounting for percentage signs if any.  Assumes
+# other non-pct are in natural numeric format
+#
+# @param whether to constraint pct values to a range
+
+parse_pct <- function(x, range=c(-Inf,Inf)) {
+  vetr(range=numeric(2))
+  range <- sort(range)
+  is <- is_pct(x)
+  res <- numeric(length(x))
+  if(any(is)) {
+    tmp <- as.numeric(
+      sub(sprintf("^\\s*(%s)%%\\s*$", num.pat.core), "\\1", x[is])
+    )
+    res[is] <- pmin(range[2], pmax(range[1], tmp / 100))
+  }
+  res[!is] <- as.numeric(x[!is])
+  res
+}
+
 ## For lengths that are pasted together; note parse_length IS vectorized
 ## e.g. "5 5 5 5"
 parse_lengths <- function(x) {
@@ -529,8 +550,6 @@ parse_element <- function(node, steps) {
   attrs <- xml_attrs(node)
   name <- xml_name(node)
 
-  # If we're dealing with gardients here, means that they don't have their own
-  # stops so have to get others.
 
   res <- switch(name,
     path=parse_path(attrs, steps),
@@ -542,6 +561,9 @@ parse_element <- function(node, steps) {
     ellipse=parse_ellipse(attrs, steps),
     use=parse_use(node, steps),
     stop=parse_stop(node),
+
+    # If we're dealing with gardients here, means that they don't have their own
+    # stops so have to get others.  Otherwise they are not terminal.
     linearGradient=parse_gradient_terminal(node),
     radialGradient=parse_gradient_terminal(node),
     list()

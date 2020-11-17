@@ -231,16 +231,16 @@ plot_one <- function(x, ppi, ...) {
       stroke <- approximate_color(style[['stroke']], url)
 
       #It's possible to get opacity back from approximation
-      fill.op <- attr('fill', 'opacity')
+      fill.op <- attr(fill, 'opacity')
       fill.op <- if(is.null(fill.op)) style[['fill-opacity']]
       else style[['fill-opacity']] * fill.op
-      stroke.op <- attr('stroke', 'opacity')
+      stroke.op <- attr(stroke, 'opacity')
       stroke.op <- if(is.null(stroke.op)) style[['stroke-opacity']]
       else style[['stroke-opacity']] * stroke.op
 
       # Here we apply alpha by generating 8 char hex codes (e.g. #FFFFFFCC)
       fill <- append_alpha(fill, fill.op)
-      stroke <- append_alpha(stroke, fill.op)
+      stroke <- append_alpha(stroke, stroke.op)
 
       stroke.width <- style[['stroke-width']]
       fill.rule <- c(evenodd='evenodd', nonzero='winding')[style[['fill-rule']]]

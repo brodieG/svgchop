@@ -5,9 +5,9 @@ process_stops <- function(node) {
 
   stops <- node[stop.children]
   stop.style <- lapply(stops, attr, 'style-computed')
-  stop.offset <- vapply(stops, "[[", 0, 1)
+  stop.offset <- vapply(stops, "[[", 0, 1)  # already computed earlier
   stop.color <- vapply(stop.style, '[[', "", 'stop-color')
-  stop.opacity <- vapply(stop.style, '[[', "", 'stop-opacity')
+  stop.opacity <- parse_pct(vapply(stop.style, '[[', "", 'stop-opacity'))
   list(offset=stop.offset, color=stop.color, opacity=stop.opacity)
 }
 
@@ -82,16 +82,9 @@ process_gradient_radial <- function(node) {
 }
 
 parse_stop <- function(node) {
-  pat <- sprintf("^\\s*%s(\\S*)\\s*$", num.pat.core)
   offset <- trimws(xml_attr(node, 'offset'))
-  offset <- if(!grepl(pat, offset)){
-    NA
-  } else {
-    m <- regmatches(offset, regexec(pat, offset))[[1]]
-    val <- if(m[3] == "%") as.numeric(m[2]) / 100 else as.numeric(m[2])
-    max(c(min(c(1, val)), 0))
-  }
-  structure(offset, class=c('gradient-stop'))
+  m <- parse_pct(offset)
+  structure(m, class=c('gradient-stop'))
 }
 
 # Gradients That Reference Others
@@ -102,7 +95,6 @@ parse_stop <- function(node) {
 #
 # Note the node is an xml node in this case.  We need to record all the top
 # level attributes, then merge them and the child stops
-
 
 parse_gradient_terminal <- function(node) {
 
