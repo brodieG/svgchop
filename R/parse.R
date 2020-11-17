@@ -339,7 +339,7 @@ process_use_node <- function(node.parsed) {
 #' "gradientTransform" is computed into a transformation matrix, but nothing
 #' else is done with it.
 #'
-#' The `plot` method for "svg_chopped" objects will use [approximate_fill()] to
+#' The `plot` method for "svg_chopped" objects will use [approximate_color()] to
 #' compute a single color from the gradient data.
 #'
 #' @section Patterns, Masks, and Clip Paths:

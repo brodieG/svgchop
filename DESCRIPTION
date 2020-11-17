@@ -24,7 +24,7 @@ License: GPL (>= 2)
 LazyData: true
 URL: https://github.com/brodieG/svgchop
 BugReports: https://github.com/brodieG/svgchop/issues
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: knitr
 Encoding: UTF-8

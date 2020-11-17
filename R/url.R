@@ -69,20 +69,20 @@ process_url <- function(node) {
   attr(node.new, 'url') <- url.old
   node.new
 }
-#' Approximate Fill
+#' Approximate Color
 #'
-#' The "fill" attribute to SVG elements may be specified in the form "url(#id)"
-#' where "id" is the DOM id of another SVG element.  This is used to implement
-#' complex fills such as gradients and patterns.  This function will attempt to
-#' represent the complex fills with a single color if it can based on data from
-#' the url-referenced object.
+#' The "fill" and "stroke" attributes to SVG elements may be specified in the
+#' form "url(#id)" where "id" is the DOM id of another SVG element.  This is
+#' used to implement complex colors such as gradients and patterns.  This
+#' function will attempt to represent the complex fills with a single color if
+#' it can based on data from the url-referenced object.
 #'
 #' Currently only gradients are approximated.  They are approximated by taking
 #' the arithmetic mean of the stop color RGB values.
 #'
 #' @export
 #' @seealso [process_svg()]
-#' @param fill character(1L) a value used as the "fill" attribute of an SVG
+#' @param color character(1L) a value used as the "fill" attribute of an SVG
 #'   element.
 #' @param url "url-data" object, typically kept as the "url" attribute of
 #'   "svg_chopped_list" objects.
@@ -92,16 +92,21 @@ process_url <- function(node) {
 #' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' fill.1 <- attr(svg[[1]][[2]], 'style-computed')[['fill']]
 #' fill.1 # A gradient fill
-#' approximate_fill(fill.1, attr(svg, 'url'))
+#' approximate_color(fill.1, attr(svg, 'url'))
 
-approximate_fill <- function(fill, url) {
+approximate_color <- function(color, url) {
   vetr(character(1L), structure(list(), class="url-data"))
-  if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", fill)) {
-      url.id <- sub(".*#([^\\)]+)\\).*", "\\1", fill)
+  if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", color)) {
+      url.id <- sub(".*#([^\\)]+)\\).*", "\\1", color)
     obj <- url[[url.id]]
     if(inherits(obj, 'gradient')) {
-      stops <- obj[['stops']][['color']]
-      rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)
+      color <- obj[['stops']][['color']]
+      rgb.col <- rgb(t(round(rowMeans(col2rgb(color)))), maxColorValue=255)
+      if(is.numeric(obj[['stops']])) {
+        opacity <- mean(obj[['opacity']])
+        attr(rgb.col, 'opacity') <- opacity
+      }
+      rgb.col
     } else NA_character_
-  } else fill
+  } else color
 }
