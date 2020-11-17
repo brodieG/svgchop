@@ -305,8 +305,10 @@ proc_color <- function(colors) {
     hex <- matrix(format(as.hexmode(vals), width=2), nrow=nrow(vals))
     colors[rgb] <- paste0('#', hex[1,], hex[2,], hex[3,])
   }
-  # url id codes
-  is.url <- grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", colors)
+  # url id codes; these allow for fallbacks, but we just ignore them
+  url.pat <- "^\\s*(url\\(#[^\\)]+\\))\\s*.*$"
+  is.url <- grepl(url.pat, colors)
+  colors[is.url] <- sub(url.pat, "\\1", colors[is.url])
 
   # color-name colors
   not.hex <- !grepl("#[0-9a-fA-F]{6}", colors)
@@ -338,6 +340,8 @@ proc_computed <- function(x) {
   if(is.na(x[['stop-color']]))
     x[['stop-color']] <- structure('#000000', class="default")
   if(x[['stop-color']] == 'none') x[['stop-color']] <- NA_character_
+  if(is.na(x[['stop-opacity']])) x[['stop-opacity']] <- "1"
+
   if(is.na(x[['stroke-width']]))
     x[['stroke-width']] <- structure("1", class="default")
   x[['stroke-width']] <- parse_length(x[['stroke-width']])

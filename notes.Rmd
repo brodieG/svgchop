@@ -66,6 +66,11 @@ gradient with the stops, and resumes normal parsing.
 
 ## ToDo
 
+* an "href" references an non-existing URL element (subscript oo error now?).
+
+* Distinguish between xml "node" and list "node" that has already been partially
+  processed ("xnode"?).
+
 * `attach_url`:
     * Need to make sure all url objects that need to be transformed are attached
       to the tree.
