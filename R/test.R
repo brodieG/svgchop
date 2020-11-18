@@ -124,12 +124,12 @@ svg_gallery_compare <- function(
         ext$x[1], ext$y[1], ext$x[2] - ext$x[1], ext$y[2] - ext$y[1]
       )
     }
-    svg.tmp <- tempfile()
+    svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
     write_xml(xml, svg.tmp)
-    file.append(out, svg.tmp)
-    svg <- process_svg(svg.tmp, ...)
-    unlink(svg.tmp)
+    cat(sprintf("<img src='%s' />", svg.tmp), file=out, append=TRUE)
 
+    # generate chopped svg
+    svg <- process_svg(svg.tmp, ...)
     png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
     plot(svg, ppi=ppi)
