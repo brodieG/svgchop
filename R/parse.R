@@ -429,13 +429,7 @@ process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   # Apply transformations
   tmp <- lapply(tmp, transform_coords, apply=transform)
 
-  # Apply the `url()` elements.  This is most meaningful for clip paths and
-  # patterns as we could apply them here
-  #
-  # At this time we ony apply clipping
-  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
-
-  # compute extents
+  # Compute extents (note we do this before clipping)
   get_coords <- function(obj, coord)
     if(is.matrix(obj) && !inherits(obj, 'hidden')) obj[coord,]
     else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)
@@ -455,6 +449,12 @@ process_svg <- function(file, steps=10, transform=TRUE, clip=TRUE) {
       attr(x, 'css') <- css
       x
   } )
+  # Apply the `url()` elements.  This is most meaningful for clip paths and
+  # patterns as we could apply them here
+  #
+  # At this time we ony apply clipping
+  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
+
   structure(
     give_names(tmp),
     class='svg_chopped_list',
