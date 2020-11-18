@@ -227,12 +227,20 @@ plot_one <- function(x, ppi, ...) {
       # Fill could be specified via `url(#id)` so we need to translate that if
       # possible into something the device can recognize.  More complex logic
       # would be required to specify patterns, or the actual gradient, etc.
-      fill <- approximate_fill(style[['fill']], url)
-      stroke <- approximate_fill(style[['stroke']], url)
+      fill <- approximate_color(style[['fill']], url)
+      stroke <- approximate_color(style[['stroke']], url)
+
+      #It's possible to get opacity back from approximation
+      fill.op <- attr(fill, 'opacity')
+      fill.op <- if(is.null(fill.op)) style[['fill-opacity']]
+      else style[['fill-opacity']] * fill.op
+      stroke.op <- attr(stroke, 'opacity')
+      stroke.op <- if(is.null(stroke.op)) style[['stroke-opacity']]
+      else style[['stroke-opacity']] * stroke.op
 
       # Here we apply alpha by generating 8 char hex codes (e.g. #FFFFFFCC)
-      fill <- append_alpha(fill, style[['fill-opacity']])
-      stroke <- append_alpha(stroke, style[['stroke-opacity']])
+      fill <- append_alpha(fill, fill.op)
+      stroke <- append_alpha(stroke, stroke.op)
 
       stroke.width <- style[['stroke-width']]
       fill.rule <- c(evenodd='evenodd', nonzero='winding')[style[['fill-rule']]]

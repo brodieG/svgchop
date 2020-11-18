@@ -20,7 +20,7 @@
 ## referenced by other elements with the `url(#id)` expression in certain
 ## attributes.
 
-process_url <- function(node) {
+process_url <- function(node, transform=TRUE) {
   # Looking for things with xml_name in the known elements
 
   name <- attr(node, 'xml_name')
@@ -38,11 +38,12 @@ process_url <- function(node) {
     name %in%
     c('linearGradient', 'radialGradient', 'pattern', 'clipPath', 'mask')
   ) {
-    node.new <- node
+    node.new <- structure(list(), class='hidden')
     url.old[[id]] <- switch(
       name,
       linearGradient=process_gradient_linear(node),
       radialGradient=process_gradient_radial(node),
+      clipPath=process_clip_path(node, transform),
       node
     )
   } else if (is.list(node) && length(node)) {
@@ -65,24 +66,56 @@ process_url <- function(node) {
     url.old[names(urls.new)] <- urls.new
   } else node.new <- node
 
-  attributes(node.new) <- attributes(node)
+  old.attrs <- names(attributes(node))[
+    !names(attributes(node)) %in% names(attributes(node.new))
+  ]
+  attributes(node.new)[old.attrs] <- attributes(node)[old.attrs]
   attr(node.new, 'url') <- url.old
   node.new
 }
-#' Approximate Fill
+## Attach URL Objects To Tree
+##
+## Right now we only attach clip-paths so they may be transformed.
+
+attach_url <- function(node, url) {
+  clip.path <- attr(node, 'clip-path')
+  if(!is.null(clip.path) && !is.na(clip.path)) {
+    obj <- get_url_obj(clip.path, url)
+    if(!is.null(obj))  attr(node, 'clip-path') <- obj
+  }
+  if(is.list(node) && length(node)) {
+    node[] <- lapply(node, attach_url, url=url)
+  }
+  node
+}
+
+## Given an id in form `url(#id)` Retrieve Corresponding Object
+##
+## @param x an href of form `url(#id)`
+## @param url the object containing all eligible URL-referenceable objects
+
+is_url_ref <- function(x) grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", x)
+get_url_obj <- function(x, url) {
+   obj <- if(is_url_ref(x)) {
+    url.id <- sub(".*#([^\\)]+)\\).*", "\\1", x)
+    obj <- url[[url.id]]
+  }
+}
+
+#' Approximate Color
 #'
-#' The "fill" attribute to SVG elements may be specified in the form "url(#id)"
-#' where "id" is the DOM id of another SVG element.  This is used to implement
-#' complex fills such as gradients and patterns.  This function will attempt to
-#' represent the complex fills with a single color if it can based on data from
-#' the url-referenced object.
+#' The "fill" and "stroke" attributes to SVG elements may be specified in the
+#' form "url(#id)" where "id" is the DOM id of another SVG element.  This is
+#' used to implement complex colors such as gradients and patterns.  This
+#' function will attempt to represent the complex fills with a single color if
+#' it can based on data from the url-referenced object.
 #'
 #' Currently only gradients are approximated.  They are approximated by taking
 #' the arithmetic mean of the stop color RGB values.
 #'
 #' @export
 #' @seealso [process_svg()]
-#' @param fill character(1L) a value used as the "fill" attribute of an SVG
+#' @param color character(1L) a value used as the "fill" attribute of an SVG
 #'   element.
 #' @param url "url-data" object, typically kept as the "url" attribute of
 #'   "svg_chopped_list" objects.
@@ -92,16 +125,19 @@ process_url <- function(node) {
 #' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' fill.1 <- attr(svg[[1]][[2]], 'style-computed')[['fill']]
 #' fill.1 # A gradient fill
-#' approximate_fill(fill.1, attr(svg, 'url'))
+#' approximate_color(fill.1, attr(svg, 'url'))
 
-approximate_fill <- function(fill, url) {
+approximate_color <- function(color, url) {
   vetr(character(1L), structure(list(), class="url-data"))
-  if(grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", fill)) {
-      url.id <- sub(".*#([^\\)]+)\\).*", "\\1", fill)
-    obj <- url[[url.id]]
+  if(!is.null(obj <- get_url_obj(color, url))) {
     if(inherits(obj, 'gradient')) {
-      stops <- obj[['stops']][['color']]
-      rgb(t(round(rowMeans(col2rgb(stops)))), maxColorValue=255)
+      color <- obj[['stops']][['color']]
+      rgb.col <- rgb(t(round(rowMeans(col2rgb(color)))), maxColorValue=255)
+      if(is.numeric(obj[['stops']][['opacity']])) {
+        opacity <- mean(obj[['stops']][['opacity']])
+        attr(rgb.col, 'opacity') <- opacity
+      }
+      rgb.col
     } else NA_character_
-  } else fill
+  } else color
 }
