@@ -1,53 +1,5 @@
 ## Clip Paths
 
-How are transforms applied to clip paths?  Do we transform clip path elements
-first?  Probably.  Should it be transform clip paths, apply, then transform
-clipped object?
-
-clipPaths are applied prior to any transformations on the object.
-
-So from experiments it seems we want to transform the clipPaths, apply them,
-then transform the resulting objects.  Nested transforms outside of the
-clipPaths don't seem to apply, but they do seem to apply to starting from a
-transform on the clipPath proper down to the contained elements.
-
-One major issue is that we can use polyclip to clip, but in order for things to
-look right we need to clip the fill and the borders differently.  Fill can be
-clipped normally, but stroke cannot.  For the stroke, the real issue is we can't
-just do point in polygon; we need to generate a new point that is at the
-intersection of the clip path and the stroke.  This point should exist, and
-should be the first point.  Aah, but that's fine, because `pointinpolygon`
-reports whether it is on the boundary.  So:
-
-Actually, let's not worry about this.  We'll compute the clip polygon correctly
-in matrix format that will get transformed, etc, and optionally we will apply
-it, but when we do it will not work for clipping lines?  Really, for clipping
-lines we need to generate a polygon in the shape of the line with
-`polyclip::polylineoffset` which we can then clip.
-
-Clip-paths must accumulate unlike other styles, and thus must be preserved at
-each containing element so that they may be transformed and applied properly.
-So all transformations must happen first before clip-paths are applied.
-
-Thus a change we still need to make is add clip-path retrieval to the transform
-process.
-
-That actually works better, because we can then easily compute the extents
-before clipping which is what we're supposed to do anyway.
-
-This then raises an interesting question for styles, as clip-path does not
-inherit.  So we need a set of not-inherited properties that get attached to the
-current element.
-
-## Gradients
-
-Gradients (and perhaps others) support hrefs to acquire stops from other
-elements.
-
-In those cases the gradients become terminal elements, so we can probably have
-specialized handling for them in `parse_element`, that then eventually finds the
-gradient with the stops, and resumes normal parsing.
-
 ## Not Supported
 
 * Text
@@ -67,27 +19,18 @@ gradient with the stops, and resumes normal parsing.
 ## ToDo
 
 * an "href" references an non-existing URL element (subscript oo error now?).
+  Related: right now we drop any fallbacks when URL don't resolve.
 
 * Distinguish between xml "node" and list "node" that has already been partially
   processed ("xnode"?).
 
-* `attach_url`:
-    * Need to make sure all url objects that need to be transformed are attached
-      to the tree.
-
 * Clipping
     * "clip-rule" support.
     * Warn about 'objectBoundingBox'
-    * Ensure all clip paths are stored as matrices, and only on the terminal
-      leaves.
     * How clip links style and transform and clip is a mess.  The problem is
       clip paths are subject to transformation, but they can be attached to
       non-terminal leaves, so all the logic that focused on terminal based
       branching now requires and exception to handle clip-paths (urgh).
-
-* `approximate_fill`:
-    * should become `approximate_color`
-    * gradients should approximate the opacity too, not just the color.
 
 * Number scientific notation beyond transform matrices.
 
@@ -96,14 +39,13 @@ gradient with the stops, and resumes normal parsing.
 * Scale to fit so that we can resize things (exists in gallery, should be a plot
   option e.g. for Tomek Car).
 
-* Add a "not supported" condition and generally let the code run through to the
-  extent possible.
-
 * Include mixed units in the "not supported" alerts, or maybe just non-pixel
   units.
 
 * Check that transform=FALSE actually works (not sure it does), complicated by
   the separate transform of clip paths and display elements.
+
+* Check that clip=FALSE actually works.
 
 * Add a mechanism to apply transform ex-post (including recomputing extents).
 
@@ -125,28 +67,7 @@ up:
 
 Would have saved re-implementing some stuff.
 
-## Gradients
-
-Do we care where the gradients are?  They are supposed to be in "def" tags, but
-they are ID identified so presumably we can just get the from everywhere.  From
-testing the seems to be the case, so long as inside an SVG.
-
-We need to expand the capabilities of the "fill" attribute to recognize
-gradients.  One option is to leave them as they are and provide a named list
-with the parsed gradient data for the renderer to use.
-
-Gradients themselves need to have their stop values computed which may require
-style sheet look-ups, and possibly inheritance from enclosing elements?
-
-We could potentially use a simplifying (YES) assumption that we don't need to
-track all the inheritance business for gradients?  It is very unlikely that a
-gradient is going to be defined somewhere we care about parent properties, and
-it doesn't make sense for.
-
-Do we need to upgrade fill/stroke tracking to record the type of color we're
-dealing with (pattern/gradient/color, or should it be url/color)?  Probably not
-worth the hassle.  The formats are unambiguous: "url(...)" or "#xxxxxx" or
-"none" so we can just have a utility function.
+## Patterns
 
 Patterns are far more complicated because they should have at least some limited
 form of inheritance.  In fact, it seems we can place them outside of the defs
@@ -173,14 +94,6 @@ So:
   style?). Also need 'stop-opacity'.  Not clear that 
 * Store gradients (and possibly other things) an ID basis in a named list to be
   looked up with `url`.
-
-Another option is to process gradients as part of the initial pass.  This has
-the advantage that all properties can be inherited from parent elements (but
-what would those be?  We set a "g" with "x1" values?).  Actually it seems that
-most position elements are not inherited.  That makes sense since the outer
-element would control positioning then.  So are there any things that we would
-want to inherit?  On the whole it doesn't seem adding the wrinkle that we could
-end up with terminal leaves other than matrices.
 
 Does this apply to patterns?  Maybe, again unlikely that they will be nested,
 although since they do specify real elements therein they will contain matrices
@@ -219,30 +132,6 @@ to some extent from their own parents rather than where they are referenced
    , including styling.  Once that's done,
 they should be moved to an external list
 
-## Presentation
-
-`clean` in particular will modify the object structure j
-Really need to think about what we're trying to do here.  The right thing
-rather than clean might be a better print or str or summary method.
-
-What do we want to see?  Maybe the original structure with all the cruft
-taken off and some indication of class and size?  Should those be summary
-methods?  Yes, we'll want a summary method for the normal one with the full
-structure, and one for the flattened one.  The purpose of the flattened one
-is to make it easier to pull out objects by indexing.  Although in theory we
-could also index the full thing?
-
-      [[c(1,1)]]   <svg>
-      [[c(1,1,1)]]     <g>
-      [[c(1,1,1,1)]]       <rect class='cls-1' x1 y1 x2 y2>
-      [[c(1,1,1,2)]]       <path class='cls-2' 230 coords, 500 x 500>
-      [[c(1,1,2)]]     <g>
-
-Problem is likely to be that the indices will get too big too fast and won't
-leave room for the rest.  In which case there is only a summary method for
-the flattened version, which I'm guessing makes most sense?
-
-
 
 ## Arcs
 
@@ -261,11 +150,7 @@ ellipse with the spokes?  No, if we know rx and ry (which we will?) then we can
 just use the cos/sin business to draw the ellipses.  Rotation around the x axis
 remains to be accounted for.
 
-Mortoray uses the [SVG appendix][3].  Unfortunately the latter appears to have
-lost all it's images.
+Mortoray uses the [SVG appendix][3].
 
 [3]: https://www.w3.org/Graphics/SVG/1.1/implnote.html#ArcImplementationNotes
-
-```
-```
 
