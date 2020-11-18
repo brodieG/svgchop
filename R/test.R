@@ -41,6 +41,7 @@
 #'   HTML in a browser, and 2 is opens the generated URL in a browser, and after
 #'   5 seconds (enough time for browser to open) deletes the files (to avoid
 #'   cluttering drive during testing).
+#' @param cols integer(1L) how many columns to arrange the diptychs in.
 #' @param ... additional arguments passed on to [process_svg()]
 #' @return character(1L) the name of the file written to
 
@@ -63,17 +64,24 @@ svg_gallery_compare <- function(
   display=1,
   width=400,
   height=NA_real_,
+  cols=1,
   ...
 ) {
   vetr(
     display=INT.1 && . %in% 0:2,
     width=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(height))),
-    height=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(width)))
+    height=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(width))),
+    cols=INT.1.POS.STR
   )
   dir.create(target)
   out <- file.path(target, "index.html")
+  col.str <- sprintf(
+    "<col style='width: %spx;'><col style='width: %spx;'>",
+    if(!is.na(width)) width else "auto",
+    if(!is.na(width)) width else "auto"
+  )
   writeLines(
-    sprintf("<!DOCTYPE html>
+    c("<!DOCTYPE html>
       <html>
         <head>
           <style>
@@ -83,16 +91,14 @@ svg_gallery_compare <- function(
         </head>
         <body>
           <table style='border: 1px solid black;'>
-            <col style='width: %spx;'><col style='width: %spx;'>
       ",
-      if(!is.na(width)) width else "auto",
-      if(!is.na(width)) width else "auto"
+      rep(col.str, cols)
     ),
     out
   )
   imgs <- character(length(source))
   for(i in seq_along(source)) {
-    cat("<tr><td>", file=out, append=TRUE)
+    if(!(i - 1) %% cols) cat("<tr>", file=out, append=TRUE)
 
     f <- file.path(target, sprintf("img-%03d.png",i))
     imgs[i] <- f
@@ -126,7 +132,7 @@ svg_gallery_compare <- function(
     }
     svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
     write_xml(xml, svg.tmp)
-    cat(sprintf("<img src='%s' />", svg.tmp), file=out, append=TRUE)
+    cat(sprintf("<td><img src='%s' />", svg.tmp), file=out, append=TRUE)
 
     # generate chopped svg
     svg <- process_svg(svg.tmp, ...)
