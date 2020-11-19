@@ -56,6 +56,8 @@ SVG data, not to compete with the browsers in rasterizing them.
 ## Related Software
 
 * [Rsvg](https://cran.r-project.org/package=rsvg) to rasterize SVGs.
+* [string2path](https://github.com/yutannihilation/string2path) for converting
+  fonts to polygons.
 * [svgpathtools](https://github.com/mathandy/svgpathtools) or a Python SVG
   manipulation library.
 * [objjob svg](http://objjob.phrogz.net/svg/hierarchy) for
