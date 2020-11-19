@@ -95,8 +95,12 @@ get_fill_rule <- function(x) {
 ## processed these should be stored in the URL element.
 ##
 ## Clip path should be a list of coordinates.
+##
+## Clip paths elements are always transformed based on the transforms specified
+## where they are defined.  This is different than whatever transformations they
+## may be subject to once they are copied into the display tree.
 
-process_clip_path <- function(node, transform=FALSE) {
+process_clip_path <- function(node, transform=TRUE) {
   trans.tree <- compute_transform(node)
   res <- if(transform) apply_transform(trans.tree) else trans.tree
 

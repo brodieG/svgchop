@@ -18,6 +18,8 @@
 
 ## ToDo
 
+* Check whether `svg_gallery_compare` really needs to do the chopping twice.
+
 * an "href" references an non-existing URL element (subscript oo error now?).
   Related: right now we drop any fallbacks when URL don't resolve.
 

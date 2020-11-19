@@ -1,6 +1,9 @@
 #' Global Regexec
 #'
-#' @export
+#' A mocked up version of a global [regexec()].  Only works in PERL mode.  One
+#' day we'll look at submitting this to r-devel.
+#'
+#' @noRd
 #' @inheritParams base::grep
 
 gregexec <- function(

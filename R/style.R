@@ -340,8 +340,8 @@ proc_computed <- function(x) {
   if(is.na(x[['stop-color']]))
     x[['stop-color']] <- structure('#000000', class="default")
   if(x[['stop-color']] == 'none') x[['stop-color']] <- NA_character_
-  if(is.na(x[['stop-opacity']])) x[['stop-opacity']] <- "1"
-
+  if(is.na(x[['stop-opacity']]))
+    x[['stop-opacity']] <- structure('1', class="default")
   if(is.na(x[['stroke-width']]))
     x[['stroke-width']] <- structure("1", class="default")
   x[['stroke-width']] <- parse_length(x[['stroke-width']])

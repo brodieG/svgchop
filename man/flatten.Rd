@@ -41,6 +41,6 @@ use the name to succinctly display key information about the object when
 examined with \code{\link[utils:str]{utils::str()}} (see example).
 }
 \examples{
-svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 str(flatten(svg), give.attr=FALSE)   # attributes may be overwhelming
 }

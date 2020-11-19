@@ -1,10 +1,13 @@
 #' Interpolate a Bézier Curve
 #'
-#' For each Bézier curve implied in `coords`, interpolate `steps` segments using
-#' the formula taken from
+#' For each Bézier curve implied in `coords`, interpolate `steps` segments.
+#'
+#' Interpolation is done with this formula taken from
 #' [Wikipedia](https://en.wikipedia.org/wiki/Bézier_curve):
 #'
+#' ```
 #' (1 - t)^3*P0 + 3*(1 - t)^2*t*P1 + 3*(1 - t)*t^2*P2 + t^3*P3
+#' ```
 #'
 #' where `P0` is the start point, `P1` and `P2` the controls, and `P3` the end
 #' point.  The steps are computed by using evenly spread values of `t` between 0
@@ -19,8 +22,10 @@
 #'   `start` parameter.
 #' @param start numeric(2) x and y coordinates for the start point of the Bézier
 #' @param steps how many steps to use for each curve
+#' @return list of two numeric vectors containing x and y coordinates for the
+#'   Bézier curve, omitting the start coordinate.
 
-bezier_interp2 <- function(coords, start, steps) {
+bezier_interp <- function(coords, start, steps) {
   vetr(
     list(numeric(), numeric()) && length(unique(lengths(.))) == 1,
     numeric(2),

@@ -14,19 +14,12 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
-#' Generate test HTML From SVGs
+#' Compare SVGs to Their "Chopped" Renderings
 #'
-#' [svg_gallery()] generates an HTML page containing SVGs that can then be
-#' processed by [process_svg()].  [svg_gallery_compare()] will juxtapose those
-#' same SVGs with the PNGs of the processed versions.
-#'
-#' [svg_gallery_compare()] ignores any width/height/x/y attributes set on the
-#' SVG proper and overrides them with the `width` and `height` params.
-#'
-#' [svg_gallery()] generates a single HTML file with all the sample SVGs
-#' embedded in it.  [svg_gallery_compare()] processes them with [process_svg()],
-#' saves the resulting plotted images as rasters (png), and generates a web page
-#' juxtaposing the original SVG and the re-rendered version.
+#' Create an HTML page of SVG and their corresponding [chop()]ed and rasterized
+#' (png) counterparts juxtaposed into diptychs for comparison.  Viewport and
+#' viewbox parameters may be manipulated to ensure the images fit into boxes of
+#' width controlled by the `width` parameter.
 #'
 #' @export
 #' @importFrom xml2 `xml_attr<-` write_xml
@@ -38,40 +31,29 @@
 #' @param height numeric(1L) if NA will use `height` and the aspect ratio from
 #'   the "viewBox" if present, or from the element extents if not.
 #' @param display numeric in 0:2, where does not display, 1 opens the generated
-#'   HTML in a browser, and 2 is opens the generated URL in a browser, and after
-#'   5 seconds (enough time for browser to open) deletes the files (to avoid
-#'   cluttering drive during testing).
+#'   HTML in a browser, and 2 (default) is opens the generated URL in a browser,
+#'   and after `timeout` seconds (enough time for browser to open) deletes the
+#'   files (to avoid cluttering drive during testing).
 #' @param cols integer(1L) how many columns to arrange the diptychs in.
-#' @param ... additional arguments passed on to [process_svg()]
+#' @param ... additional arguments passed on to [chop()]
 #' @return character(1L) the name of the file written to
 
 svg_gallery <- function(
   source=svg_samples(),
-  target=paste0(tempfile(), ".html")
-) {
-  writeLines("<!DOCTYPE html><html><body>", target)
-  lapply(source, file.append, file1=target)
-  cat( "</body></html>\n", file=target, append=TRUE)
-  target
-}
-#' @export
-#' @rdname svg_gallery
-
-svg_gallery_compare <- function(
-  source=svg_samples(),
   target=tempfile(),
   ppi=96,
-  display=1,
   width=400,
   height=NA_real_,
   cols=1,
+  display=2,
+  timeout=2,
   ...
 ) {
   vetr(
     display=INT.1 && . %in% 0:2,
     width=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(height))),
     height=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(width))),
-    cols=INT.1.POS.STR
+    cols=INT.1.POS.STR, timeout=NUM.1.POS
   )
   dir.create(target)
   out <- file.path(target, "index.html")
@@ -102,8 +84,9 @@ svg_gallery_compare <- function(
 
     f <- file.path(target, sprintf("img-%03d.png",i))
     imgs[i] <- f
-    # Compute dimensions for device, as well as for SVG
-    svg <- process_svg(source[i], ...)
+    # Compute dimensions for device, as well as for SVG.  This is means we do
+    # the chopping twice.
+    svg <- chop(source[i], ...)
     vb <- compute_vb_dim(svg[[1]])
     xml <- read_xml(source[i])
     svg.node <- xml_find_first(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
@@ -134,8 +117,10 @@ svg_gallery_compare <- function(
     write_xml(xml, svg.tmp)
     cat(sprintf("<td><img src='%s' />", svg.tmp), file=out, append=TRUE)
 
-    # generate chopped svg
-    svg <- process_svg(svg.tmp, ...)
+    # generate chopped svg again so that all dims are done correctly.  This is
+    # rather lazy and will take additional time.  Maybe can resolve by adding a
+    # "fit" parameter to plot.
+    svg <- chop(svg.tmp, ...)
     png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
     plot(svg, ppi=ppi)
@@ -148,7 +133,7 @@ svg_gallery_compare <- function(
   if(display) {
     browseURL(res)
     if(display > 1) {
-      Sys.sleep(2)
+      Sys.sleep(timeout)
       unlink(dirname(res), recursive=TRUE)
     }
   }
@@ -162,4 +147,19 @@ svg_samples <- function()
     system.file(package='svgchop', 'svg'), pattern="\\.svg$", ignore.case=TRUE,
     full.names=TRUE
   )
+
+## Generate an HTML Page With All Samples
+##
+## Used to test that parsing of multiple SVGs in a single HTML page works.
+
+samples_to_html <- function(
+  source=svg_samples(),
+  target=paste0(tempfile(), ".html")
+) {
+  writeLines("<!DOCTYPE html><html><body>", target)
+  lapply(source, file.append, file1=target)
+  cat( "</body></html>\n", file=target, append=TRUE)
+  target
+}
+
 

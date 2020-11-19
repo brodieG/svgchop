@@ -39,7 +39,7 @@
 #' viewports and the implementation of gradients, etc.
 #'
 #' @export
-#' @seealso [process_svg()]
+#' @seealso [chop()]
 #' @param x an "svg_chopped" or "svg_chopped_list" object.
 #' @param ask TRUE or FALSE whether to prompt to display more plots when
 #'   plotting an "svg_chopped_list" with multiple elements that don't fit in the

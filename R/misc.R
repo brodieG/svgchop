@@ -37,7 +37,7 @@
 #' @param x an object to flatten
 #' @return the object flattened
 #' @examples
-#' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+#' svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' str(flatten(svg), give.attr=FALSE)   # attributes may be overwhelming
 
 flatten <- function(x, ...) UseMethod('flatten')
@@ -167,7 +167,7 @@ str.svg_chopped_list_flat <- function(object, give.attr=FALSE, ...)
 #' attributes.  The purpose of the names is to make the structure of the object
 #' more recognizable when viewed via with e.g. [str.svg_chopped()].
 #'
-#' @export
+#' @noRd
 #' @param x a list
 #' @return x, but with new names
 

@@ -64,5 +64,5 @@ Future versions may switch to \code{grid} functions and take advantage of
 viewports and the implementation of gradients, etc.
 }
 \seealso{
-\code{\link[=process_svg]{process_svg()}}
+\code{\link[=chop]{chop()}}
 }
