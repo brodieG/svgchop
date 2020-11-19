@@ -122,7 +122,7 @@ svg_gallery <- function(
     # rather lazy and will take additional time.  Maybe can resolve by adding a
     # "fit" parameter to plot.
     svg <- chop(svg.tmp, ...)
-    png(f, width=w, height=h, res=ppi)
+    png(f, width=w, height=h, res=ppi, type="cairo-png")
     par(mai=numeric(4))
     plot(svg, ppi=ppi)
     dev.off()    # this resets old parameters
