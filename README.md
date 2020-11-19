@@ -2,7 +2,7 @@
 
 library(rmarkdown)
 render('README.Rmd', output_format=md_document())
-
+# render('README.Rmd', output_format=html_vignette())
 -->
 svgchop - Approximate SVG Elements With Line Segments
 =====================================================
@@ -34,6 +34,12 @@ We implement:
 The implementation does not conform to the standard, but it works
 reasonably well across a wide variety of SVGs:
 
+<a href=extra/gallery.png style='text-decoration: none; color: inherit;'>
+<img
+  src=extra/gallery.png style='width: 650px;' 
+  alt="diptychs comparing SVGs to their svgchop counterparts"
+> </a>
+
 Each diptych has a browser-rendered image on the left, and an `svgchop`
 rendering on the right. We purposefully use low-resolution
 approximations here for effect, but it is reasonably cheap to increase
@@ -56,6 +62,8 @@ Related Software
 ----------------
 
 -   [Rsvg](https://cran.r-project.org/package=rsvg) to rasterize SVGs.
+-   [string2path](https://github.com/yutannihilation/string2path) for
+    converting fonts to polygons.
 -   [svgpathtools](https://github.com/mathandy/svgpathtools) or a Python
     SVG manipulation library.
 -   [objjob svg](http://objjob.phrogz.net/svg/hierarchy) for
