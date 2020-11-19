@@ -18,13 +18,16 @@ retrieved from the prior element and provided to this function via the
 
 \item{steps}{how many steps to use for each curve}
 }
+\value{
+list of two numeric vectors containing x and y coordinates for the
+Bézier curve, omitting the start coordinate.
+}
 \description{
-For each Bézier curve implied in \code{coords}, interpolate \code{steps} segments using
-the formula taken from
-\href{https://en.wikipedia.org/wiki/Bézier_curve}{Wikipedia}:
+For each Bézier curve implied in \code{coords}, interpolate \code{steps} segments.
 }
 \details{
-\preformatted{(1 - t)^3*P0 + 3*(1 - t)^2*t*P1 + 3*(1 - t)*t^2*P2 + t^3*P3
+Interpolation is done with this formula taken from
+\href{https://en.wikipedia.org/wiki/Bézier_curve}{Wikipedia}:\preformatted{(1 - t)^3*P0 + 3*(1 - t)^2*t*P1 + 3*(1 - t)*t^2*P2 + t^3*P3
 }
 
 where \code{P0} is the start point, \code{P1} and \code{P2} the controls, and \code{P3} the end

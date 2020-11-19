@@ -47,5 +47,6 @@ character(1L) the name of the file written to
 Create an HTML page of SVG and their corresponding \code{\link[=chop]{chop()}}ed and rasterized
 (png) counterparts juxtaposed into diptychs for comparison.  Viewport and
 viewbox parameters may be manipulated to ensure the images fit into boxes of
-width controlled by the \code{width} parameter.
+width controlled by the \code{width} parameter.  Original SVG will be on the left,
+with the rasterized counterpart on the right.
 }

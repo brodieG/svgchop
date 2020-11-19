@@ -153,16 +153,15 @@ process_use_node <- function(node.parsed) {
   attr(node.parsed, 'xml_attrs') <- attrs
   node.parsed
 }
-#' Convert SVG Elements to Polygons or Polylines
+#' Approximate SVG Documents With Line Segments
 #'
-#' Parse and convert SVG elements into polygons.  SVG transforms and clip paths
-#' are optionally applied to the polygon coordinates, and SVG presentation
-#' attributes are computed from style sheets, inline styles and attributes, and
-#' are attached as the "style-computed" R attribute.  The SVG 1.1 specification
-#' is only loosely followed so do not expect outputs to be exactly the same as
-#' in a conforming SVG rendering engine.  This function is experimental and the
-#' API and structure of the return value will likely change in future versions.
-#' The code is optimized neither for speed nor memory use.
+#' Parse and convert SVG elements into line segments and supporting meta data.
+#' SVG transforms and clip paths are optionally applied, and SVG presentation
+#' attributes are computed from style sheets, inline styles and attributes.  The
+#' SVG 1.1 specification is only loosely followed so do not expect outputs to be
+#' exactly the same as in a conforming SVG rendering engine.  This function is
+#' experimental and the API and structure of the return value will likely change
+#' in future versions.  The code is optimized neither for speed nor memory use.
 #'
 #' @section Details:
 #'
@@ -248,8 +247,6 @@ process_use_node <- function(node.parsed) {
 #' column in the coordinate matrix for each sub-path is recorded in the "starts"
 #' attribute.
 #'
-#' "g" elements act as containers for child elements and convey their properties
-#' to them.
 #'
 #' The "use" element is supported, but only if the "xlink:href" or "href"
 #' elements point to the id of an element within the same document.  Support is
@@ -261,9 +258,10 @@ process_use_node <- function(node.parsed) {
 #' as if it were a "g" element with the referenced element as a child and the
 #' "x" and "y" attributes specified as a translate transform.
 #'
-#' Elements not explicitly referenced here are not directly supported and how
-#' they are processed is not specified.  Generally though such elements with
-#' children will behave like "g" elements, and those without will be omitted.
+#' "g" elements behave similarly as they do in SVG documents.  Elements not
+#' explicitly referenced here are not directly supported and how they are
+#' processed is not specified.  Generally though such elements with children
+#' will behave like "g" elements, and those without will be omitted.
 #'
 #' @section Transforms:
 #'

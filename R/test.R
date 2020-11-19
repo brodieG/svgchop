@@ -19,7 +19,8 @@
 #' Create an HTML page of SVG and their corresponding [chop()]ed and rasterized
 #' (png) counterparts juxtaposed into diptychs for comparison.  Viewport and
 #' viewbox parameters may be manipulated to ensure the images fit into boxes of
-#' width controlled by the `width` parameter.
+#' width controlled by the `width` parameter.  Original SVG will be on the left,
+#' with the rasterized counterpart on the right.
 #'
 #' @export
 #' @importFrom xml2 `xml_attr<-` write_xml
