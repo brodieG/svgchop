@@ -122,10 +122,12 @@ svg_gallery <- function(
     # rather lazy and will take additional time.  Maybe can resolve by adding a
     # "fit" parameter to plot.
     svg <- chop(svg.tmp, ...)
-    png(f, width=w, height=h, res=ppi, type="cairo-png")
+    png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
     plot(svg, ppi=ppi)
     dev.off()    # this resets old parameters
+    # nuke color profile info; couldn't figure out a better way
+    png::writePNG(png::readPNG(f), f)
 
     cat(sprintf("<td><img src='%s' />", f), file=out, append=TRUE)
   }

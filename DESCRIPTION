@@ -18,6 +18,7 @@ Imports:
     vetr,
     xml2,
     polyclip,
+    png,
     utils
 Suggests:
     unitizer
