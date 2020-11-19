@@ -144,7 +144,7 @@ process_clip_path <- function(node, transform=TRUE) {
 apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
   clip.path <- attr(node, 'clip-path')
   clip <- if(is.list(clip.path)) {
-    if(!is.null(clip.path) && length(prev.clip)) {
+    if(length(clip.path[['x']]) && length(prev.clip[['x']])) {
       tmp <- polyclip::polyclip(
         prev.clip, clip.path,
         fillA=attr(prev.clip, 'fill-rule'), fillB=attr(clip.path, 'fill-rule')
