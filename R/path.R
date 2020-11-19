@@ -214,7 +214,7 @@ path_simplify <- function(path, steps) {
 
         # Cubic Bézier -> Line segments
         start <- vapply(res[[i-1]][2:3], function(x) x[length(x)], 1)
-        coords.i <- bezier_interp2(list(xs, ys), start, steps=steps)
+        coords.i <- bezier_interp(list(xs, ys), start, steps=steps)
 
         c(list(rep('L', length(coords.i[[1L]]))), coords.i)
       },
