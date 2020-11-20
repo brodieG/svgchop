@@ -45,26 +45,31 @@
 #'   plotting an "svg_chopped_list" with multiple elements that don't fit in the
 #'   current plotting grid.
 #' @param ppi numeric pixels per inch to assume for calculations.
+#' @param scale TRUE or FALSE (default), whether to force the SVG to scale so
+#'   that the extents fit the display device while respecting aspect ratio.
+#'   This causes the "viewBox" attribute to be ignored.
 #' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
-plot.svg_chopped <- function(x, ppi=96, ...) plot_one(x, ppi, ...)
+plot.svg_chopped <- function(x, ppi=96, scale=FALSE, ...)
+  plot_one(x, ppi=ppi, scale=scale, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
-plot.svg_chopped_flat <- function(x, ppi=96, ...) plot_one(x, ppi, ...)
+plot.svg_chopped_flat <- function(x, ppi=96, scale=FALSE, ...)
+  plot_one(x, ppi=ppi, scale=scale, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
 plot.svg_chopped_list <- function(
-  x, ppi=96,
+  x, ppi=96, scale=FALSE,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 ) {
   vetr(structure(list(), class='svg_chopped_list'), INT.1.POS.STR, LGL.1)
-  plot_list(x, ppi=ppi, ask=ask, ...)
+  plot_list(x, ppi=ppi, scale=scale, ask=ask, ...)
 }
 #' @export
 #' @rdname plot.svg_chopped
@@ -138,7 +143,7 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
 
   # viewbox info
   vb <- compute_vb_dim(x)
-  if(vb$has.vb) {
+  if(vb$has.vb || scale) {
     if(vp.height / vp.width > vb$height / vb$width) {
       uppi <- ppi * vb$width / vp.width
       lim.width <- vb$width
@@ -190,17 +195,17 @@ compute_vb_dim <- function(x) {
 
 ## Internal: plot either normal or flat chopped_list
 
-plot_list <- function(x, ppi, ask, ...) {
+plot_list <- function(x, ppi, scale=FALSE, ask, ...) {
   if (ask) {
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot, ppi=ppi, ...)
+  lapply(x, plot, ppi=ppi, scale=scale, ...)
   invisible(x)
 }
 ## Internal: plot either normal or flat chopped
 
-plot_one <- function(x, ppi, ...) {
+plot_one <- function(x, ppi, scale=FALSE, ...) {
   url <- attr(x, 'url')   # gradients, patterns, etc., stored here
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
@@ -208,7 +213,8 @@ plot_one <- function(x, ppi, ...) {
   # Compute plot dimensions in user units using viewBox info if availble, and if
   # not from the pre-computed extents attributes
   plot.new()
-  d.params <- compute_display_params(x, ppi=ppi)
+  if(scale) attr(x, 'viewBox') <- NULL
+  d.params <- compute_display_params(x, ppi=ppi, scale=scale)
   lim <- d.params[['plot.lim']]
   plot.window(lim[['x']], rev(lim[['y']]), asp=d.params[['asp']])
 
