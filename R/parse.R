@@ -525,40 +525,47 @@ chop <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   tmp <- lapply(tmp, transform_coords, apply=transform)
 
   # Compute extents (note we do this before clipping)
-  get_coords <- function(obj, coord)
-    if(is.matrix(obj) && !inherits(obj, 'hidden')) obj[coord,]
-    else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)
+  tmp <- lapply(tmp, get_extents)
 
+  # Apply the `url()` elements.  This is most meaningful for clip paths and
+  # patterns as we could apply them here. At this time we ony apply clipping
+  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
+
+  # Attach global objects
   tmp <- lapply(
-    tmp,
-    function(x) {
-      xall <- unlist(lapply(x, get_coords, 1))
-      yall <- unlist(lapply(x, get_coords, 2))
-      # default size of an SVG embedded in HTML (stand-alones vary in size
-      # depending on browser, but are often 100vh or some such so require device
-      # info
-      xs <- if(length(xall)) range(xall) else c(0, 300)
-      ys <- if(length(yall)) range(yall) else c(0, 150)
-      attr(x, 'extents') <- list(x=xs, y=ys)
+    tmp, function(x) {
       attr(x, 'url') <- url
       attr(x, 'css') <- css
       x
   } )
-  # Apply the `url()` elements.  This is most meaningful for clip paths and
-  # patterns as we could apply them here
-  #
-  # At this time we ony apply clipping
-  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
 
+  # Return, also attaching global objects to outer list
   structure(
     give_names(tmp),
     class='svg_chopped_list',
     url=url, css=css
   )
 }
+get_extents <- function(x) {
+  vetr(structure(list(), class="svg_chopped"))
+  get_coords <- function(obj, coord)
+    if(is.matrix(obj) && !inherits(obj, 'hidden')) obj[coord,]
+    else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)
+
+  xall <- unlist(get_coords(x, 1))
+  yall <- unlist(get_coords(x, 2))
+
+  # default size of an SVG embedded in HTML (stand-alones vary in size
+  # depending on browser, but are often 100vh or some such so require device
+  # info)
+  xs <- if(length(xall)) range(xall) else c(0, 300)
+  ys <- if(length(yall)) range(yall) else c(0, 150)
+  attr(x, 'extents') <- list(x=xs, y=ys)
+  x
+}
+
 num.pat.core <- "(-?\\d*\\.?\\d+)"
 num.pat <- sprintf("%s(?:\\w|%%)*", num.pat.core)
-
 
 ## Vectorized, parses lengths dropping units.
 
