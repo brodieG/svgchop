@@ -547,7 +547,10 @@ chop <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   )
 }
 get_extents <- function(x) {
-  vetr(structure(list(), class="svg_chopped"))
+  vetr(
+    structure(list(), class="svg_chopped") ||
+    structure(list(), class="svg_chopped_flat")
+  )
   get_coords <- function(obj, coord)
     if(is.matrix(obj) && !inherits(obj, 'hidden')) obj[coord,]
     else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)

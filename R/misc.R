@@ -94,11 +94,7 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @param i mixed subsetting indices
 #' @export
 
-`[.svg_chopped` <- function(x, i, ...) {
-  res <- subset_chop(x, i, ...)
-  attr(res, 'extents') <- get_extents(res)
-  res
-}
+`[.svg_chopped` <- function(x, i, ...) get_extents( subset_chop(x, i, ...))
 
 #' @rdname subset.svg_chopped
 #' @export
@@ -113,11 +109,8 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @rdname subset.svg_chopped
 #' @export
 
-`[.svg_chopped_flat` <- function(x, i, ...) {
-  res <- subset_chop(x, i, ...)
-  attr(res, 'extents') <- get_extents(res)
-  res
-}
+`[.svg_chopped_flat` <- function(x, i, ...) get_extents(subset_chop(x, i, ...))
+
 ## Should probably have a common class for all the chopped objects instead of
 ## this hack.
 
