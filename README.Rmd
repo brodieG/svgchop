@@ -23,7 +23,16 @@ those produced by a conforming implementation, many SVGs are approximated
 closely.
 
 This package is aimed at anyone who wants to extract SVG elements as polygons
-before they are drawn to the canvas.
+before they are drawn to the canvas.  It is experimental, and follows the old
+European city design model (start with the village well, add features as needed,
+next thing you know you have mess of a city and you do a half-hearted
+_Haussmannization_).  The API is likely to change.  The code has not been
+optimized.  It will not make it onto CRAN except in the unlikely event there is
+substantial external interest for that to happen.
+
+## Installation
+
+
 
 ## Feature Coverage
 
@@ -59,6 +68,10 @@ which is why some of the more complex SVGs don't look right.  It would be
 reasonably straightforward to use the [new `grid` > 4.0.x][1] features to
 display the gradients correctly, but the point of this package is to extract the
 SVG data, not to compete with the browsers in rasterizing them.
+
+## Documentation
+
+See `?svgchop::chop`, in particular the examples.
 
 ## Related Software
 

@@ -158,10 +158,11 @@ process_use_node <- function(node.parsed) {
 #' Parse and convert SVG elements into line segments and supporting meta data.
 #' SVG transforms and clip paths are optionally applied, and SVG presentation
 #' attributes are computed from style sheets, inline styles and attributes.  The
-#' SVG 1.1 specification is only loosely followed so do not expect outputs to be
-#' exactly the same as in a conforming SVG rendering engine.  This function is
-#' experimental and the API and structure of the return value will likely change
-#' in future versions.  The code is optimized neither for speed nor memory use.
+#' [SVG 1.1 specification](https://www.w3.org/TR/SVG11/) is only loosely
+#' followed so expect divergences from conforming SVG rendering engines.  This
+#' function is experimental and the API and structure of the return value will
+#' likely change in future versions.  The code is optimized neither for speed
+#' nor memory use.
 #'
 #' @section Details:
 #'
@@ -170,30 +171,33 @@ process_use_node <- function(node.parsed) {
 #' be used elsewhere.  We wrote this code to make it easier to render extruded
 #' SVG objects in 3D with
 #' [`rayrender`](https://cran.r-project.org/package=rayrender).  See the
-#' implementation of the [plot.svg_chopped()] for ideas on how to extract the
-#' data for your own use.
+#' examples, and the implementation of [plot.svg_chopped()] for ideas on how
+#' to extract the data for your own use.
 #'
 #' In addition to vertex coordinates, this function will attempt to compute
 #' styles using an approximation of SVG styling and CSS semantics for a
 #' limited set of styles (see the "Styling" section).
 #'
+#' It is likely best to start by looking at the examples for this function and
+#' for [flatten()] to get a sense for how to interact with the outputs.
+#'
 #' @section Return Value:
 #'
 #' The return value is an "svg_chopped_list" object, a list of "svg_chopped"
-#' objects with some additional meta data attached as attributes.  Because HTML
+#' objects with additional meta data attached as attributes.  Because HTML
 #' documents may contain multiple top level SVG viewports this function always
 #' returns an "svg_chopped_list" object, even for the common case where there is
 #' only one viewport.  Each "svg_chopped" object is a recursive list
-#' representing a top-level SVG viewport. 
+#' representing a top-level SVG viewport.
 #'
 #' Inspecting "svg_chopped*" objects is best done by starting with `str(obj)` as
 #' they tend to be very complex.  This package implements [str()] methods that
 #' omit attributes by default as there are many of those and it is difficult to
 #' see the object structure with them displayed.
 #'
-#' If the leaves of the tree are known display elements they will appear as `2 x
-#' n` numeric matrices.  The matrices contain the X-Y coordinates of the ordered
-#' `n` endpoints of the `n - 1` line segments that the polygon or path
+#' If the leaves of the tree are known display elements they will appear as
+#' `2 x n` numeric matrices.  The matrices contain the X-Y coordinates of the
+#' ordered `n` endpoints of the `n - 1` line segments that the polygon or path
 #' representation of the SVG elements comprise.  These matrices may have
 #' attributes attached that modify how they should be interpreted.  See
 #' "Elements" section.  If the leaves are not known display elements they will
@@ -205,17 +209,23 @@ process_use_node <- function(node.parsed) {
 #' attributes to relevant child nodes, or stored under the "url" attribute of
 #' the "svg_chopped" and "svg_chopped_list" objects.  This "url" attribute will
 #' be the same for the "svg_chopped_list" object and all its child "svg_chopped"
-#' objects.  See the "Styling", "Gradients", and "Patterns, Masks, and Clip
-#' Paths" sections.
+#' objects.  See the "Styling", and "Gradients, Patterns, Masks, and Clip Paths"
+#' sections.
 #'
 #' Almost all the data present in the SVG document is retained as part of the
 #' recursive list structure of the return value, or as attributes to it.  In
 #' particular, the list "incarnation" of each XML node will have "xml_name" and
-#' "xml_attrs" attributes containing respectively the element name and
-#' attributes.  You can retrieve them and parse them with your own logic if so
-#' desired.
+#' "xml_attrs" attributes containing respectively the element name and the
+#' original unprocessed XML attributes.  You can retrieve them and parse them
+#' with your own logic if so desired.
 #'
-#' @section Lengths:
+#' @section Dimensions:
+#'
+#' "svg_chopped" objects will have "width", "height", "viewBox", and "extents"
+#' attributes.  The first three correspond to the SVG attributes you might find
+#' on an "svg" element.  The last is a list containing the range of X and Y
+#' coordinates contained within the SVG display elements (after transforms if
+#' they are applied, but before clipping).
 #'
 #' All lengths and coordinates are assumed to be unit-less except for the
 #' "width" and "height" attributes on the top-level SVG elements, and the
@@ -238,7 +248,7 @@ process_use_node <- function(node.parsed) {
 #' support "auto" values for "rx" and "ry" (that is the default, but we assume
 #' 0).  "pathLength" is not supported on any element.
 #'
-#' XML attribute data is processed to compute x and y coordinates for a set of
+#' XML attribute data is processed to compute X and Y coordinates for a set of
 #' vertices that approximates the outline of each element.  These are stored as
 #' 2 x n matrices.  The attribute "closed" will be set to a logical vector
 #' representing whether the element should be interpreted as a closed polygon or
@@ -246,7 +256,6 @@ process_use_node <- function(node.parsed) {
 #' "closed" vector will contain one entry for each sub-path.  The starting
 #' column in the coordinate matrix for each sub-path is recorded in the "starts"
 #' attribute.
-#'
 #'
 #' The "use" element is supported, but only if the "xlink:href" or "href"
 #' elements point to the id of an element within the same document.  Support is
@@ -268,7 +277,7 @@ process_use_node <- function(node.parsed) {
 #' Only SVG transforms are supported (i.e. not CSS ones).  The transform
 #' attribute of every element in the SVG is read, parsed, and accumulated
 #' through element generations.  It is then applied to the computed coordinates
-#' of the terminal nodes and to any clip paths attached to the tree (see the
+#' of the terminal nodes, and to any clip paths attached to the tree (see the
 #' "Gradients, Patterns, Masks, and Clip Paths" section).  You may turn off the
 #' application of the transforms by setting `transform=FALSE`, in which case you
 #' will be responsible for retrieving the transform data from the
@@ -288,6 +297,11 @@ process_use_node <- function(node.parsed) {
 #' is explicitly computed from the SVG data (see [styles_computed()] for the
 #' list).  Values are taken from the properties defined in-line in the SVG
 #' elements or its ancestors, CSS style sheets, and in-line "style" properties.
+#' The computed style will be attached as the "style-computed" attribute to
+#' nodes of the tree.  For inheritable styles the attribute will be attached to
+#' the leaves of the tree (i.e the vertex coordinate matrices).  For non
+#' inheritable styles they will be attached to the node they are defined on.
+#'
 #' CSS selector support is limited to direct match lookups on
 #' "&#lt;element&gt;.&lt;class&gt;" or "&lt;element&gt;#&lt;id&gt;" where "*"
 #' may be used as a wild card.  Selector hierarchies, properties, or anything
@@ -373,9 +387,28 @@ process_use_node <- function(node.parsed) {
 #' [polyclip::polylineoffset()], and then retrieve the clipping path from the
 #' "clip-path" attribute to apply it yourself.
 #'
+#' @section Unsupported Features:
+#'
+#' An incomplete list of known unsupported features:
+#'
+#' * Filters.
+#' * Masks.
+#' * Patterns.
+#' * Plotting of gradients.
+#' * Mixed length units, and most non user space units.
+#' * Rounded corners or length constraints on paths / elements.
+#' * CSS transforms.
+#' * Complex CSS selectors.
+#' * "rgba" color specification.
+#' * Clip path "clipPathUnits" other than "userSpaceOnUse".
+#'
+#' There are likely many other features that are either unimplemented,
+#' incompletely implemented, or incorrectly implemented.
+#'
 #' @export
-#' @seealso [plot.svg()], [flatten()] for an easier-to-manage data structure,
-#'   [styles_computed()] for what styles are actively processed.
+#' @seealso [plot.svg_chopped()], [flatten()] for an easier-to-manage data
+#'   structure, [styles_computed()] for what styles are actively processed,
+#'   [approximate_color()] for how to approximate gradient fills.
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #'   xml_text xml_length xml_children xml_attr xml_find_first xml_root
 #'   xml_parents
@@ -394,8 +427,61 @@ process_use_node <- function(node.parsed) {
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
 #'   objects.  See "Details".
 #' @examples
-#' svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+#' ## Chop and plot to demonstrate we reproduce the logo
+#' svg <- chop(R_logo())
 #' if(interactive()) plot(svg)
+#'
+#' ## Directly access the internals for our purposes
+#' str(svg) # str(svg, give.attr=TRUE) # to show attributes
+#' hoop <-  svg[[1]][[2]]
+#' r <-     svg[[1]][[3]]
+#' ext <-   attr(svg[[1]], 'extents')
+#' if(interactive()) {
+#'   ## Basic geometry
+#'   plot(
+#'     t(hoop), type='l', ann=FALSE, asp=1, axes=FALSE,
+#'     xlim=ext[['x']], ylim=rev(ext[['y']])
+#'   )
+#'   lines(t(r))
+#' }
+#' if(interactive()) {
+#'   ## Let's do better
+#'   plot.new()
+#'   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
+#'   r2 <- r
+#'   ## Abuse the fact we know the polygons are explicitly closed,
+#'   ## so make the last value of each sub-path NA so they are treated
+#'   ## as separate by polypath.
+#'   r2[,attr(r, 'starts')] <- NA
+#'   polypath(t(r2), col='blue')
+#'
+#'   ## Color not right, let's retrieve actual color
+#'   rfill <- attr(r, 'style-computed')[['fill']]
+#'   rfill
+#'   ## Gah, it's a gradient.  But that's okay.
+#'   rfill <- approximate_color(rfill, attr(svg, 'url'))
+#'   plot.new()
+#'   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
+#'   polypath(t(r2), col=rfill)
+#' }
+#' if(interactive()) {
+#'   ## We control the geometry, so let's play by drawing the full
+#'   ## logo but applying arbitrary transforms (note: SVG transforms
+#'   ## are applied automatically).
+#'   h2 <- hoop
+#'   h2[, attr(hoop, 'starts')] <- NA
+#'   hfill <- attr(hoop, 'style-computed')[['fill']]
+#'   hfill <- approximate_color(hfill, attr(svg, 'url'))
+#'   ## rotation matrices
+#'   ang <- pi/16
+#'   center <- vapply(ext, mean, 0)
+#'   rot1 <- matrix(c(cos(ang), sin(ang), -sin(ang), cos(ang)), 2)
+#'   rot2 <- matrix(c(cos(-ang), sin(-ang), -sin(-ang), cos(-ang)), 2)
+#'   plot.new()
+#'   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
+#'   polypath(t(rot2 %*% (h2 - center) + center), col=hfill)
+#'   polypath(t(rot1 %*% (r2 - center) + center), col=rfill)
+#' }
 
 chop <- function(file, steps=10, transform=TRUE, clip=TRUE) {
   vetr(CHR.1, INT.1.POS.STR, LGL.1)

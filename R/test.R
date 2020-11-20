@@ -145,11 +145,27 @@ svg_gallery <- function(
 #' @rdname svg_gallery
 #' @export
 
-svg_samples <- function()
+svg_samples <- function(pattern="\\.svg$")
   list.files(
-    system.file(package='svgchop', 'svg'), pattern="\\.svg$", ignore.case=TRUE,
+    system.file(package='svgchop', 'svg'), pattern=pattern, ignore.case=TRUE,
     full.names=TRUE
   )
+
+#' Return a Path to the SVG R Logo
+#'
+#' For demo and examples.
+#'
+#' @export
+#' @param internal TRUE (default) whether to use the logo bundled with this
+#'   package, or FALSE to use the one in R's installation directory.
+#' @return character(1L) a path to R Logo SVG file.
+
+R_logo <- function(internal=TRUE) {
+  vetr(LGL.1)
+  if(internal) {
+    system.file(package='svgchop', file.path("svg", "R-logo.svg"))
+  } else file.path(R.home(), 'doc', 'html', 'Rlogo.svg')
+}
 
 ## Generate an HTML Page With All Samples
 ##

@@ -260,10 +260,64 @@ make polygons in the shapes of the open paths, e.g. with
 }
 
 \examples{
-svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+## Chop and plot to demonstrate we reproduce the logo
+svg <- chop(R_logo())
 if(interactive()) plot(svg)
+
+## Directly access the internals for our purposes
+str(svg) # str(svg, give.attr=TRUE) # to show attributes
+hoop <-  svg[[1]][[2]]
+r <-     svg[[1]][[3]]
+ext <-   attr(svg[[1]], 'extents')
+if(interactive()) {
+  ## Basic geometry
+  plot(
+    t(hoop), type='l', ann=FALSE, asp=1, axes=FALSE,
+    xlim=ext[['x']], ylim=rev(ext[['y']])
+  )
+  lines(t(r))
+}
+if(interactive()) {
+  ## Let's do better
+  plot.new()
+  plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
+  r2 <- r
+  ## Abuse the fact we know the polygons are explicitly closed, 
+  ## so make the last value of each sub-path NA so they are treated 
+  ## as separate by polypath.
+  r2[,attr(r, 'starts')] <- NA
+  polypath(t(r2), col='blue')
+
+  ## Color not right, let's retrieve actual color
+  rfill <- attr(r, 'style-computed')[['fill']]
+  rfill
+  ## Gah, it's a gradient.  But that's okay.
+  rfill <- approximate_color(rfill, attr(svg, 'url'))
+  plot.new()
+  plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
+  polypath(t(r2), col=rfill)
+}
+if(interactive()) {
+  ## We control the geometry, so let's play by drawing the full
+  ## logo but applying arbitrary transforms (note: SVG transforms
+  ## are applied automatically).
+  h2 <- hoop
+  h2[, attr(hoop, 'starts')] <- NA
+  hfill <- attr(hoop, 'style-computed')[['fill']]
+  hfill <- approximate_color(hfill, attr(svg, 'url'))
+  ## rotation matrices
+  ang <- pi/16
+  center <- vapply(ext, mean, 0)
+  rot1 <- matrix(c(cos(ang), sin(ang), -sin(ang), cos(ang)), 2)
+  rot2 <- matrix(c(cos(-ang), sin(-ang), -sin(-ang), cos(-ang)), 2)
+  plot.new()
+  plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
+  polypath(t(rot2 \%*\% (h2 - center) + center), col=hfill)
+  polypath(t(rot1 \%*\% (r2 - center) + center), col=rfill)
+}
 }
 \seealso{
-\code{\link[=plot.svg]{plot.svg()}}, \code{\link[=flatten]{flatten()}} for an easier-to-manage data structure,
-\code{\link[=styles_computed]{styles_computed()}} for what styles are actively processed.
+\code{\link[=plot.svg_chopped]{plot.svg_chopped()}}, \code{\link[=flatten]{flatten()}} for an easier-to-manage data
+structure, \code{\link[=styles_computed]{styles_computed()}} for what styles are actively processed,
+\code{\link[=approximate_color]{approximate_color()}} for how to approximate gradient fills.
 }
