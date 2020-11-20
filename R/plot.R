@@ -129,9 +129,6 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
   if(vp.pct['height']) {
     vp.height <- vp.height / 100 * ppi * pin[2]
   }
-  # Based on most constrained dimension, compute display pixels to user pixels
-  vpp.to.usrp <- 1   # ratio of viewport pixels to viewbox pixels
-
   # Aspect ratio is only 1, unless preserveAspectRatio is not 'meet', and we
   # don't currenlty support anything other than meet.
   asp <- 1
@@ -141,7 +138,6 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
 
   # viewbox info
   vb <- compute_vb_dim(x)
-
   if(vb$has.vb) {
     if(vp.height / vp.width > vb$height / vb$width) {
       uppi <- ppi * vb$width / vp.width
@@ -153,7 +149,7 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
       lim.width <- vb$width * (vb$height / vb$width) / (vp.height / vp.width)
     }
   }
-  # Figure out the actul plottable area as the viewport may not fit in the
+  # Figure out the actual plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
 
   list(
@@ -162,6 +158,8 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
     uppi=uppi  # for stroke width calcs
   )
 }
+# Parse viewBox falling back to extents
+
 compute_vb_dim <- function(x) {
   # Start with viewBox width and height
   vb <- attr(x, 'viewBox')
@@ -209,7 +207,6 @@ plot_one <- function(x, ppi, ...) {
 
   # Compute plot dimensions in user units using viewBox info if availble, and if
   # not from the pre-computed extents attributes
-
   plot.new()
   d.params <- compute_display_params(x, ppi=ppi)
   lim <- d.params[['plot.lim']]

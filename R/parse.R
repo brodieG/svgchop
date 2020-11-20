@@ -484,7 +484,7 @@ process_use_node <- function(node.parsed) {
 #' }
 
 chop <- function(file, steps=10, transform=TRUE, clip=TRUE) {
-  vetr(CHR.1, INT.1.POS.STR, LGL.1)
+  vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1)
   xml <- try(read_xml(file))
   if(inherits(try, 'try-error'))
     stop(
