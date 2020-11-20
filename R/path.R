@@ -298,6 +298,16 @@ parse_path <- function(x, steps=20) {
     # Convert to absolute coords
     cmds.abs <- path_to_abs(cmds)
     cmds.cmds <- vapply(cmds.abs, '[[', "", 1)
+
+    # Drop trailing Ms and split
+    cmds.rle <- rle(cmds.cmds)
+    grp.len <- length(cmds.rle$values)
+    if(identical(cmds.rle$values[grp.len], 'M')) {
+      m.drop <-
+        -seq(length(cmds.abs), length.out=cmds.rle$lengths[grp.len], by=-1)
+      cmds.abs <- cmds.abs[m.drop]
+      cmds.cmds <- cmds.cmds[m.drop]
+    }
     cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
 
     # Simplify to x,y coords
