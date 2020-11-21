@@ -87,8 +87,8 @@ svg_gallery <- function(
     imgs[i] <- f
     # Compute dimensions for device, as well as for SVG.  This is means we do
     # the chopping twice.
-    svg <- chop(source[i], ...)
-    vb <- compute_vb_dim(svg[[1]])
+    svg <- chop(source[i], ...)[[1]]
+    vb <- compute_vb_dim(svg)
     xml <- read_xml(source[i])
     svg.node <- xml_find_first(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
 
@@ -106,14 +106,12 @@ svg_gallery <- function(
     } else if (is.na(w) && is.na(h))
       stop("Internal Error: contact maintainer.")
 
-    # set viewbox to extents if not set in the original SVG, and write back the
-    # modified SVG to a tempfile for eventual inclusion into the gallery
-    if(is.na(xml_attr(svg.node, 'viewBox'))) {
-      ext <- attr(svg[[1]], 'extents')
-      xml_attr(svg.node, 'viewBox') <- paste(
-        ext$x[1], ext$y[1], ext$x[2] - ext$x[1], ext$y[2] - ext$y[1]
-      )
-    }
+    # set viewbox to extents
+    vbe <- as.character(vb_from_extents(svg))
+    xml_attr(svg.node, 'viewBox') <-
+      if(anyNA(vbe)) NA_character_
+      else paste0(vbe, collapse=" ")
+
     svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
     write_xml(xml, svg.tmp)
     cat(sprintf("<td><img src='%s' />", svg.tmp), file=out, append=TRUE)
@@ -121,10 +119,10 @@ svg_gallery <- function(
     # generate chopped svg again so that all dims are done correctly.  This is
     # rather lazy and will take additional time.  Maybe can resolve by adding a
     # "fit" parameter to plot.
-    svg <- chop(svg.tmp, ...)
+
     png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
-    plot(svg, ppi=ppi)
+    plot(svg, ppi=ppi, scale=TRUE)
     dev.off()    # this resets old parameters
     # nuke color profile info; couldn't figure out a better way
     png::writePNG(png::readPNG(f), f)
