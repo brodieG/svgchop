@@ -46,8 +46,8 @@ interleave_cols <- function(x, y, mult) {
 
 path_to_abs <- function(path) {
   invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
-  x0 <- 0
-  y0 <- 0
+  x0 <- x <- 0
+  y0 <- y <- 0
   res <- vector('list', length(path))
   for(i in seq_along(path)) {
     el <- path[[i]]
@@ -66,8 +66,8 @@ path_to_abs <- function(path) {
         y <- ys[len / 2]
         cmd <- toupper(el[[1]])
         if(cmd == 'M') {
-          x0 <- x
-          y0 <- y
+          x0 <- xs[1]
+          y0 <- ys[1]
         }
         list(cmd, interleave(xs, ys))
       },
@@ -156,13 +156,15 @@ path_simplify <- function(path, steps) {
     res[[i]] <- switch(
       cmd,
       M=,L={
+        # M command with more than one coordinate pair becomes implicit L
+        # command thereafter.
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
         x <- xs[len / 2]
         y <- ys[len / 2]
         if(cmd == 'M') {
-          x0 <- x
-          y0 <- y
+          x0 <- xs[1]
+          y0 <- ys[1]
         }
         list(c(cmd, rep("L", len / 2 - 1)), xs, ys)
       },
@@ -287,9 +289,9 @@ parse_path <- function(x, steps=20) {
     matrix(numeric(), 2, 0, dimnames=list(c('x','y'), NULL))
   else {
     raw <- regmatches(
-      x[['d']], gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x[['d']])
+      x[['d']], gregexpr(sprintf("%s|[a-zA-Z]", num.pat.core),  x[['d']])
     )[[1]]
-    raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
+    raw <- unname(split(raw, cumsum(grepl("^[a-zA-Z]$", raw))))
     cmds <- lapply(
       raw, function(x) {
         if(length(x)) list(x[1], as.numeric(x[-1]))

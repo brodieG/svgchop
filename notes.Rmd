@@ -18,6 +18,8 @@
 
 ## ToDo
 
+* Not sure if `parse_path` should be exported (probably not).
+
 * Bug with R6 logo with 'm'.
 
 * an "href" references an non-existing URL element (subscript oo error now?).
