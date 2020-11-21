@@ -44,43 +44,54 @@
 #' @param ask TRUE or FALSE whether to prompt to display more plots when
 #'   plotting an "svg_chopped_list" with multiple elements that don't fit in the
 #'   current plotting grid.
-#' @param ppi numeric pixels per inch to assume for calculations.
-#' @param scale TRUE or FALSE (default), whether to force the SVG to scale so
-#'   that the extents fit the display device while respecting aspect ratio.
-#'   This causes the "viewBox" attribute to be ignored.
+#' @param ppi numeric pixels per inch of the display device to assume for
+#'   calculations, defaults to 125 which is a common display density for retina
+#'   style displays (note these are "display" pixels, not screen pixels which
+#'   are ~2x denser).
+#' @param scale TRUE or FALSE (default), whether to force the SVG to scale to
+#'   the display device.  If true, the image is adjusted to fill as much of the
+#'   device as possible while respecting the original aspect ratio.  This causes
+#'   the "viewBox", "width", and "height" attributes of the original SVG to be
+#'   ignored.
+#' @param center TRUE (default)  or FALSE, whether to center the image on the
+#'   device.
 #' @param ... passed on to [polypath()] and/or [lines()].
 #' @return `x`, invisibly
 
-plot.svg_chopped <- function(x, ppi=96, scale=FALSE, ...)
-  plot_one(x, ppi=ppi, scale=scale, ...)
+plot.svg_chopped <- function(
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE, ...
+)
+  plot_one(x, ppi=ppi, scale=scale, center=center,...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
-plot.svg_chopped_flat <- function(x, ppi=96, scale=FALSE, ...)
-  plot_one(x, ppi=ppi, scale=scale, ...)
+plot.svg_chopped_flat <- function(
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE, ...
+)
+  plot_one(x, ppi=ppi, scale=scale, center=center, ...)
 
 #' @export
 #' @rdname plot.svg_chopped
 
 plot.svg_chopped_list <- function(
-  x, ppi=96, scale=FALSE,
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 ) {
   vetr(structure(list(), class='svg_chopped_list'), INT.1.POS.STR, LGL.1)
-  plot_list(x, ppi=ppi, scale=scale, ask=ask, ...)
+  plot_list(x, ppi=ppi, scale=scale, center=center, ask=ask, ...)
 }
 #' @export
 #' @rdname plot.svg_chopped
 
 plot.svg_chopped_list_flat <- function(
-  x, ppi=96,
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 ) {
   vetr(structure(list(), class='svg_chopped_list_flat'), INT.1.POS.STR, LGL.1)
-  plot_list(x, ppi=ppi, ask=ask, ...)
+  plot_list(x, ppi=ppi, ask=ask, center=center, scale=scale, ...)
 }
 
 #' Compute Display Parameters for Device
@@ -108,11 +119,15 @@ plot.svg_chopped_list_flat <- function(
 #'   actual aspect ratio of the plot).
 #' * "uppi": numeric(1) the user-pixels per inch.
 
-compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
+compute_display_params <- function(
+  x, pin=par('pin'), ppi=getOption('svgchop.ppi', 125),
+  scale=FALSE, center=TRUE
+) {
   vetr(
     structure(list(), class='svg_chopped') ||
     structure(list(), class='svg_chopped_flat'),
-    pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR
+    pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR,
+    center=LGL.1
   )
   dev.width <- lim.width <- pin[1] * ppi
   dev.height <- lim.height <- pin[2] * ppi
@@ -155,13 +170,19 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
       uppi <- ppi * vb$height / vp.height
     }
   }
-  # Figure out the actual plottable area as the viewport may not fit in the
-  # display window, unless scale is TRUE (do we need to use ASP here?)
+  w.off <- (dev.width - vp.width) / 2 * center
+  h.off <- (dev.height - vp.height) / 2 * center
+  x0 <- vb$x - w.off
+  y0 <- vb$y - h.off
 
   list(
-    plot.lim=list(x=c(vb$x, vb$x + dev.width), y=c(vb$y, vb$y + dev.height)),
+    plot.lim=list(
+      x=c(x0, x0 + dev.width),
+      y=c(y0, y0 + dev.height)
+    ),
     asp=asp,
-    uppi=uppi  # for stroke width calcs
+    uppi=uppi,  # ppi/uppi is userspace to device scaling ratio
+    vb=vb
   )
 }
 vb_from_extents <- function(x) {
@@ -195,17 +216,17 @@ compute_vb_dim <- function(x) {
 
 ## Internal: plot either normal or flat chopped_list
 
-plot_list <- function(x, ppi, scale=FALSE, ask, ...) {
+plot_list <- function(x, ppi, scale=FALSE, center=TRUE, ask, ...) {
   if (ask) {
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot, ppi=ppi, scale=scale, ...)
+  lapply(x, plot, ppi=ppi, scale=scale, center=center, ...)
   invisible(x)
 }
 ## Internal: plot either normal or flat chopped
 
-plot_one <- function(x, ppi, scale=FALSE, ...) {
+plot_one <- function(x, ppi, scale=FALSE, center=TRUE, ...) {
   url <- attr(x, 'url')   # gradients, patterns, etc., stored here
   extents <- attr(x, 'extents')
   old.par <- par(xaxs='i', yaxs='i')
@@ -219,7 +240,7 @@ plot_one <- function(x, ppi, scale=FALSE, ...) {
     attr(x, 'width') <- NA_real_
     attr(x, 'height') <- NA_real_
   }
-  d.params <- compute_display_params(x, ppi=ppi)
+  d.params <- compute_display_params(x, ppi=ppi, center=center)
   lim <- d.params[['plot.lim']]
   plot.window(lim[['x']], rev(lim[['y']]), asp=d.params[['asp']])
 
@@ -281,7 +302,8 @@ plot_one <- function(x, ppi, scale=FALSE, ...) {
     # looks closed or not will be a matter of the lines forming a closed
     # outline.
 
-    offset <- c(lim[['x']][1], lim[['y']][1])
+    vb <- d.params[['vb']]
+    offset <- c(vb[['x']], vb[['y']])
     if(ncol(mat) > 1) {
       m <- t((mat - offset) * ppi / d.params[['uppi']] + offset)
       polypath(m, col=fill, border=NA, rule=fill.rule, ...)
