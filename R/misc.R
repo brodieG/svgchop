@@ -37,8 +37,22 @@
 #' @param x an object to flatten
 #' @return the object flattened
 #' @examples
-#' svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
-#' str(flatten(svg), give.attr=FALSE)   # attributes may be overwhelming
+#' ## Normal "svg_chopped" objects are tree-like
+#' svg <- chop(svg_samples('shapes'))
+#' str(svg, max.level=4, list.len=3)
+#'
+#' ## Flattened ones are linearized and lose hidden elements
+#' svgf <- flatten(svg)
+#' str(svgf, list.len=8)
+#' length([[1]]) # number of distinct SVG elements
+#'
+#' ## We can use this to plot only parts of the SVG
+#' old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
+#' plot(svgf, scale=TRUE)             # full plot
+#' plot(svgf[[1]][4], scale=TRUE)     # one item
+#' plot(svgf[[1]][4:6], scale=TRUE)   # more
+#' plot(svgf[[1]][10:12], scale=TRUE) # more
+#' par(old.par)
 
 flatten <- function(x, ...) UseMethod('flatten')
 
