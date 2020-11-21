@@ -24,11 +24,11 @@ closely.
 
 This package is aimed at anyone who wants to extract SVG elements as polygons
 before they are drawn to the canvas.  It is experimental, and follows the old
-European city design model (start with the village well, add features as needed,
-next thing you know you have mess of a city and you do a half-hearted
-_Haussmannization_).  The API is likely to change.  The code has not been
-optimized.  It will not make it onto CRAN except in the unlikely event there is
-substantial external interest for that to happen.
+city design model (start with the village well, add features as needed, next
+thing you know you have mess and you do a half-hearted [_Haussmannization_][2]).
+The API is likely to change with no concessions to backward compatibility.   The
+code has not been optimized.  It will not make it onto CRAN except in the
+unlikely event there is substantial external interest for that to happen.
 
 ## Installation
 
@@ -121,6 +121,7 @@ See `?svgchop::chop`, in particular the examples.
   promotion of the free software movement.
 
 [1]: https://developer.r-project.org/Blog/public/2020/07/15/new-features-in-the-r-graphics-engine/index.html
+[2]: https://en.wikipedia.org/wiki/Haussmann%27s_renovation_of_Paris
 
 
 [^gradients]: Gradients are fully parsed and the data required to render them is
