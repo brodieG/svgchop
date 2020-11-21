@@ -18,7 +18,10 @@
 
 ## ToDo
 
-* Check whether `svg_gallery_compare` really needs to do the chopping twice.
+* Main `chop` method should work on just one SVG element and warn when there is
+  an HTML page with many, and add a `chop_all` method.  `chop` then does not
+  return an "svg_list" and we get rid of all the complications due to that.  We
+  also may not attach "url" and "stylesheet" to overall object?
 
 * an "href" references an non-existing URL element (subscript oo error now?).
   Related: right now we drop any fallbacks when URL don't resolve.
@@ -35,11 +38,6 @@
       branching now requires and exception to handle clip-paths (urgh).
 
 * Number scientific notation beyond transform matrices.
-
-* Examples subsetting the flattened list and plotting part of the thing.
-
-* Scale to fit so that we can resize things (exists in gallery, should be a plot
-  option e.g. for Tomek Car).
 
 * Include mixed units in the "not supported" alerts, or maybe just non-pixel
   units.
