@@ -170,8 +170,8 @@ compute_display_params <- function(
       uppi <- ppi * vb$height / vp.height
     }
   }
-  w.off <- (dev.width - vp.width) / 2 * center
-  h.off <- (dev.height - vp.height) / 2 * center
+  w.off <- (dev.width - vb$width * ppi / uppi) / 2 * center
+  h.off <- (dev.height - vb$height * ppi / uppi) / 2 * center
   x0 <- vb$x - w.off
   y0 <- vb$y - h.off
 

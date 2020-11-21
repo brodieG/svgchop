@@ -18,6 +18,13 @@
 
 ## ToDo
 
+* Check that it's okay to recompute extents on subsetting, since in theory
+  clipping might have been applied.  One possibility is to defer actual clipping
+  to the plot method.  May not be necessary though if we accept bad extents on
+  clipping.
+
+* Bug with R6 logo with 'm'.
+
 * Main `chop` method should work on just one SVG element and warn when there is
   an HTML page with many, and add a `chop_all` method.  `chop` then does not
   return an "svg_list" and we get rid of all the complications due to that.  We

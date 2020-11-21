@@ -42,7 +42,7 @@
 svg_gallery <- function(
   source=svg_samples(),
   target=tempfile(),
-  ppi=96,
+  ppi=getOption('svgchop.ppi', 125),
   width=400,
   height=NA_real_,
   cols=1,
@@ -60,8 +60,8 @@ svg_gallery <- function(
   out <- file.path(target, "index.html")
   col.str <- sprintf(
     "<col style='width: %spx;'><col style='width: %spx;'>",
-    if(!is.na(width)) width else "auto",
-    if(!is.na(width)) width else "auto"
+    if(!is.na(width)) width + 4 else "auto",
+    if(!is.na(width)) width + 4 else "auto"
   )
   writeLines(
     c("<!DOCTYPE html>
@@ -69,7 +69,7 @@ svg_gallery <- function(
         <head>
           <style>
           table {border-collapse: collapse;}
-          td    {border: 1px solid black;}
+          td    {border: 1px solid black; padding: 2px;}
           </style>
         </head>
         <body>
@@ -114,7 +114,13 @@ svg_gallery <- function(
 
     svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
     write_xml(xml, svg.tmp)
-    cat(sprintf("<td><img src='%s' />", svg.tmp), file=out, append=TRUE)
+    cat(
+      sprintf(
+        "<td><img src='%s' style='width: %spx; height: %spx;'/>",
+        svg.tmp, w, h
+      ),
+      file=out, append=TRUE
+    )
 
     # generate chopped svg again so that all dims are done correctly.  This is
     # rather lazy and will take additional time.  Maybe can resolve by adding a
