@@ -565,7 +565,7 @@ chop_internal <- function(
   # references are resolved above.
   tmp <- lapply(tmp, attach_url, url=url)
 
-  # Apply transformations
+  # Compute and apply transformations
   tmp <- lapply(tmp, transform_coords, apply=transform)
 
   # Compute extents (note we do this before clipping, after transform)
@@ -574,7 +574,8 @@ chop_internal <- function(
 
   # Apply the `url()` elements.  This is most meaningful for clip paths and
   # patterns as we could apply them here. At this time we ony apply clipping
-  tmp <- lapply(tmp, apply_clip_path, url=url, apply=clip)
+  if(clip)
+    tmp <- lapply(tmp, apply_clip_path, url=url)
 
   # Attach global objects
   tmp <- lapply(
@@ -583,15 +584,12 @@ chop_internal <- function(
       attr(x, 'css') <- css
       x
   } )
-
-  # Return, also attaching global objects to outer list
-  structure(
-    give_names(tmp),
-    class='svg_chopped_list',
-    url=url, css=css
-  )
+  # Return with pretty names
+  structure(give_names(tmp), class='svg_chopped_list')
 }
-# Extent calc broken up into steps so we can update them when we subset
+# Extent calc broken up into steps so we can update them when we subset.
+# Note we don't just recompute extents from the terminal leaves after the
+# initial computation because those may be modified by clipping.
 
 compute_leaf_extents <- function(x) {
   if(

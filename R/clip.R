@@ -141,10 +141,10 @@ process_clip_path <- function(node, transform=TRUE) {
 ##
 ## http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Classes/Clipper/Methods/Execute.htm
 
-apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
+apply_clip_path <- function(node, url, prev.clip=NULL) {
   clip.path <- attr(node, 'clip-path')
   clip <- if(is.list(clip.path)) {
-    if(length(clip.path[['x']]) && length(prev.clip[['x']])) {
+    if(is.list(prev.clip)) {
       tmp <- polyclip::polyclip(
         prev.clip, clip.path,
         fillA=attr(prev.clip, 'fill-rule'), fillB=attr(clip.path, 'fill-rule')
@@ -155,7 +155,7 @@ apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
   } else prev.clip
 
   res <- if(!is.list(node)) {
-    if(length(clip) && apply) {
+    if(length(clip)) {
       res.pc <- polyclip::polyclip(
         as_polyclip_poly(node), clip,
         fillA=get_fill_rule(node), fillB=attr(clip, 'fill-rule')
