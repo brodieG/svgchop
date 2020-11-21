@@ -164,6 +164,12 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
     uppi=uppi  # for stroke width calcs
   )
 }
+vb_from_extents <- function(x) {
+  ext <- attr(x, 'extents')
+  if(!is.null(ext)) {
+    c(ext[['x']][1], ext[['y']][1], diff(ext[['x']]), diff(ext[['y']]))
+  } else rep(NA_real_, 4)
+}
 # Parse viewBox falling back to extents
 
 compute_vb_dim <- function(x) {
@@ -176,22 +182,15 @@ compute_vb_dim <- function(x) {
     !is.null(vb) && is.numeric(vb) && !anyNA(vb) && length(vb) == 4 &&
     all(vb[3:4] > 0)
   ) {
-    x0 <- vb[1]
-    y0 <- vb[2]
-    vb.width <- vb[3]
-    vb.height <- vb[4]
     has.vb <- TRUE
   } else if(
     !is.null(extents) &&
     isTRUE(vet(list(numeric(2), numeric(2)), extents))
   ) {
-    vb.width <- diff(extents[[1]])
-    vb.height <- diff(extents[[2]])
-    x0 <- extents[[1]][1]
-    y0 <- extents[[2]][1]
+    vb <- vb_from_extents(x)
   } else stop("Dimensions corrupted.")
 
-  list(width=vb.width, height=vb.height, x=x0, y=y0, has.vb=has.vb)
+  c(as.list(setNames(vb, c('x', 'y', 'width', 'height'))), list(has.vb=has.vb))
 }
 
 ## Internal: plot either normal or flat chopped_list
@@ -216,10 +215,7 @@ plot_one <- function(x, ppi, scale=FALSE, ...) {
   # not from the pre-computed extents attributes
   plot.new()
   if(scale) {
-    attr(x, 'viewBox') <- c(
-      extents[['x']][1], extents[['y']][1],
-      diff(rev(extents[['x']])), diff(rev(extents[['y']]))
-    )
+    attr(x, 'viewBox') <- vb_from_extents(x)
     attr(x, 'width') <- NA_real_
     attr(x, 'height') <- NA_real_
   }
