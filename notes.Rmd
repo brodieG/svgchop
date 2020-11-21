@@ -23,9 +23,6 @@
 * an "href" references an non-existing URL element (subscript oo error now?).
   Related: right now we drop any fallbacks when URL don't resolve.
 
-* Distinguish between xml "node" and list "node" that has already been partially
-  processed ("xnode"?).
-
 * Clipping
     * "clip-rule" support.
     * Warn about 'objectBoundingBox'

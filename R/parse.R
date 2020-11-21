@@ -111,13 +111,13 @@ parse_ellipse <- function(x, steps) {
 ## Still requires special handling in the caller to ensure that the transform is
 ## recorded properly
 
-parse_use <- function(node, steps) {
-  href <- xml_attr(node, 'xlink:href')
-  if(is.na(href)) href <- xml_attr(node, 'href')
+parse_use <- function(xnode, steps) {
+  href <- xml_attr(xnode, 'xlink:href')
+  if(is.na(href)) href <- xml_attr(xnode, 'href')
   href <- trimws(href)
   if(!is.na(href) && grepl("^#", href)) {
     ref <- xml_find_first(
-      xml_root(node),
+      xml_root(xnode),
       sprintf('.//svg:*[@id="%s"]', sub("^#", "", href)),
       ns=NSMAP
     )
@@ -138,8 +138,8 @@ parse_use <- function(node, steps) {
     list()
   }
 }
-process_use_node <- function(node.parsed) {
-  attrs <- attr(node.parsed, 'xml_attrs')
+process_use_node <- function(node) {
+  attrs <- attr(node, 'xml_attrs')
   x <- y <- 0
   if('x' %in% names(attrs)) x <- parse_length(attrs[['x']])
   if('y' %in% names(attrs)) y <- parse_length(attrs[['y']])
@@ -150,8 +150,8 @@ process_use_node <- function(node.parsed) {
       if(is.null(attrs[['transform']])) transform
       else paste(attrs[['transform']], transform)
   }
-  attr(node.parsed, 'xml_attrs') <- attrs
-  node.parsed
+  attr(node, 'xml_attrs') <- attrs
+  node
 }
 #' Approximate SVG Documents With Line Segments
 #'
