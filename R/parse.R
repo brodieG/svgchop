@@ -393,14 +393,17 @@ process_use_node <- function(node.parsed) {
 #' "clip-path" attribute to apply it yourself.
 #'
 #' If you wish to manually apply the clip paths, you will need to retrieve all
-#' the ancestors and AND combine them yourself.  If you are also manually
-#' applying the transforms, you will need to apply the corresponding transforms
-#' to each ancestor clip path before AND combining them.  The transform data
-#' should be attached as the "transform-computed" attribute of any node that
-#' also has a "clip-path" attribute.  Note that transforms on the clip path
-#' definitions (i.e. those affecting the contents of &lt;clipPath&gt; elements)
-#' will always be applied, unlike those of that affect the elements that
-#' reference them.
+#' the ancestors and AND combine them yourself.  This is unlike transforms,
+#' which are computed accounting for ancestor transforms.  This oddity is
+#' required to ensure that clip paths still make sense for the case where
+#' transforms are deferred and applied manually later.
+#' In the transform deferral case, you will need to apply the corresponding
+#' transforms to each ancestor clip path before AND combining them.  The
+#' transform data should be attached as the "transform-computed" attribute of
+#' any node that also has a "clip-path" attribute.  Note that transforms on the
+#' clip path definitions (i.e. those affecting the contents of &lt;clipPath&gt;
+#' elements) will always be applied, unlike those of that affect the elements
+#' that reference them.
 #'
 #' "clip-path" attributes on "clipPath" elements are not followed, which is a
 #' departure from the spec.  "clipPathUnits" are assumed to be "userSpaceOnUse".
@@ -439,7 +442,11 @@ process_use_node <- function(node.parsed) {
 #'   in the future this parameter will be deprecated in favor of tolerance
 #'   based ones.
 #' @param transform TRUE (default) or FALSE whether to apply the transformation
-#'   to the computed element coordinates.
+#'   to the computed element coordinates.  There is a chance this parameter will
+#'   become deprecated and we will no longer provide the option to leave
+#'   transforms un-applied.  The option complicates code substantially.  If set
+#'   to FALSE, you must should also set `clip` to FALSE and apply the clip-paths
+#'   yourself.
 #' @param clip TRUE or FALSE (default) whether to apply clipping paths to the
 #'   output.  See "Gradients, Patterns, Masks, and Clip Paths".
 #' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
@@ -561,8 +568,9 @@ chop_internal <- function(
   # Apply transformations
   tmp <- lapply(tmp, transform_coords, apply=transform)
 
-  # Compute extents (note we do this before clipping)
-  tmp <- lapply(tmp, get_extents)
+  # Compute extents (note we do this before clipping, after transform)
+  tmp <- lapply(tmp, compute_leaf_extents)
+  tmp <- lapply(tmp, update_extents)
 
   # Apply the `url()` elements.  This is most meaningful for clip paths and
   # patterns as we could apply them here. At this time we ony apply clipping
@@ -583,32 +591,45 @@ chop_internal <- function(
     url=url, css=css
   )
 }
+# Extent calc broken up into steps so we can update them when we subset
 
-get_extents <- function(x) {
-  vetr(
-    structure(list(), class="svg_chopped") ||
-    structure(list(), class="svg_chopped_flat")
-  )
-  get_coords <- function(obj, coord)
-    if(is.matrix(obj) && !inherits(obj, 'hidden')) obj[coord,]
-    else if(is.list(obj) && length(obj)) lapply(obj, get_coords, coord)
-
-  xall <- unlist(get_coords(x, 1))
-  yall <- unlist(get_coords(x, 2))
-
-  # default size of an SVG embedded in HTML (stand-alones vary in size
-  # depending on browser, but are often 100vh or some such so require device
-  # info)
-  xs <- if(length(xall)) range(xall) else c(0, 300)
-  ys <- if(length(yall)) range(yall) else c(0, 150)
-  attr(x, 'extents') <- list(x=xs, y=ys)
+compute_leaf_extents <- function(x) {
+  if(
+    is.matrix(x) && !inherits(x, 'hidden') &&
+    ncol(x)
+  ) {
+    attr(x, 'extents') <- list(x=range(x[1,]), y=range(x[2,]))
+  } else if (is.list(x) && length(x)) {
+    x[] <- lapply(x, compute_leaf_extents)
+  }
   x
 }
+sum_extents <- function(x) {
+  if(is.list(x)) {
+    Reduce(
+      function(A, B) {
+        if(is.null(A) && is.null(B)) NULL
+        else if(is.null(B)) A
+        else if(is.null(A)) B
+        else
+          list(
+            x=range(c(A[['x']], B[['x']])),
+            y=range(c(A[['y']], B[['y']]))
+          )
+      },
+      lapply(x, sum_extents)
+    )
+  } else attr(x, 'extents')
+}
+update_extents <- function(x) {
+  ext <- sum_extents(x)
+  attr(x, 'extents') <- ext
+  x
+}
+## Vectorized, parses lengths dropping units.
 
 num.pat.core <- "(-?\\d*\\.?\\d+)"
 num.pat <- sprintf("%s(?:\\w|%%)*", num.pat.core)
-
-## Vectorized, parses lengths dropping units.
 
 parse_length <- function(x) {
   vetr(character())

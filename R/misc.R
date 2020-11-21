@@ -29,7 +29,7 @@
 #' "svg_chopped_list", and terminal nodes are retained.
 #'
 #' For convenience the flat list is named with the numeric index of the element
-#' and the svg element name.  The underlying recursive list is unnamed so we 
+#' and the svg element name.  The underlying recursive list is unnamed so we
 #' use the name to succinctly display key information about the object when
 #' examined with [utils::str()] (see example).
 #'
@@ -106,7 +106,14 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @param i mixed subsetting indices
 #' @export
 
-`[.svg_chopped` <- function(x, i, ...) get_extents( subset_chop(x, i, ...))
+`[.svg_chopped` <- function(x, i, ...) update_extents(subset_chop(x, i, ...))
+
+#' @rdname subset.svg_chopped
+#' @export
+
+`[.svg_chopped_flat` <- function(x, i, ...)
+  update_extents(subset_chop(x, i, ...))
+
 
 #' @rdname subset.svg_chopped
 #' @export
@@ -117,11 +124,6 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @export
 
 `[.svg_chopped_list_flat` <- function(x, i, ...) subset_chop(x, i, ...)
-
-#' @rdname subset.svg_chopped
-#' @export
-
-`[.svg_chopped_flat` <- function(x, i, ...) get_extents(subset_chop(x, i, ...))
 
 ## Should probably have a common class for all the chopped objects instead of
 ## this hack.
