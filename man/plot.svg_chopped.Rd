@@ -7,20 +7,24 @@
 \alias{plot.svg_chopped_list_flat}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
-\method{plot}{svg_chopped}(x, ppi = 96, ...)
+\method{plot}{svg_chopped}(x, ppi = getOption("svgchop.ppi", 125), scale = FALSE, center = TRUE, ...)
 
-\method{plot}{svg_chopped_flat}(x, ppi = 96, ...)
+\method{plot}{svg_chopped_flat}(x, ppi = getOption("svgchop.ppi", 125), scale = FALSE, center = TRUE, ...)
 
 \method{plot}{svg_chopped_list}(
   x,
-  ppi = 96,
+  ppi = getOption("svgchop.ppi", 125),
+  scale = FALSE,
+  center = TRUE,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 )
 
 \method{plot}{svg_chopped_list_flat}(
   x,
-  ppi = 96,
+  ppi = getOption("svgchop.ppi", 125),
+  scale = FALSE,
+  center = TRUE,
   ask = prod(par("mfcol")) < length(x) && dev.interactive(),
   ...
 )
@@ -28,7 +32,19 @@
 \arguments{
 \item{x}{an "svg_chopped" or "svg_chopped_list" object.}
 
-\item{ppi}{numeric pixels per inch to assume for calculations.}
+\item{ppi}{numeric pixels per inch of the display device to assume for
+calculations, defaults to 125 which is a common display density for retina
+style displays (note these are "display" pixels, not screen pixels which
+are ~2x denser).}
+
+\item{scale}{TRUE or FALSE (default), whether to force the SVG to scale to
+the display device.  If true, the image is adjusted to fill as much of the
+device as possible while respecting the original aspect ratio.  This causes
+the "viewBox", "width", and "height" attributes of the original SVG to be
+ignored.}
+
+\item{center}{TRUE (default)  or FALSE, whether to center the image on the
+device.}
 
 \item{...}{passed on to \code{\link[=polypath]{polypath()}} and/or \code{\link[=lines]{lines()}}.}
 

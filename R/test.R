@@ -87,7 +87,7 @@ svg_gallery <- function(
     imgs[i] <- f
     # Compute dimensions for device, as well as for SVG.  This is means we do
     # the chopping twice.
-    svg <- chop(source[i], ...)[[1]]
+    svg <- chop(source[i], ...)
     vb <- compute_vb_dim(svg)
     xml <- read_xml(source[i])
     svg.node <- xml_find_first(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)

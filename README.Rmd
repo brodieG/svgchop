@@ -22,13 +22,14 @@ approximate manner.  While you should not expect the results to be identical to
 those produced by a conforming implementation, many SVGs are approximated
 closely.
 
-This package is aimed at anyone who wants to extract SVG elements as polygons
-before they are drawn to the canvas.  It is experimental, and follows the old
-city design model (start with the village well, add features as needed, next
-thing you know you have mess and you do a half-hearted [_Haussmannization_][2]).
-The API is likely to change with no concessions to backward compatibility.   The
-code has not been optimized.  It will not make it onto CRAN except in the
-unlikely event there is substantial external interest for that to happen.
+This package is aimed at the narrow niche of those that want to extract SVG
+elements as polygons before they are drawn to the canvas.  It is experimental,
+and follows the old-city design model (start with the village well, add features
+as needed, next thing you know you have a mess and you do a half-hearted
+[_Haussmannization_][2]).  The API is likely to change with no concessions to
+backward compatibility.   The code has not been optimized.  It will not make it
+onto CRAN except in the unlikely event there is substantial external interest
+for that to happen.
 
 ## Installation
 
@@ -36,7 +37,7 @@ unlikely event there is substantial external interest for that to happen.
 
 ## Feature Coverage
 
-We implement:
+This package implements:
 
 * All basic elements.
 * Paths, including all sub-commands.
@@ -75,7 +76,8 @@ See `?svgchop::chop`, in particular the examples.
 
 ## Related Software
 
-* [Rsvg](https://cran.r-project.org/package=rsvg) to rasterize SVGs.
+* [Rsvg](https://cran.r-project.org/package=rsvg), a wrapper around the [Librsvg
+  Gnome library](https://developer.gnome.org/rsvg/), to rasterize SVGs.
 * [string2path](https://github.com/yutannihilation/string2path) for converting
   fonts to polygons.
 * [svgpathtools](https://github.com/mathandy/svgpathtools) or a Python SVG
@@ -97,11 +99,16 @@ See `?svgchop::chop`, in particular the examples.
 * R Core for developing and maintaining such a wonderful language.
 * [W3C](https://www.w3.org/) for the SVG spec and accompanying documentation,
   and more generally for supporting open web standards.
+* Daniel Veillard etal. for [libxml2](http://www.xmlsoft.org/), and Jim Hester,
+  Hadley Wickham, etal.  for making it available in R with a nice consistent
+  interface via [`xml2`](https://cran.r-project.org/package=xml2), which we use
+  to easily manipulate SVG files (among other things).
+* Angus Johnson for [clipper](http://angusj.com/delphi/clipper.php), and Adrian
+  Baddley etal. for making it available in R via
+  [polyclip](https://cran.r-project.org/package=polyclip).  We use `polyclip` to
+  implement clip paths.
 * [MDN](https://developer.mozilla.org/en-US/) for being a fantastic resource for
   web development.
-* Jim Hester, Hadley Wickham, etal. for
-  [`xml2`](https://cran.r-project.org/package=xml2), which makes
-  it easy to extract properties from SVG (among other things).
 * [Mortoray](https://twitter.com/edaqa) for pointing me to the SVG arc
   implementation appendix.
 * [Hadley Wickham](https://github.com/hadley/), [Peter

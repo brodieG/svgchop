@@ -8,7 +8,7 @@
 svg_gallery(
   source = svg_samples(),
   target = tempfile(),
-  ppi = 96,
+  ppi = getOption("svgchop.ppi", 125),
   width = 400,
   height = NA_real_,
   cols = 1,
@@ -17,7 +17,7 @@ svg_gallery(
   ...
 )
 
-svg_samples()
+svg_samples(pattern = "\\\\.svg$")
 }
 \arguments{
 \item{source}{character vector of paths or URLs for SVGs to compile into

@@ -4,7 +4,13 @@
 \alias{compute_display_params}
 \title{Compute Display Parameters for Device}
 \usage{
-compute_display_params(x, pin = par("pin"), ppi = 96, scale = FALSE)
+compute_display_params(
+  x,
+  pin = par("pin"),
+  ppi = getOption("svgchop.ppi", 125),
+  scale = FALSE,
+  center = TRUE
+)
 }
 \arguments{
 \item{x}{an "svg_chopped" object}

@@ -99,9 +99,7 @@ flatten.svg_chopped_list <- function(x, ...) {
 #'
 #' Versions of the base subsetting functions that do not drop attributes.  Among
 #' other things, this allows us to subset complex objects and still benefit from
-#' the inspection methods in the package.  Recall that the return value from
-#' [chop()] is an "svg_chopped_list", often containing just one "svg_chopped"
-#' object.
+#' the inspection methods in the package.
 #'
 #' @rdname subset.svg_chopped
 #' @param x an "svg_chopped" or related object
@@ -207,47 +205,3 @@ make_name <- function(x) {
   }
   sprintf("%s%s%s", name, id, class)
 }
-
-
-## Twisted Pyramid
-##
-## To generate the twisting overlapped squares for the tests
-##
-## @export
-
-# nocov start
-twisted_pyramid <- function(tiers=10, angle=10, colors=rainbow(tiers)) {
-  outer <- sprintf('
-    <svg viewBox="-55 -55 110 110">
-      <defs>
-        <rect 
-        id="base-rect" width="100" height="100" x="-50" y="-50" 
-        transform="rotate(-%f)"
-        />
-      </defs>
-      %%s
-    </svg>', 
-  angle)
-  templates <- sprintf('
-    <g transform="rotate(%%f) scale(%%f)">
-      <use href="#base-rect" fill="%s"/>
-      %%s
-    </g>',
-    colors
-  )
-  scale <- 1 / (cos((45 - angle) / 180 * pi) * sqrt(2))
-  inside <- Reduce(
-    function(x, y) sprintf(x, angle, scale, y),
-    c(templates, "")
-  )
-  sprintf(outer, inside)
-}
-# nocov end
-
-
-
-
-
-
-
-
