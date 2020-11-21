@@ -626,7 +626,8 @@ update_extents <- function(x) {
 }
 ## Vectorized, parses lengths dropping units.
 
-num.pat.core <- "(-?\\d*\\.?\\d+)"
+
+num.pat.core <- "([+-]?[0-9]*\\.?[0-9]+(?:e[+-][0-9]+)?)"
 num.pat <- sprintf("%s(?:\\w|%%)*", num.pat.core)
 
 parse_length <- function(x) {

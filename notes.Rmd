@@ -18,11 +18,6 @@
 
 ## ToDo
 
-* Check that it's okay to recompute extents on subsetting, since in theory
-  clipping might have been applied.  One possibility is to defer actual clipping
-  to the plot method.  May not be necessary though if we accept bad extents on
-  clipping.
-
 * Bug with R6 logo with 'm'.
 
 * an "href" references an non-existing URL element (subscript oo error now?).
@@ -39,17 +34,8 @@
       non-terminal leaves, so all the logic that focused on terminal based
       branching now requires and exception to handle clip-paths (urgh).
 
-* Number scientific notation beyond transform matrices.
-
 * Include mixed units in the "not supported" alerts, or maybe just non-pixel
   units.
-
-* Check that transform=FALSE actually works (not sure it does), complicated by
-  the separate transform of clip paths and display elements.
-
-* Check that clip=FALSE actually works.
-
-* Add a mechanism to apply transform ex-post (including recomputing extents).
 
 * When implementing patterns, will need to think about whether to apply them
   truly (i.e. replace target with tessellated and clipped pattern, or just
