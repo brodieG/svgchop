@@ -114,6 +114,9 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
     structure(list(), class='svg_chopped_flat'),
     pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR
   )
+  dev.width <- lim.width <- pin[1] * ppi
+  dev.height <- lim.height <- pin[2] * ppi
+
   # Compute viewport width and height in pixels
   vp.width <- attr(x, 'width')
   vp.height <- attr(x, 'height')
@@ -129,36 +132,34 @@ compute_display_params <- function(x, pin=par('pin'), ppi=96, scale=FALSE) {
     vp.pct['height'] <- TRUE
   }
   if(vp.pct['width']) {
-    vp.width <- vp.width / 100 * ppi * pin[1]
+    vp.width <- vp.width / 100 * dev.width
   }
   if(vp.pct['height']) {
-    vp.height <- vp.height / 100 * ppi * pin[2]
+    vp.height <- vp.height / 100 * dev.height
   }
   # Aspect ratio is only 1, unless preserveAspectRatio is not 'meet', and we
-  # don't currenlty support anything other than meet.
+  # don't currently support anything other than meet.
   asp <- 1
   uppi <- ppi
-  dev.width <- lim.width <- pin[1] * ppi
-  dev.height <- lim.height <- pin[2] * ppi
 
-  # viewbox info
+  # There is the device, the viewport, and the viewbox.
+  #
+  # If there is a viewbox, it will be mapped to fit the viewport.  Then, those
+  # coordinates are related to the device window.
+
   vb <- compute_vb_dim(x)
-  if(vb$has.vb || scale) {
+  if(vb$has.vb) {
     if(vp.height / vp.width > vb$height / vb$width) {
       uppi <- ppi * vb$width / vp.width
-      lim.width <- vb$width
-      lim.height <- vb$height * (vp.height / vp.width) / (vb$height / vb$width)
     } else {
       uppi <- ppi * vb$height / vp.height
-      lim.height <- vb$height
-      lim.width <- vb$width * (vb$height / vb$width) / (vp.height / vp.width)
     }
   }
   # Figure out the actual plottable area as the viewport may not fit in the
   # display window, unless scale is TRUE (do we need to use ASP here?)
 
   list(
-    plot.lim=list(x=c(vb$x, vb$x + lim.width), y=c(vb$y, vb$y + lim.height)),
+    plot.lim=list(x=c(vb$x, vb$x + dev.width), y=c(vb$y, vb$y + dev.height)),
     asp=asp,
     uppi=uppi  # for stroke width calcs
   )
@@ -207,14 +208,22 @@ plot_list <- function(x, ppi, scale=FALSE, ask, ...) {
 
 plot_one <- function(x, ppi, scale=FALSE, ...) {
   url <- attr(x, 'url')   # gradients, patterns, etc., stored here
+  extents <- attr(x, 'extents')
   old.par <- par(xaxs='i', yaxs='i')
   on.exit(par(old.par))
 
   # Compute plot dimensions in user units using viewBox info if availble, and if
   # not from the pre-computed extents attributes
   plot.new()
-  if(scale) attr(x, 'viewBox') <- NULL
-  d.params <- compute_display_params(x, ppi=ppi, scale=scale)
+  if(scale) {
+    attr(x, 'viewBox') <- c(
+      extents[['x']][1], extents[['y']][1],
+      diff(rev(extents[['x']])), diff(rev(extents[['y']]))
+    )
+    attr(x, 'width') <- NA_real_
+    attr(x, 'height') <- NA_real_
+  }
+  d.params <- compute_display_params(x, ppi=ppi)
   lim <- d.params[['plot.lim']]
   plot.window(lim[['x']], rev(lim[['y']]), asp=d.params[['asp']])
 
@@ -276,8 +285,9 @@ plot_one <- function(x, ppi, scale=FALSE, ...) {
     # looks closed or not will be a matter of the lines forming a closed
     # outline.
 
+    offset <- c(lim[['x']][1], lim[['y']][1])
     if(ncol(mat) > 1) {
-      m <- t(mat)
+      m <- t((mat - offset) * ppi / d.params[['uppi']] + offset)
       polypath(m, col=fill, border=NA, rule=fill.rule, ...)
       lines(m, col=stroke, lwd=stroke.width, ...)
     }
