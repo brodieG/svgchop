@@ -92,43 +92,45 @@ parse_transform <- function(node, trans.prev=trans()) {
             mx.tmp[1:2,3] <- valsi
           } else if(length(valsi) == 1) {
             mx.tmp[1,3] <- valsi
-          } else stop('Invalid "translate" command')
+          } else sig_e('Invalid "translate" transform command')
         },
         rotate={
           mx.tmp <- diag(3)
-          if(!length(valsi) %in% c(1, 3))
-            stop('Invalid "rotate" transform command')
-          ang <- valsi[1] / 180 * pi
+          if(!length(valsi) %in% c(1, 3)) {
+            sig_e('Invalid "rotate" transform command')
+          } else {
+            ang <- valsi[1] / 180 * pi
 
-          mx.tmp[1:2, 1:2] <- c(cos(ang), sin(ang), -sin(ang), cos(ang))
-          # 3 params means translate -> rotate -> untranslate
-          if(length(valsi) == 3) {
-            trans1 <- trans2 <- diag(3)
-            trans1[1:2, 3] <- valsi[2:3]
-            trans2[1:2, 3] <- -valsi[2:3]
-            mx.tmp <- trans1 %*% mx.tmp %*% trans2
-          } else if(length(valsi) != 1)
-            stop('Invalid "rotate" transform command')
+            mx.tmp[1:2, 1:2] <- c(cos(ang), sin(ang), -sin(ang), cos(ang))
+            # 3 params means translate -> rotate -> untranslate
+            if(length(valsi) == 3) {
+              trans1 <- trans2 <- diag(3)
+              trans1[1:2, 3] <- valsi[2:3]
+              trans2[1:2, 3] <- -valsi[2:3]
+              mx.tmp <- trans1 %*% mx.tmp %*% trans2
+            } else if(length(valsi) != 1)
+              sig_e('Invalid "rotate" transform command')
+          }
         },
         scale={
           if(length(valsi) %in% 1:2) {
             mx.tmp[cbind(1:2, 1:2)] <- valsi
-          } else stop('Invalid "scale" transform command')
+          } else sig_e('Invalid "scale" transform command')
         },
         skewX={
           if(length(valsi) == 1) {
             mx.tmp[1,2] <- tan(valsi / 180 * pi)
-          } else stop('Invalid "skewX" transform command')
+          } else sig_e('Invalid "skewX" transform command')
         },
         skewY={
           if(length(valsi) == 1) {
             mx.tmp[2,1] <- tan(valsi / 180 * pi)
-          } else stop('Invalid "skewX" transform command')
+          } else sig_e('Invalid "skewY" transform command')
         },
         matrix={
           if(length(valsi) == 6) {
             mx.tmp[1:2,1:3] <- valsi
-          } else stop('Invalid "matrix" transform command')
+          } else sig_e('Invalid "matrix" transform command')
         },
         stop('"', cmds[i], '" transformation not supported')
       )
