@@ -94,19 +94,20 @@ compare_svg <- function(
         <body>
           <table style='border: 1px solid black;'>
       ",
-      rep(col.str, cols)
+      rep(col.str, ncol)
     ),
     out
   )
   imgs <- character(length(source))
   if(rsvg) {
-    if(!requireNamespace('rsvg'))
+    if(!requireNamespace('rsvg', quietly=TRUE))
       stop("`rsvg` not available, set `rsvg=FALSE`.")
   }
   for(i in seq_along(source)) {
-    if(!(i - 1) %% cols) cat("<tr>", file=out, append=TRUE)
+    if(!(i - 1) %% ncol) cat("<tr>", file=out, append=TRUE)
 
-    f <- file.path(target, sprintf("img-%04d.png",i))
+    bname <- sub("\\..*$", "", basename(source[i]))
+    f <- file.path(target, sprintf("img-%s.png", bname))
     imgs[i] <- f
     svg <- chop(source[i], ...)
 
@@ -135,10 +136,10 @@ compare_svg <- function(
     } else if (is.na(w) && is.na(h))
       stop("Internal Error: contact maintainer.")
 
-    svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
+    svg.tmp <- file.path(target, sprintf("tmp-%s.svg", bname))
     write_xml(xml, svg.tmp)
     if(rsvg) {
-      svg.png <- file.path(target, sprintf("rsvg-%04d.png", i))
+      svg.png <- file.path(target, sprintf("rsvg-%s.png", bname))
       rsvg::rsvg_png(svg.tmp, file=svg.png, width=width, height=h)
       svg.tmp <- svg.png
     }
@@ -261,7 +262,7 @@ compare_rsvg <- function(..., width=400, display=2, timeout=2) {
 R_logo <- function(internal=TRUE) {
   vetr(LGL.1)
   if(internal) {
-    system.file(package='svgchop', file.path("svg", "R-logo.svg"))
+    system.file(package='svgchop', file.path("svg", "07-R-logo.svg"))
   } else file.path(R.home(), 'doc', 'html', 'Rlogo.svg')
 }
 
