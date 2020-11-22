@@ -10,7 +10,7 @@ chop(
   steps = 10,
   transform = TRUE,
   clip = TRUE,
-  warn = getOption("svgchop.warn", TRUE)
+  warn = getOption("svgchop.warn", FALSE)
 )
 
 chop_all(
@@ -18,7 +18,7 @@ chop_all(
   steps = 10,
   transform = TRUE,
   clip = TRUE,
-  warn = getOption("svgchop.warn", TRUE)
+  warn = getOption("svgchop.warn", FALSE)
 )
 }
 \arguments{
@@ -41,6 +41,10 @@ yourself.}
 
 \item{clip}{TRUE (default) or FALSE whether to apply clipping paths to the
 output.  See "Gradients, Patterns, Masks, and Clip Paths".}
+
+\item{warn}{TRUE or FALSE (default) whether to warn when unsupported SVG
+features are encountered.  Note the warnings are not comprehensive.  See
+"Unsupported Features" section for details.}
 }
 \value{
 an "svg_chopped" S3 object for \code{chop}, an "svg_chopped_list" S3
@@ -344,6 +348,11 @@ There is a distinction between features unimplemented in the parser and those
 unimplemented in the \code{plot} method.  For example, gradients are mostly
 implemented in the parser, but the \code{plot} method is not able to represent
 them other than as a single color.
+
+You can ask \code{chop} and \code{chop_all} to report when they encounter unsupported
+features by setting \code{warn=TRUE} or `options(svgchop.warn=TRUE), although the
+reporting is not comprehensive.  Both of these functions always signal
+conditions inheriting class "svgchop" so you may handle them (see example).
 }
 
 \examples{
