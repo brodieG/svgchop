@@ -46,8 +46,8 @@ interleave_cols <- function(x, y, mult) {
 
 path_to_abs <- function(path) {
   invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
-  x0 <- 0
-  y0 <- 0
+  x0 <- x <- 0
+  y0 <- y <- 0
   res <- vector('list', length(path))
   for(i in seq_along(path)) {
     el <- path[[i]]
@@ -66,8 +66,8 @@ path_to_abs <- function(path) {
         y <- ys[len / 2]
         cmd <- toupper(el[[1]])
         if(cmd == 'M') {
-          x0 <- x
-          y0 <- y
+          x0 <- xs[1]
+          y0 <- ys[1]
         }
         list(cmd, interleave(xs, ys))
       },
@@ -156,13 +156,15 @@ path_simplify <- function(path, steps) {
     res[[i]] <- switch(
       cmd,
       M=,L={
+        # M command with more than one coordinate pair becomes implicit L
+        # command thereafter.
         xs <- el[[2]][seq(1, length.out=len / 2, by=2)]
         ys <- el[[2]][seq(2, length.out=len / 2, by=2)]
         x <- xs[len / 2]
         y <- ys[len / 2]
         if(cmd == 'M') {
-          x0 <- x
-          y0 <- y
+          x0 <- xs[1]
+          y0 <- ys[1]
         }
         list(c(cmd, rep("L", len / 2 - 1)), xs, ys)
       },
@@ -179,8 +181,12 @@ path_simplify <- function(path, steps) {
             if(
               prevc %in% c('Q','T') && cmd == 'T' ||
               prevc %in% c('C','S') && cmd == 'S'
-            )
+            ) {
               ref <- prev[, ncol(prev) - 1L]
+            }
+            else {
+              stop("'", cmd, "' not valid when following '", prevc, "'.")
+            }
           } else {
             stop("'", cmd, "' command not valid as first command in path.")
           }
@@ -211,12 +217,7 @@ path_simplify <- function(path, steps) {
         ys <- coords[2L,]
         x <- xs[length(xs)]
         y <- ys[length(ys)]
-
-        # Cubic Bézier -> Line segments
-        start <- vapply(res[[i-1]][2:3], function(x) x[length(x)], 1)
-        coords.i <- bezier_interp2(list(xs, ys), start, steps=steps)
-
-        c(list(rep('L', length(coords.i[[1L]]))), coords.i)
+        list(rep('C', length(xs)), xs, ys)
       },
       V=,H={
         if(cmd == 'V') {
@@ -246,50 +247,68 @@ path_simplify <- function(path, steps) {
       stop("unknown command ", el[[1]])
     )
   }
-  cmds <- unlist(lapply(res, '[[', 1))
-  xs <- unlist(lapply(res, '[[', 2))
-  ys <- unlist(lapply(res, '[[', 3))
+  res
+}
+path_interpolate <- function(path, steps) {
+  beziers <- which(vapply(path, function(x) x[[1]][1] == 'C', TRUE))
+  if(any(beziers < 2)) stop("'C' commands cannot be at start of path.")
+  starts <- lapply(
+    path[beziers - 1],
+    function(x) vapply(x[2:3], function(y) y[length(y)], 1)
+  )
+  path[beziers] <- Map(
+    function(p, start) {
+      coords.i <- bezier_interp(p[2:3], start, steps=steps)
+      c(list(rep('L', length(coords.i[[1L]]))), coords.i)
+    },
+    path[beziers],
+    starts
+  )
+  path
+}
+path_finalize <- function(path) {
+  cmds <- unlist(lapply(path, '[[', 1))
+  xs <- unlist(lapply(path, '[[', 2))
+  ys <- unlist(lapply(path, '[[', 3))
 
   # Confirm that only remaining commands are M/L and drop them
   if(!all(cmds %in% c('M','L'))) {
     # nocov start
-    stop(
-      "Internal Error: simplified path command other than 'M', or 'L' found."
-    )
+    stop("Internal Error: simplified path command other than 'M' or 'L'.")
     # nocov end
   }
   rbind(x=xs, y=ys)
 }
-#' Convert SVG Path to Line Segments
-#'
-#' Parses the "d" path attribute into X-Y coordinates of line segments collected
-#' into sub-paths.  Sub-paths are designated by "M" or "m" commands embedded in
-#' the path command.  Bézier curves and paths are interpolated.
-#'
-#' @export
-#' @param x a path SVG node.
-#' @param steps positive integer(1), how many line segments to use to
-#'   approximate Bézier curves or elliptical arcs.  For arcs, it is the number
-#'   of steps for a complete ellipse, so for partial ellipses fewer steps will
-#'   be used.
-#' @return numeric matrix, 2 x n containing the x and y coordinates of the
-#'   endpoints of the n - 1 concatenated line segments that approximate the path
-#'   described by the "d" attribute of the path SVG element `x`.  If there is
-#'   more than one sub-path, the starting column of sub-paths following the
-#'   first will be stored as the "starts" attribute of the matrix.  Whether the
-#'   (sub)paths are open or closed is recorded as the "closed" attribute.
-#'   (Sub)paths are considered closed if they end in a "Z" or "z" command.
-#'   (Sub)paths that end at the starting coordinate, but do not end in "Z" or
-#'   "z", are not considered closed.
+## Convert SVG Path to Line Segments
+##
+## Parses the "d" path attribute into X-Y coordinates of line segments collected
+## into sub-paths.  Sub-paths are designated by "M" or "m" commands embedded in
+## the path command.  Bézier curves and paths are interpolated.
+##
+## @export
+## @param x a path SVG node.
+## @param steps positive integer(1), how many line segments to use to
+##   approximate Bézier curves or elliptical arcs.  For arcs, it is the number
+##   of steps for a complete ellipse, so for partial ellipses fewer steps will
+##   be used.
+## @return numeric matrix, 2 x n containing the x and y coordinates of the
+##   endpoints of the n - 1 concatenated line segments that approximate the path
+##   described by the "d" attribute of the path SVG element `x`.  If there is
+##   more than one sub-path, the starting column of sub-paths following the
+##   first will be stored as the "starts" attribute of the matrix.  Whether the
+##   (sub)paths are open or closed is recorded as the "closed" attribute.
+##   (Sub)paths are considered closed if they end in a "Z" or "z" command.
+##   (Sub)paths that end at the starting coordinate, but do not end in "Z" or
+##   "z", are not considered closed.
 
 parse_path <- function(x, steps=20) {
   if(!'d' %in% names(x))
     matrix(numeric(), 2, 0, dimnames=list(c('x','y'), NULL))
   else {
     raw <- regmatches(
-      x[['d']], gregexpr("-?[0-9]*\\.?[0-9]+|[a-zA-Z]", x[['d']])
+      x[['d']], gregexpr(sprintf("%s|[a-zA-Z]", num.pat.core),  x[['d']])
     )[[1]]
-    raw <- unname(split(raw, cumsum(grepl("[a-zA-Z]", raw))))
+    raw <- unname(split(raw, cumsum(grepl("^[a-zA-Z]$", raw))))
     cmds <- lapply(
       raw, function(x) {
         if(length(x)) list(x[1], as.numeric(x[-1]))
@@ -298,10 +317,26 @@ parse_path <- function(x, steps=20) {
     # Convert to absolute coords
     cmds.abs <- path_to_abs(cmds)
     cmds.cmds <- vapply(cmds.abs, '[[', "", 1)
+
+    # Drop trailing Ms and split
+    cmds.rle <- rle(cmds.cmds)
+    grp.len <- length(cmds.rle$values)
+    if(identical(cmds.rle$values[grp.len], 'M')) {
+      m.drop <-
+        -seq(length(cmds.abs), length.out=cmds.rle$lengths[grp.len], by=-1)
+      cmds.abs <- cmds.abs[m.drop]
+      cmds.cmds <- cmds.cmds[m.drop]
+    }
     cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
 
-    # Simplify to x,y coords
-    coords <- unname(lapply(cmds.split, path_simplify, steps))
+    # Simplify to M,L,C
+    cmds.simple <- unname(lapply(cmds.split, path_simplify, steps=steps))
+
+    # Simplify to M,L
+    cmds.basic <- lapply(cmds.simple, path_interpolate, steps=steps)
+
+    # Generate coord matrices
+    coords <- lapply(cmds.basic, path_finalize)
 
     # compute which paths are closed
     closed <- unname(

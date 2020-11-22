@@ -14,19 +14,13 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
-#' Generate test HTML From SVGs
+#' Compare SVGs to Their "Chopped" Renderings
 #'
-#' [svg_gallery()] generates an HTML page containing SVGs that can then be
-#' processed by [process_svg()].  [svg_gallery_compare()] will juxtapose those
-#' same SVGs with the PNGs of the processed versions.
-#'
-#' [svg_gallery_compare()] ignores any width/height/x/y attributes set on the
-#' SVG proper and overrides them with the `width` and `height` params.
-#'
-#' [svg_gallery()] generates a single HTML file with all the sample SVGs
-#' embedded in it.  [svg_gallery_compare()] processes them with [process_svg()],
-#' saves the resulting plotted images as rasters (png), and generates a web page
-#' juxtaposing the original SVG and the re-rendered version.
+#' Create an HTML page of SVG and their corresponding [chop()]ed and rasterized
+#' (png) counterparts juxtaposed into diptychs for comparison.  Viewport and
+#' viewbox parameters may be manipulated to ensure the images fit into boxes of
+#' width controlled by the `width` parameter.  Original SVG will be on the left,
+#' with the rasterized counterpart on the right.
 #'
 #' @export
 #' @importFrom xml2 `xml_attr<-` write_xml
@@ -37,48 +31,48 @@
 #'   the "viewBox" if present, or from the element extents if not.
 #' @param height numeric(1L) if NA will use `height` and the aspect ratio from
 #'   the "viewBox" if present, or from the element extents if not.
-#' @param display numeric in 0:2, where does not display, 1 opens the generated
-#'   HTML in a browser, and 2 is opens the generated URL in a browser, and after
-#'   5 seconds (enough time for browser to open) deletes the files (to avoid
-#'   cluttering drive during testing).
+#' @param display numeric in 0:2, where 0 does not display, 1 opens the
+#'   generated HTML in a browser, and 2 (default) opens the generated HTML in a
+#'   browser, and after `timeout` seconds (enough time for browser to open)
+#'   deletes the files (to avoid cluttering drive during testing).
 #' @param cols integer(1L) how many columns to arrange the diptychs in.
-#' @param ... additional arguments passed on to [process_svg()]
+#' @param ... additional arguments passed on to [chop()]
 #' @return character(1L) the name of the file written to
+#' @examples
+#' \dontrun{
+#' svg_gallery()   # opens a browser instance
+#' }
+#' \donttest{
+#' samples <- svg_samples()
+#' scol <- ceiling(sqrt(length(samples)))
+#' srow <- ceiling(length(samples) / scol)
+#' svgs <- as.svg_chopped_list(lapply(samples, chop))
+#' plot(svgs, mfcol=c(scol, srow), scale=TRUE)
+#' }
 
 svg_gallery <- function(
   source=svg_samples(),
-  target=paste0(tempfile(), ".html")
-) {
-  writeLines("<!DOCTYPE html><html><body>", target)
-  lapply(source, file.append, file1=target)
-  cat( "</body></html>\n", file=target, append=TRUE)
-  target
-}
-#' @export
-#' @rdname svg_gallery
-
-svg_gallery_compare <- function(
-  source=svg_samples(),
   target=tempfile(),
-  ppi=96,
-  display=1,
+  ppi=getOption('svgchop.ppi', 125),
   width=400,
   height=NA_real_,
   cols=1,
+  display=2,
+  timeout=2,
   ...
 ) {
   vetr(
     display=INT.1 && . %in% 0:2,
     width=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(height))),
     height=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(width))),
-    cols=INT.1.POS.STR
+    cols=INT.1.POS.STR, timeout=NUM.1.POS
   )
   dir.create(target)
   out <- file.path(target, "index.html")
   col.str <- sprintf(
     "<col style='width: %spx;'><col style='width: %spx;'>",
-    if(!is.na(width)) width else "auto",
-    if(!is.na(width)) width else "auto"
+    if(!is.na(width)) width + 4 else "auto",
+    if(!is.na(width)) width + 4 else "auto"
   )
   writeLines(
     c("<!DOCTYPE html>
@@ -86,7 +80,7 @@ svg_gallery_compare <- function(
         <head>
           <style>
           table {border-collapse: collapse;}
-          td    {border: 1px solid black;}
+          td    {border: 1px solid black; padding: 2px;}
           </style>
         </head>
         <body>
@@ -102,9 +96,10 @@ svg_gallery_compare <- function(
 
     f <- file.path(target, sprintf("img-%03d.png",i))
     imgs[i] <- f
-    # Compute dimensions for device, as well as for SVG
-    svg <- process_svg(source[i], ...)
-    vb <- compute_vb_dim(svg[[1]])
+    # Compute dimensions for device, as well as for SVG.  This is means we do
+    # the chopping twice.
+    svg <- chop(source[i], ...)
+    vb <- compute_vb_dim(svg)
     xml <- read_xml(source[i])
     svg.node <- xml_find_first(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
 
@@ -122,24 +117,32 @@ svg_gallery_compare <- function(
     } else if (is.na(w) && is.na(h))
       stop("Internal Error: contact maintainer.")
 
-    # set viewbox to extents if not set in the original SVG, and write back the
-    # modified SVG to a tempfile for eventual inclusion into the gallery
-    if(is.na(xml_attr(svg.node, 'viewBox'))) {
-      ext <- attr(svg[[1]], 'extents')
-      xml_attr(svg.node, 'viewBox') <- paste(
-        ext$x[1], ext$y[1], ext$x[2] - ext$x[1], ext$y[2] - ext$y[1]
-      )
-    }
+    # set viewbox to extents
+    vbe <- as.character(vb_from_extents(svg))
+    xml_attr(svg.node, 'viewBox') <-
+      if(anyNA(vbe)) NA_character_
+      else paste0(vbe, collapse=" ")
+
     svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
     write_xml(xml, svg.tmp)
-    cat(sprintf("<td><img src='%s' />", svg.tmp), file=out, append=TRUE)
+    cat(
+      sprintf(
+        "<td><img src='%s' style='width: %spx; height: %spx;'/>",
+        svg.tmp, w, h
+      ),
+      file=out, append=TRUE
+    )
 
-    # generate chopped svg
-    svg <- process_svg(svg.tmp, ...)
+    # generate chopped svg again so that all dims are done correctly.  This is
+    # rather lazy and will take additional time.  Maybe can resolve by adding a
+    # "fit" parameter to plot.
+
     png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
-    plot(svg, ppi=ppi)
+    plot(svg, ppi=ppi, scale=TRUE)
     dev.off()    # this resets old parameters
+    # nuke color profile info; couldn't figure out a better way
+    png::writePNG(png::readPNG(f), f)
 
     cat(sprintf("<td><img src='%s' />", f), file=out, append=TRUE)
   }
@@ -148,7 +151,7 @@ svg_gallery_compare <- function(
   if(display) {
     browseURL(res)
     if(display > 1) {
-      Sys.sleep(2)
+      Sys.sleep(timeout)
       unlink(dirname(res), recursive=TRUE)
     }
   }
@@ -157,9 +160,40 @@ svg_gallery_compare <- function(
 #' @rdname svg_gallery
 #' @export
 
-svg_samples <- function()
+svg_samples <- function(pattern="\\.svg$")
   list.files(
-    system.file(package='svgchop', 'svg'), pattern="\\.svg$", ignore.case=TRUE,
+    system.file(package='svgchop', 'svg'), pattern=pattern, ignore.case=TRUE,
     full.names=TRUE
   )
+
+#' Return a Path to the SVG R Logo
+#'
+#' For demo and examples.
+#'
+#' @export
+#' @param internal TRUE (default) whether to use the logo bundled with this
+#'   package, or FALSE to use the one in R's installation directory.
+#' @return character(1L) a path to R Logo SVG file.
+
+R_logo <- function(internal=TRUE) {
+  vetr(LGL.1)
+  if(internal) {
+    system.file(package='svgchop', file.path("svg", "R-logo.svg"))
+  } else file.path(R.home(), 'doc', 'html', 'Rlogo.svg')
+}
+
+## Generate an HTML Page With All Samples
+##
+## Used to test that parsing of multiple SVGs in a single HTML page works.
+
+samples_to_html <- function(
+  source=svg_samples(),
+  target=paste0(tempfile(), ".html")
+) {
+  writeLines("<!DOCTYPE html><html><body>", target)
+  lapply(source, file.append, file1=target)
+  cat( "</body></html>\n", file=target, append=TRUE)
+  target
+}
+
 

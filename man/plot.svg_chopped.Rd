@@ -2,39 +2,43 @@
 % Please edit documentation in R/plot.R
 \name{plot.svg_chopped}
 \alias{plot.svg_chopped}
-\alias{plot.svg_chopped_flat}
-\alias{plot.svg_chopped_list}
-\alias{plot.svg_chopped_list_flat}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
-\method{plot}{svg_chopped}(x, ppi = 96, ...)
-
-\method{plot}{svg_chopped_flat}(x, ppi = 96, ...)
-
-\method{plot}{svg_chopped_list}(
+\method{plot}{svg_chopped}(
   x,
-  ppi = 96,
-  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
-  ...
-)
-
-\method{plot}{svg_chopped_list_flat}(
-  x,
-  ppi = 96,
-  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
+  ppi = getOption("svgchop.ppi", 125),
+  scale = FALSE,
+  center = TRUE,
+  xaxs = "i",
+  yaxs = "i",
+  mai = numeric(4),
   ...
 )
 }
 \arguments{
 \item{x}{an "svg_chopped" or "svg_chopped_list" object.}
 
-\item{ppi}{numeric pixels per inch to assume for calculations.}
+\item{ppi}{numeric pixels per inch of the display device to assume for
+calculations, defaults to 125 which is a common display density for retina
+style displays (note these are "display" pixels, not screen pixels which
+are ~2x denser).}
 
-\item{...}{passed on to \code{\link[=polypath]{polypath()}} and/or \code{\link[=lines]{lines()}}.}
+\item{scale}{TRUE or FALSE (default), whether to force the SVG to scale to
+the display device.  If true, the image is adjusted to fill as much of the
+device as possible while respecting the original aspect ratio.  This causes
+the "viewBox", "width", and "height" attributes of the original SVG to be
+ignored.}
 
-\item{ask}{TRUE or FALSE whether to prompt to display more plots when
-plotting an "svg_chopped_list" with multiple elements that don't fit in the
-current plotting grid.}
+\item{center}{TRUE (default)  or FALSE, whether to center the image on the
+device.}
+
+\item{...}{used to set graphical parameters with \code{\link[graphics:par]{graphics::par()}}.}
+
+\item{ask}{NULL (default) TRUE or FALSE whether to prompt to display more
+plots when plotting an "svg_chopped_list" with multiple elements that don't
+fit in the current plotting grid.  If NULL, auto-detects based on how many
+elements there are to draw and whether they fit in the grid implied by
+\code{prod(par('mfrow'))}.}
 }
 \value{
 \code{x}, invisibly
@@ -48,21 +52,30 @@ in x and y directions.  The "width", "height", "x", and "y" attributes of the
 SVG element proper are ignored.
 }
 \details{
-Nested SVGs viewports will not be respected and their contents will be drawn
-in the outer viewport coordinates.  Maybe, this is untested.
-
 Stroke widths are computed under the assumption that 1 "lwd" == 1/96th of an
 inch, and may look bad on devices that don't support "lwd" values less than
-one.
+one.  Future versions may switch to \code{grid} functions and take advantage of
+viewports, gradients, patterns, etc.
+}
+\examples{
+\donttest{
+svg <- chop(R_logo())
+plot(svg)
+plot(svg, ppi=75)       # fat pixels
+plot(svg, scale=TRUE)   # fit to device
 
-The "svg_chopped_list" method will call the "svg_chopped" method for each
-item, passing along the "url-data" object that is attached as the "url"
-attribute of the "svg_chopped_list" object.  If you set \code{par(mfrow=...)} or
-similar each element of the list will be plotted in its own grid spot.
-
-Future versions may switch to \code{grid} functions and take advantage of
-viewports and the implementation of gradients, etc.
+## Plot multiple svgs at once (chop_all is for all SVGS in
+## a single XML doc, not multiple SVG docs)
+svgs <- as.svg_chopped_list(lapply(svg_samples()[1:4], chop))
+plot(svgs, mfrow=c(2,2), mai=rep(.1, 4), scale=TRUE)
+}
 }
 \seealso{
-\code{\link[=process_svg]{process_svg()}}
+\code{\link[=chop]{chop()}} in particular the "Unsupported Features" section,
+\code{\link[graphics:par]{graphics::par()}} for other general graphical settings,
+\code{\link[graphics:polypath]{graphics::polypath()}}, \code{\link[graphics:lines]{graphics::lines()}}, for how the polygons and
+their line strokes are drawn, \code{\link[=compute_display_params]{compute_display_params()}} for how
+the SVG is sized, \code{\link[=as.svg_chopped_list]{as.svg_chopped_list()}} to convert a list of
+"svg_chopped" objects into a plottable version of it, \code{\link[=svg_samples]{svg_samples()}} for
+sample SVG files that ship with this package.
 }

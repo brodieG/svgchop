@@ -43,7 +43,8 @@ process_url <- function(node, transform=TRUE) {
       name,
       linearGradient=process_gradient_linear(node),
       radialGradient=process_gradient_radial(node),
-      clipPath=process_clip_path(node, transform),
+      # Always transform clip path elements before they are copied into tree.
+      clipPath=process_clip_path(node, transform=TRUE),
       node
     )
   } else if (is.list(node) && length(node)) {
@@ -98,7 +99,9 @@ is_url_ref <- function(x) grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", x)
 get_url_obj <- function(x, url) {
    obj <- if(is_url_ref(x)) {
     url.id <- sub(".*#([^\\)]+)\\).*", "\\1", x)
-    obj <- url[[url.id]]
+    if(!url.id %in% names(url)) {
+      sig_e("no object with id '%s' available to reference")
+    } else url[[url.id]]
   }
 }
 
@@ -114,15 +117,15 @@ get_url_obj <- function(x, url) {
 #' the arithmetic mean of the stop color RGB values.
 #'
 #' @export
-#' @seealso [process_svg()]
+#' @seealso [chop()]
 #' @param color character(1L) a value used as the "fill" attribute of an SVG
 #'   element.
 #' @param url "url-data" object, typically kept as the "url" attribute of
-#'   "svg_chopped_list" objects.
+#'   "svg_chopped" objects.
 #' @return character(1L), a hex color, or NA_character_ if the fill could not
 #'   be approximated by a color.
 #' @examples
-#' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
+#' svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
 #' fill.1 <- attr(svg[[1]][[2]], 'style-computed')[['fill']]
 #' fill.1 # A gradient fill
 #' approximate_color(fill.1, attr(svg, 'url'))

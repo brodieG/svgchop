@@ -14,30 +14,6 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
-
-
-
-## Convert Sequence of Transforms into One Transformation Matrix
-##
-## It is inefficient to record the full set of transforms, and then recompute
-## the transforms for each leaf in the tree.
-##
-## Drive through tree accumulating transform strings and converting them to
-## transform matrix.  For debug purposes we want to keep the full transform
-## string, maybe as an attribute to the CMS matrix.
-
-
-## I recursion, we will have:
-## * The previous transform matrix
-## * The accumulated transform strings
-## * The current transform string, if any
-##
-## Produce the new transform matrix, and append the transform string to the
-## accumulation.  So we produce "transform" objects containing the matrix and
-## the accumulation.
-
-## @param x a list maybe containing 'transform' and 'coords' elements
-
 #' Compute and Apply SVG Transforms to Coordinates
 #'
 #' SVG transforms should be applied recursively to nested elements.  We
@@ -45,9 +21,9 @@
 #' parsing them into transformation matrices, and ultimately applying the
 #' accumulated transformation matrices to the terminal SVG elements.
 #'
-#' @seealso [parse_svg()]
-#' @export
-#' @param x an "svg_chopped" object as produced by [parse_svg()].
+#' @noRd
+#' @seealso [chop()]
+#' @param x an "svg_chopped" object as produced by [chop()].
 #' @return x, with coordinates transformed.
 
 transform_coords <- function(x, apply=TRUE) {
@@ -102,12 +78,7 @@ parse_transform <- function(node, trans.prev=trans()) {
     proc1 <- substr(rep(trans.dat, length(cs)), c(cs), c(cs + cl - 1))
     cmds <- proc1[seq_len(nrow(cs))]
     vals <- proc1[seq_len(nrow(cs)) + nrow(cs)]
-    vals2 <- lapply(
-      regmatches(
-        vals,
-        gregexpr("-?[0-9]*\\.?[0-9]+(?:e[+-][0-9]+)?", vals)
-      ), as.numeric
-    )
+    vals2 <- lapply(regmatches(vals, gregexpr(num.pat.core, vals)), as.numeric)
     if(any(vapply(vals2, anyNA, TRUE)))
       stop('unparseable parameters in SVG transform command')
 

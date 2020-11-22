@@ -63,7 +63,7 @@ arc_ep_to_c <- function(p1, p2, r, phi, flagA, flagS) {
   r <- abs(r)
 
   # 6.6.3
-  r_adj <- sum(p1_^2 / r^2)
+  r_adj <- sqrt(sum(p1_^2 / r^2))
   if(r_adj > 1) r <- r_adj * r
 
   # 6.5.2

@@ -25,20 +25,40 @@
 #'
 #' When flattening terminal leaves are retrieved via depth-first recursion into
 #' a single level list for each "svg_chopped" object.  Terminal elements
-#' defined inside "defs" will be hidden.  Attributes for the "svg_chopped",
-#' "svg_chopped_list", and terminal nodes are retained.
+#' defined inside "&lt;defs&gt;" blocks are considered hidden and omitted from
+#' the flat list.  Attributes for the "svg_chopped", "svg_chopped_list", and
+#' terminal nodes are retained.
 #'
-#' For convenience the flat list is named with the numeric index of the element
-#' and the svg element name.  The underlying recursive list is unnamed so we 
-#' use the name to succinctly display key information about the object when
-#' examined with [utils::str()] (see example).
+#' The raw names of the flat structure may not be unique, so for convenience we
+#' prepend the numeric index of each element so you may subset with numeric
+#' indices.
+#'
+#' "svg_chopped_flat" (and "svg_chopped") objects are best inspected with
+#' [utils::str()].
 #'
 #' @export
+#' @seealso [chop()]
 #' @param x an object to flatten
 #' @return the object flattened
 #' @examples
-#' svg <- process_svg(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
-#' str(flatten(svg), give.attr=FALSE)   # attributes may be overwhelming
+#' ## Normal "svg_chopped" objects are tree-like
+#' svg <- chop(svg_samples('shapes'))
+#' str(svg, max.level=3, list.len=3)
+#'
+#' ## Flattened ones are linearized and lose hidden elements
+#' svgf <- flatten(svg)
+#' str(svgf, list.len=8)
+#' length(svgf)          # number of distinct SVG elements
+#'
+#' ## We can use this to plot only parts of the SVG
+#' \donttest{
+#' old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
+#' plot(svgf, scale=TRUE)             # full plot
+#' plot(svgf[4], scale=TRUE)     # one item
+#' plot(svgf[4:6], scale=TRUE)   # more
+#' plot(svgf[10:12], scale=TRUE) # more
+#' par(old.par)
+#' }
 
 flatten <- function(x, ...) UseMethod('flatten')
 
@@ -48,10 +68,10 @@ flatten <- function(x, ...) UseMethod('flatten')
 flatten.default <- function(x, ...)
   stop("Default flatten method not implemented")
 
-flatten_rec <- function(x) {
+flatten_rec <- function(x, names=character(length(x))) {
   if(inherits(x, 'hidden')) list()
-  else if(!is.list(x)) setNames(list(x), attr(x, 'xml_name'))
-  else  unlist(unname(lapply(x, flatten_rec)), recursive=FALSE)
+  else if(!is.list(x)) setNames(list(x), names)
+  else  unlist(unname(Map(flatten_rec, x, names(x))), recursive=FALSE)
 }
 ## Simplified version for clipping
 
@@ -67,7 +87,7 @@ flatten.svg_chopped <- function(x, ...) {
   names <- names(res)
   attrs <- attributes(x)
   attributes(res) <- attrs[names(attrs) != 'names']
-  names(res) <- sprintf("[%s] %s", format(seq_along(names)), names)
+  names(res) <- flat_names(names)
   class(res) <- "svg_chopped_flat"
   res
 }
@@ -92,8 +112,16 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @param i mixed subsetting indices
 #' @export
 
-`[.svg_chopped` <- function(x, i, ...) subset_chop(x, i, ...)
+`[.svg_chopped` <- function(x, i, ...) update_extents(subset_chop(x, i, ...))
 
+#' @rdname subset.svg_chopped
+#' @export
+
+`[.svg_chopped_flat` <- function(x, i, ...) {
+  res <- update_extents(subset_chop(x, i, ...))
+  names(res) <- flat_names(names(res))
+  res
+}
 #' @rdname subset.svg_chopped
 #' @export
 
@@ -103,11 +131,6 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @export
 
 `[.svg_chopped_list_flat` <- function(x, i, ...) subset_chop(x, i, ...)
-
-#' @rdname subset.svg_chopped
-#' @export
-
-`[.svg_chopped_flat` <- function(x, i, ...) subset_chop(x, i, ...)
 
 ## Should probably have a common class for all the chopped objects instead of
 ## this hack.
@@ -167,7 +190,7 @@ str.svg_chopped_list_flat <- function(object, give.attr=FALSE, ...)
 #' attributes.  The purpose of the names is to make the structure of the object
 #' more recognizable when viewed via with e.g. [str.svg_chopped()].
 #'
-#' @export
+#' @noRd
 #' @param x a list
 #' @return x, but with new names
 
@@ -191,47 +214,64 @@ make_name <- function(x) {
   }
   sprintf("%s%s%s", name, id, class)
 }
-
-
-## Twisted Pyramid
-##
-## To generate the twisting overlapped squares for the tests
-##
-## @export
-
-# nocov start
-twisted_pyramid <- function(tiers=10, angle=10, colors=rainbow(tiers)) {
-  outer <- sprintf('
-    <svg viewBox="-55 -55 110 110">
-      <defs>
-        <rect 
-        id="base-rect" width="100" height="100" x="-50" y="-50" 
-        transform="rotate(-%f)"
-        />
-      </defs>
-      %%s
-    </svg>', 
-  angle)
-  templates <- sprintf('
-    <g transform="rotate(%%f) scale(%%f)">
-      <use href="#base-rect" fill="%s"/>
-      %%s
-    </g>',
-    colors
+flat_names <- function(names) {
+  names <- sub("^\\s*\\[[0-9]+\\] ", "", names)
+  sprintf(
+    "%s %s",
+    format(sprintf("[%d]", seq_along(names)), justify='right'), names
   )
-  scale <- 1 / (cos((45 - angle) / 180 * pi) * sqrt(2))
-  inside <- Reduce(
-    function(x, y) sprintf(x, angle, scale, y),
-    c(templates, "")
-  )
-  sprintf(outer, inside)
 }
-# nocov end
+
+## For Unsupported Features
 
 
+sig_u <- function(msg) {
+  cond <- simpleCondition(msg)
+  class(cond) <- c('svgchop_unsupported', 'svgchop', class(cond))
+  signalCondition(cond)
+  invisible(NULL)
+}
+sig_e <- function(msg) {
+  cond <- simpleCondition(msg)
+  class(cond) <- c('svgchop_error', 'svgchop', class(cond))
+  signalCondition(cond)
+  invisible(NULL)
+}
 
+#' Convert Objects into "svg_chopped" Objects into "svg_chopped_list"
+#'
+#' Useful in cases where we wish to take a list of "svg_chopped" objects, e.g.
+#' because we produced them with `lapply`, but wish to have access to the
+#' "svg_chopped_list" methods.
+#'
+#' @export
+#' @param x a list of "svg_chopped" objects
+#' @return an "svg_chopped_list" object
+#' @examples
+#' svgs <- lapply(svg_samples()[1:2], chop)
+#' \dontrun{
+#' plot(svgs)  ## Error!
+#' }
+#' \donttest{
+#' plot(as.svg_chopped_list(svgs), mfrow=c(2,1), scale=TRUE)
+#' }
 
+as.svg_chopped_list <- function(x) UseMethod('as.svg_chopped_list')
 
+#' @export
 
+as.svg_chopped.default <- function(x)
+  stop('No `as.svg_chopped` method for object of class ', deparse(class(x)))
 
+#' @export
 
+as.svg_chopped_list.list <- function(x) {
+  if(!is.list(x) || !all(vapply(x, inherits, TRUE, 'svg_chopped')))
+    stop("Argument 'x' must be a list containing only \"svg_chopped\" objects.")
+  structure(x, class="svg_chopped_list")
+}
+#' @export
+
+as.svg_chopped_list.svg_chopped <- function(x) {
+  as.svg_chopped(list(x))
+}

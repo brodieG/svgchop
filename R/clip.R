@@ -95,8 +95,19 @@ get_fill_rule <- function(x) {
 ## processed these should be stored in the URL element.
 ##
 ## Clip path should be a list of coordinates.
+##
+## Clip paths elements are always transformed based on the transforms specified
+## where they are defined.  This is different than whatever transformations they
+## may be subject to once they are copied into the display tree.
 
-process_clip_path <- function(node, transform=FALSE) {
+process_clip_path <- function(node, transform=TRUE) {
+  attrs <- attr(node, 'xml_attrs')
+  if(
+    !is.null(attrs[['clipPathUnits']]) &&
+    !identical(attrs[['clipPathUnits']], "userSpaceOnUse")
+  )
+    sig("clipPathUnits set to something other than 'userSpaceOnUse'")
+
   trans.tree <- compute_transform(node)
   res <- if(transform) apply_transform(trans.tree) else trans.tree
 
@@ -137,10 +148,10 @@ process_clip_path <- function(node, transform=FALSE) {
 ##
 ## http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Classes/Clipper/Methods/Execute.htm
 
-apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
+apply_clip_path <- function(node, url, prev.clip=NULL) {
   clip.path <- attr(node, 'clip-path')
   clip <- if(is.list(clip.path)) {
-    if(!is.null(clip.path) && length(prev.clip)) {
+    if(is.list(prev.clip)) {
       tmp <- polyclip::polyclip(
         prev.clip, clip.path,
         fillA=attr(prev.clip, 'fill-rule'), fillB=attr(clip.path, 'fill-rule')
@@ -151,7 +162,7 @@ apply_clip_path <- function(node, url, prev.clip=NULL, apply=TRUE) {
   } else prev.clip
 
   res <- if(!is.list(node)) {
-    if(length(clip) && apply) {
+    if(length(clip)) {
       res.pc <- polyclip::polyclip(
         as_polyclip_poly(node), clip,
         fillA=get_fill_rule(node), fillB=attr(clip, 'fill-rule')

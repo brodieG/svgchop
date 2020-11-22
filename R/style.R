@@ -149,7 +149,7 @@ parse_css <- function(x) {
       STYLE.PROPS
     )
   } else {
-    warning("CSS style sheet not in recognized format.")
+    sig("CSS style sheet in unrecognized format.")
     list()
   }
   structure(res, class="css")
@@ -182,9 +182,12 @@ parse_css_selector <- function(x) {
   )
   bad <- lengths(m) != 3
   if(any(bad))
-    warning(
-      "CSS selector \"", trimws(gsub('\\s+', ' ', x)),
-      "\" contains unrecognized tokens."
+    sig(
+      paste0(
+        "CSS selector \"", trimws(gsub('\\s+', ' ', x)),
+        "\" contains unrecognized tokens.",
+        collapse=""
+      )
     )
 
   good <- matrix(unlist(m[!bad]), 3)
@@ -340,8 +343,8 @@ proc_computed <- function(x) {
   if(is.na(x[['stop-color']]))
     x[['stop-color']] <- structure('#000000', class="default")
   if(x[['stop-color']] == 'none') x[['stop-color']] <- NA_character_
-  if(is.na(x[['stop-opacity']])) x[['stop-opacity']] <- "1"
-
+  if(is.na(x[['stop-opacity']]))
+    x[['stop-opacity']] <- structure('1', class="default")
   if(is.na(x[['stroke-width']]))
     x[['stroke-width']] <- structure("1", class="default")
   x[['stroke-width']] <- parse_length(x[['stroke-width']])
