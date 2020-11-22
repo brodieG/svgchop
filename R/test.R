@@ -35,11 +35,12 @@
 #'   generated HTML in a browser, and 2 (default) opens the generated HTML in a
 #'   browser, and after `timeout` seconds (enough time for browser to open)
 #'   deletes the files (to avoid cluttering drive during testing).
-#' @param cols integer(1L) how many columns to arrange the diptychs in (only for
+#' @param ncol integer(1L) how many columns to arrange the diptychs in (only for
 #'   `compare_svg`.
+#' @param quietly TRUE or FALSE (default) passed on to the [plot.svg_chopped()].
 #' @param pattern character(1L) a regular expression to sub-select svgs from the
 #'   built-in samples.
-#' @param ... additional arguments passed on to [vs_svg()] and [chop()]
+#' @param ... additional arguments passed on to [compare_svg()] and [chop()]
 #' @return character(1L) the name of the file written to
 #' @examples
 #' \dontrun{
@@ -61,7 +62,8 @@ compare_svg <- function(
   ppi=getOption('svgchop.ppi', 125),
   width=400,
   height=NA_real_,
-  cols=1,
+  ncol=1,
+  quietly=FALSE,
   display=2,
   timeout=2,
   rsvg=FALSE,
@@ -71,7 +73,7 @@ compare_svg <- function(
     display=INT.1 && . %in% 0:2,
     width=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(height))),
     height=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(width))),
-    cols=INT.1.POS.STR, timeout=NUM.1.POS
+    ncol=INT.1.POS.STR, timeout=NUM.1.POS, quietly=LGL.1
   )
   dir.create(target)
   out <- file.path(target, "index.html")
@@ -150,7 +152,7 @@ compare_svg <- function(
 
     png(f, width=w, height=h, res=ppi)
     par(mai=numeric(4))
-    plot(svg, ppi=ppi, scale=TRUE)
+    plot(svg, ppi=ppi, scale=TRUE, quietly=quietly)
     dev.off()    # this resets old parameters
 
     cat(sprintf("<td><img src='%s' />", f), file=out, append=TRUE)
@@ -189,9 +191,9 @@ collapse_alpha <- function(x) {
 #' @export
 
 compare_rsvg <- function(..., width=400, display=2, timeout=2) {
-  if(!requireNamespace('png'))
+  if(!requireNamespace('png', quietly=TRUE))
     stop("'png' package required for this function.")
-  out <- svg_gallery(display=0, rsvg=TRUE, ...)
+  out <- compare_svg(display=0, rsvg=TRUE, ...)
   dir <- dirname(out)
   svgs <- list.files(dir, pattern="^img-.*\\.png$", full.names=TRUE)
   rsvgs <- list.files(dir, pattern="^rsvg-.*\\.png$", full.names=TRUE)
@@ -244,6 +246,7 @@ compare_rsvg <- function(..., width=400, display=2, timeout=2) {
       unlink(dirname(out), recursive=TRUE)
     }
   }
+  out
 }
 
 #' Return a Path to the SVG R Logo
