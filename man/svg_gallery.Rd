@@ -3,6 +3,7 @@
 \name{svg_gallery}
 \alias{svg_gallery}
 \alias{svg_samples}
+\alias{svg_diff}
 \title{Compare SVGs to Their "Chopped" Renderings}
 \usage{
 svg_gallery(
@@ -14,10 +15,13 @@ svg_gallery(
   cols = 1,
   display = 2,
   timeout = 2,
+  rsvg = FALSE,
   ...
 )
 
 svg_samples(pattern = "\\\\.svg$")
+
+svg_diff(..., display = 2)
 }
 \arguments{
 \item{source}{character vector of paths or URLs for SVGs to compile into

@@ -59,6 +59,7 @@ svg_gallery <- function(
   cols=1,
   display=2,
   timeout=2,
+  rsvg=FALSE,
   ...
 ) {
   vetr(
@@ -91,48 +92,53 @@ svg_gallery <- function(
     out
   )
   imgs <- character(length(source))
+  if(rsvg) {
+    if(!requireNamespace('rsvg'))
+      stop("`rsvg` not available, set `rsvg=FALSE`.")
+  }
   for(i in seq_along(source)) {
     if(!(i - 1) %% cols) cat("<tr>", file=out, append=TRUE)
 
-    f <- file.path(target, sprintf("img-%03d.png",i))
+    f <- file.path(target, sprintf("img-%04d.png",i))
     imgs[i] <- f
-    # Compute dimensions for device, as well as for SVG.  This is means we do
-    # the chopping twice.
     svg <- chop(source[i], ...)
-    vb <- compute_vb_dim(svg)
+
     xml <- read_xml(source[i])
     svg.node <- xml_find_first(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
+
+    # set viewbox to extents
+    vbe <- vb_from_extents(svg)
+    vbec <- as.character(vbe)
+
+    xml_attr(svg.node, 'viewBox') <-
+      if(anyNA(vbec)) NA_character_
+      else paste0(vbec, collapse=" ")
 
     w <- width
     h <- height
     # not great for images that are taller than wide
     if(is.na(h) && !is.na(w)) {
-      h <- vb$height / vb$width * w
+      h <- vbe[4] / vbe[3] * w
       xml_attr(svg.node, "height") <- NULL
       xml_attr(svg.node, "width") <- "100%"
     } else if (is.na(w) && !is.na(h)) {
-      w <- vb$width / vb$height * h
+      w <- vbe[3] / vbe[4] * h
       xml_attr(svg.node, "width") <- NULL
       xml_attr(svg.node, "height") <- "100%"
     } else if (is.na(w) && is.na(h))
       stop("Internal Error: contact maintainer.")
 
-    # set viewbox to extents
-    vbe <- as.character(vb_from_extents(svg))
-    xml_attr(svg.node, 'viewBox') <-
-      if(anyNA(vbe)) NA_character_
-      else paste0(vbe, collapse=" ")
-
     svg.tmp <- file.path(target, sprintf("tmp-%04d.svg", i))
     write_xml(xml, svg.tmp)
+    if(rsvg) {
+      svg.png <- file.path(target, sprintf("rsvg-%04d.png", i))
+      rsvg::rsvg_png(svg.tmp, file=svg.png, width=width, height=h)
+      svg.tmp <- svg.png
+    }
     cat(
-      sprintf(
-        "<td><img src='%s' style='width: %spx; height: %spx;'/>",
-        svg.tmp, w, h
-      ),
+      sprintf("<td><img src='%s' style='width: %spx;'/>", svg.tmp, w),
       file=out, append=TRUE
     )
-
     # generate chopped svg again so that all dims are done correctly.  This is
     # rather lazy and will take additional time.  Maybe can resolve by adding a
     # "fit" parameter to plot.
@@ -165,6 +171,75 @@ svg_samples <- function(pattern="\\.svg$")
     system.file(package='svgchop', 'svg'), pattern=pattern, ignore.case=TRUE,
     full.names=TRUE
   )
+
+## Collapse RGBA Into RGB
+##
+## Blend Assuming White Background.  Assumes values in 0-1
+
+collapse_alpha <- function(x) {
+  if(dim(x)[3] == 4) {
+    x[, , -4] * c(x[, , 4, drop=FALSE]) + c(1 - x[, , 4])
+  } else x
+}
+
+#' @rdname svg_gallery
+#' @export
+
+svg_diff <- function(..., width=400, display=2, timeout=2) {
+  out <- svg_gallery(display=0, rsvg=TRUE, ...)
+  dir <- dirname(out)
+  svgs <- list.files(dir, pattern="^img-.*\\.png$", full.names=TRUE)
+  rsvgs <- list.files(dir, pattern="^rsvg-.*\\.png$", full.names=TRUE)
+  res <- mapply(
+    function(svg, rsvg) {
+      a <- collapse_alpha(png::readPNG(svg))
+      b <- collapse_alpha(png::readPNG(rsvg))
+      if(!identical(dim(a), dim(b))) stop("Unequal diff dimensions.")
+      out <- file.path(dir, paste0('diff-', basename(svg)))
+      png::writePNG(rowMeans(1 - abs(a - b), dims=2), out)
+      out
+    },
+    svgs,
+    rsvgs
+  )
+  col.str <- sprintf(
+    "<col style='width: %spx;'><col style='width: %spx;'><col style='width: %spx;'>",
+    if(!is.na(width)) width + 4 else "auto",
+    if(!is.na(width)) width + 4 else "auto",
+    if(!is.na(width)) width + 4 else "auto"
+  )
+  writeLines(
+    c("<!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+          table {border-collapse: collapse;}
+          td    {border: 1px solid black; padding: 2px;}
+          </style>
+        </head>
+        <body>
+          <table style='border: 1px solid black;'>
+      ",
+      col.str
+    ),
+    out
+  )
+  cat(
+    sprintf(
+      "<tr><td><img src='%s'/><td><img src='%s'/><td><img src='%s'/>",
+      rsvgs, svgs, res
+    ),
+    file=out, append=TRUE
+  )
+  cat("</table></body></html>\n", file=out, append=TRUE)
+  if(display) {
+    browseURL(out)
+    if(display > 1) {
+      Sys.sleep(timeout)
+      unlink(dirname(out), recursive=TRUE)
+    }
+  }
+}
 
 #' Return a Path to the SVG R Logo
 #'
