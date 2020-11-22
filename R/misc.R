@@ -224,9 +224,17 @@ flat_names <- function(names) {
 
 ## For Unsupported Features
 
-sig <- function(msg) {
+
+sig_u <- function(msg) {
   cond <- simpleCondition(msg)
-  class(cond) <- c('svgchop_unsupported', class(cond))
+  class(cond) <- c('svgchop_unsupported', 'svgchop', class(cond))
   signalCondition(cond)
+  invisible(NULL)
+}
+sig_e <- function(msg) {
+  cond <- simpleCondition(msg)
+  class(cond) <- c('svgchop_error', 'svgchop', class(cond))
+  signalCondition(cond)
+  invisible(NULL)
 }
 

@@ -99,7 +99,9 @@ is_url_ref <- function(x) grepl("^\\s*url\\(#[^\\)]+\\)\\s*$", x)
 get_url_obj <- function(x, url) {
    obj <- if(is_url_ref(x)) {
     url.id <- sub(".*#([^\\)]+)\\).*", "\\1", x)
-    obj <- url[[url.id]]
+    if(!url.id %in% names(url)) {
+      sig_e("no object with id '%s' available to reference")
+    } else url[[url.id]]
   }
 }
 

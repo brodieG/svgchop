@@ -45,9 +45,9 @@ parse_poly <- function(x, close=TRUE) {
 
 parse_rect <- function(x) {
   props <- names(x)
-  if('rx' %in% props) sig("'rx' property in <rect>")
-  if('ry' %in% props) sig("'ry' property in <rect>")
-  if('pathLenght' %in% props) sig("'pathLength' property in <rect>")
+  if('rx' %in% props) sig_u("'rx' property in <rect>")
+  if('ry' %in% props) sig_u("'ry' property in <rect>")
+  if('pathLenght' %in% props) sig_u("'pathLength' property in <rect>")
 
   if(!'x' %in% props) x[['x']] <- "0"
   if(!'y' %in% props) x[['y']] <- "0"
@@ -76,7 +76,7 @@ parse_rect <- function(x) {
 }
 parse_line <- function(x) {
   props <- names(x)
-  if(any(c('pathLength') %in% props)) sig("'pathLength' property in <line>")
+  if(any(c('pathLength') %in% props)) sig_u("'pathLength' property in <line>")
 
   base.props <- c('x1', 'y1', 'x2', 'y2')
   points <- x[base.props]
@@ -92,7 +92,7 @@ parse_circle <- function(x, steps) {
 parse_ellipse <- function(x, steps) {
   props <- names(x)
   if(any(c('pathLength') %in% props))
-    sig("'pathLength' property <circle>/<ellipse>")
+    sig_u("'pathLength' property <circle>/<ellipse>")
 
   # Unspecified attributes set to 0.  this is not quite right, ellipses default
   # to 'auto' rx and ry, which we don't support.  It's right for circles though.
@@ -134,7 +134,7 @@ parse_use <- function(xnode, steps) {
       list(parse_node(ref, steps))
     }
   } else {
-    sig("non-id based 'href' in <use>")
+    sig_u("non-id based 'href' in <use>")
     list()
   }
 }
@@ -426,7 +426,14 @@ process_use_node <- function(node) {
 #'
 #' There are other features that are either unimplemented, incompletely
 #' implemented, or incorrectly implemented.  The parser will signal conditions
-#' on encountering some of the known unsupported features.
+#' that inherit class "svgchop" when encountering some of these.  See
+#' examples for ideas on how to use handlers to examine the problematic SVGs.
+#'
+#' There is a distinction between features unimplemented in the parser and those
+#' unimplemented in the `plot` method.  For example, gradients are mostly
+#' implemented in the parser, but the `plot` method is not able to represent
+#' them other than as a single color.  `plot` method limitations are not
+#' reported as unsupported.
 #'
 #' @export
 #' @seealso [plot.svg_chopped()], [flatten()] for an easier-to-manage data
@@ -449,10 +456,11 @@ process_use_node <- function(node) {
 #'   transforms un-applied.  The option complicates code substantially.  If set
 #'   to FALSE, you must should also set `clip` to FALSE and apply the clip-paths
 #'   yourself.
-#' @param clip TRUE or FALSE (default) whether to apply clipping paths to the
+#' @param clip TRUE (default) or FALSE whether to apply clipping paths to the
 #'   output.  See "Gradients, Patterns, Masks, and Clip Paths".
-#' @return an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
-#'   objects.  See "Details".
+#'
+#' @return an "svg_chopped" S3 object for `chop`, an "svg_chopped_list" S3
+#'   object for `chop_all`.  See "Return Value" section for details.
 #' @examples
 #' ## Chop and plot to demonstrate we reproduce the logo
 #' svg <- chop(R_logo())
@@ -510,25 +518,45 @@ process_use_node <- function(node) {
 #'   polypath(t(rot2 %*% (h2 - center) + center), col=hfill)
 #'   polypath(t(rot1 %*% (r2 - center) + center), col=rfill)
 #' }
+#' ## Run with handlers to intercept errors
+#' \dontrun{
+#' withCallingHandlers(
+#'   svg_gallery(svg_samples('pie-and-arcs')),
+#'
+#'   ## set a handler on 'svgchop' signals, and
+#'   ## inspect stack at moment of problem
+#'   svgchop=function(e) recover()
+#' )
+#' }
 
-chop <- function(file, steps=10, transform=TRUE, clip=TRUE) {
-  vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1)
+chop <- function(
+  file, steps=10, transform=TRUE, clip=TRUE,
+  warn=getOption('svgchop.warn', TRUE)
+) {
+  vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1, warn=LGL.1)
   chop_internal(
-    file=file, steps=steps, transform=transform, clip=clip, first.only=TRUE
+    file=file, steps=steps, transform=transform, clip=clip, first.only=TRUE,
+    warn=warn
   )[[1]]
 }
 #' @export
 #' @rdname chop
 
-chop_all <- function(file, steps=10, transform=TRUE, clip=TRUE) {
-  vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1)
-  chop_internal(file=file, steps=steps, transform=transform, clip=clip)
+chop_all <- function(
+  file, steps=10, transform=TRUE, clip=TRUE,
+  warn=getOption('svgchop.warn', TRUE)
+) {
+  vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1, warn=LGL.1)
+  chop_internal(
+    file=file, steps=steps, transform=transform, clip=clip, warn=warn
+  )
 }
 
 chop_internal <- function(
-  file, steps=10, transform=TRUE, clip=TRUE, first.only=FALSE
+  file, steps=10, transform=TRUE, clip=TRUE, first.only=FALSE,
+  warn=getOption('svgchop.warn', TRUE)
 ) {
-  unsupported <- integer()
+  sigs <- list(unsupported=integer(), error=integer(), other=integer())
   res <- withCallingHandlers(
     {
       xml <- try(read_xml(file))
@@ -592,22 +620,44 @@ chop_internal <- function(
       # Return with pretty names
       structure(give_names(tmp), class='svg_chopped_list')
     },
-    svgchop_unsupported=function(e) {
-      unsupported[conditionMessage(e)] <<-
-        if(is.na(unsupported[conditionMessage(e)])) 1
-        else unsupported[conditionMessage(e)] + 1
+    svgchop=function(e) {
+      if(inherits(e, 'svgchop_unsupported')) {
+        sigs[['unsupported']][conditionMessage(e)] <<-
+          if(is.na(sigs[['unsupported']][conditionMessage(e)])) 1
+          else sigs[['unsupported']][conditionMessage(e)] + 1
+      } else if (inherits(e, 'svgchop_error')) {
+        sigs[['error']][conditionMessage(e)] <<-
+          if(is.na(sigs[['error']][conditionMessage(e)])) 1
+          else sigs[['error']][conditionMessage(e)] + 1
+      } else {
+        sigs[['other']][conditionMessage(e)] <<-
+          if(is.na(sigs[['other']][conditionMessage(e)])) 1
+          else sigs[['other']][conditionMessage(e)] + 1
+      }
     }
   )
-  if(length(unsupported)) {
+  if(any(lengths(sigs)) && warn) {
+    make_msg <- function(x, msg, file) {
+      if(length(x))
+        c(
+          sprintf("\r%s in '%s':\n", msg, basename(file)),
+          paste0(
+             "* ", names(x),
+            ifelse(x > 1, sprintf(" (%d times)", x), ""),
+            collapse="\n"
+    ) ) }
     warning(
-      "\rUnsupported SVG features encountered:\n",
-      paste0(
-        "* ", names(unsupported),
-        ifelse(unsupported > 1, sprintf("(%d times)", unsupported), ""),
-        collapse="\n"
-      )
-    )
-  }
+      c(
+        make_msg(
+          sigs[['unsupported']], "Unsupported SVG features encountered", file
+        ),
+        make_msg(
+          sigs[['error']], "Errors parsing SVG", file
+        ),
+        make_msg(
+          sigs[['other']], "Messages parsing SVG", file
+        )
+  ) ) }
   res
 }
 # Extent calc broken up into steps so we can update them when we subset.
@@ -716,21 +766,21 @@ process_svg_node <- function(node.parsed) {
   if('y' %in% names(attrs)) y <- parse_length(attrs[['y']])
 
   if(!isTRUE(attr(width, 'unit') %in% c('%', '', 'px')))
-    sig(sprintf("unit (%s) in <svg width='...'>.", attr(width, 'unit')))
+    sig_u(sprintf("unit (%s) in <svg width='...'>.", attr(width, 'unit')))
   if(!isTRUE(attr(height, 'unit') %in% c('%', '', 'px')))
-    sig(sprintf("unit (%s) in <svg height='...'>.", attr(height, 'unit')))
+    sig_u(sprintf("unit (%s) in <svg height='...'>.", attr(height, 'unit')))
   if(!isTRUE(attr(x, 'unit') %in% c('', 'px')))
-    sig(sprintf("unit (%s) in <svg x='...'>.", attr(x, 'unit')))
+    sig_u(sprintf("unit (%s) in <svg x='...'>.", attr(x, 'unit')))
   if(!isTRUE(attr(y, 'unit') %in% c('', 'px')))
-    sig(sprintf("unit (%s) in <svg y='...'>.", attr(y, 'unit')))
+    sig_u(sprintf("unit (%s) in <svg y='...'>.", attr(y, 'unit')))
 
   if ('viewBox' %in% names(attrs)) {
     viewbox <- parse_lengths(attrs[['viewBox']])
     if(length(viewbox) != 4) {
-      sig("unrecognized viewBox format")
+      sig_u("unrecognized viewBox format")
       viewbox <- rep(NA_real_, 4)
     } else if (!all(nzchar(attr(viewbox, 'unit')) == 0)) {
-      sig("units in <svg viewBox=''>.")
+      sig_u("units in <svg viewBox=''>.")
     }
   }
   if(is.na(x)) x <- 0
@@ -794,27 +844,37 @@ merge_xml_attrs <- function(x, attrs) {
 ##   the leaves.  Branches that end in empty lists are possible.  XML attributes
 ##   and names are retained as R attributes to each node.
 
-parse_node <- function(node, steps, defs=FALSE) {
+parse_node <- function(node, steps, in.defs=FALSE, in.clip=FALSE) {
   vetr(structure(list(), class='xml_node'), INT.1.POS.STR, LGL.1)
 
   res <- if(xml_length(node, only_elements=TRUE)) {
     # Non-terminal node, recurse
     lapply(
       xml_children(node), parse_node, steps=steps,
-      defs=defs || tolower(xml_name(node)) == 'defs'
+      in.defs=in.defs || xml_name(node) == 'defs',
+      in.clip=in.clip || xml_name(node) == 'clipPath'
     )
   } else {
     # Parse terminal node
     tmp <- parse_element(node, steps)
-    if(defs) class(tmp) <- c('hidden', class(tmp))
+    if(in.defs) class(tmp) <- c('hidden', class(tmp))
     tmp
   }
   # attach attributes; this should be done before final processing
-
   res <- merge_xml_attrs(res, xml_attrs(node))
   attr(res, 'xml_name') <- xml_name(node)
+
+  # known unimplemented
   switch(
-    tolower(xml_name(node)),
+    xml_name(node),
+    filter=,mask=,marker=,pattern=,symbol=,text=
+    sig_u(sprintf("'<%s>' not implemented", xml_name(node)))
+  )
+  if(in.clip && 'clip-path' %in% names(xml_attrs(node)))
+    sig_u("'clip-path' attribute in <clipPath> children not implemented")
+
+  switch(
+    xml_name(node),
     svg=process_svg_node(res),
     use=process_use_node(res),
     res
