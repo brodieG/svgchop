@@ -279,27 +279,27 @@ path_finalize <- function(path) {
   }
   rbind(x=xs, y=ys)
 }
-#' Convert SVG Path to Line Segments
-#'
-#' Parses the "d" path attribute into X-Y coordinates of line segments collected
-#' into sub-paths.  Sub-paths are designated by "M" or "m" commands embedded in
-#' the path command.  Bézier curves and paths are interpolated.
-#'
-#' @export
-#' @param x a path SVG node.
-#' @param steps positive integer(1), how many line segments to use to
-#'   approximate Bézier curves or elliptical arcs.  For arcs, it is the number
-#'   of steps for a complete ellipse, so for partial ellipses fewer steps will
-#'   be used.
-#' @return numeric matrix, 2 x n containing the x and y coordinates of the
-#'   endpoints of the n - 1 concatenated line segments that approximate the path
-#'   described by the "d" attribute of the path SVG element `x`.  If there is
-#'   more than one sub-path, the starting column of sub-paths following the
-#'   first will be stored as the "starts" attribute of the matrix.  Whether the
-#'   (sub)paths are open or closed is recorded as the "closed" attribute.
-#'   (Sub)paths are considered closed if they end in a "Z" or "z" command.
-#'   (Sub)paths that end at the starting coordinate, but do not end in "Z" or
-#'   "z", are not considered closed.
+## Convert SVG Path to Line Segments
+##
+## Parses the "d" path attribute into X-Y coordinates of line segments collected
+## into sub-paths.  Sub-paths are designated by "M" or "m" commands embedded in
+## the path command.  Bézier curves and paths are interpolated.
+##
+## @export
+## @param x a path SVG node.
+## @param steps positive integer(1), how many line segments to use to
+##   approximate Bézier curves or elliptical arcs.  For arcs, it is the number
+##   of steps for a complete ellipse, so for partial ellipses fewer steps will
+##   be used.
+## @return numeric matrix, 2 x n containing the x and y coordinates of the
+##   endpoints of the n - 1 concatenated line segments that approximate the path
+##   described by the "d" attribute of the path SVG element `x`.  If there is
+##   more than one sub-path, the starting column of sub-paths following the
+##   first will be stored as the "starts" attribute of the matrix.  Whether the
+##   (sub)paths are open or closed is recorded as the "closed" attribute.
+##   (Sub)paths are considered closed if they end in a "Z" or "z" command.
+##   (Sub)paths that end at the starting coordinate, but do not end in "Z" or
+##   "z", are not considered closed.
 
 parse_path <- function(x, steps=20) {
   if(!'d' %in% names(x))
