@@ -62,7 +62,6 @@
 
 flatten <- function(x, ...) UseMethod('flatten')
 
-#' @rdname flatten
 #' @export
 
 flatten.default <- function(x, ...)
@@ -79,7 +78,6 @@ flatten_rec2 <- function(x) {
   if(is.matrix(x)) list(x)
   else unlist(unname(lapply(x, flatten_rec2)), recursive=FALSE)
 }
-#' @rdname flatten
 #' @export
 
 flatten.svg_chopped <- function(x, ...) {
@@ -91,7 +89,6 @@ flatten.svg_chopped <- function(x, ...) {
   class(res) <- "svg_chopped_flat"
   res
 }
-#' @rdname flatten
 #' @export
 
 flatten.svg_chopped_list <- function(x, ...) {
@@ -114,7 +111,6 @@ flatten.svg_chopped_list <- function(x, ...) {
 
 `[.svg_chopped` <- function(x, i, ...) update_extents(subset_chop(x, i, ...))
 
-#' @rdname subset.svg_chopped
 #' @export
 
 `[.svg_chopped_flat` <- function(x, i, ...) {
@@ -122,12 +118,10 @@ flatten.svg_chopped_list <- function(x, ...) {
   names(res) <- flat_names(names(res))
   res
 }
-#' @rdname subset.svg_chopped
 #' @export
 
 `[.svg_chopped_list` <- function(x, i, ...) subset_chop(x, i, ...)
 
-#' @rdname subset.svg_chopped
 #' @export
 
 `[.svg_chopped_list_flat` <- function(x, i, ...) subset_chop(x, i, ...)
@@ -162,13 +156,11 @@ str.svg_chopped <- function(object, give.attr=FALSE, ...) {
   message('Attributes suppresssed; set "give.attr = TRUE" to display them')
   invisible(res)
 }
-#' @rdname str.svg_chopped
 #' @export
 
 str.svg_chopped_list <- function(object, give.attr=FALSE, ...)
   NextMethod("str", object=object, give.attr=give.attr, ...)
 
-#' @rdname str.svg_chopped
 #' @export
 
 str.svg_chopped_flat <- function(object, give.attr=FALSE, ...) {
@@ -176,7 +168,6 @@ str.svg_chopped_flat <- function(object, give.attr=FALSE, ...) {
   message('Attributes suppresssed; set "give.attr = TRUE" to display them')
   invisible(res)
 }
-#' @rdname str.svg_chopped
 #' @export
 
 str.svg_chopped_list_flat <- function(object, give.attr=FALSE, ...)
@@ -224,7 +215,6 @@ flat_names <- function(names) {
 
 ## For Unsupported Features
 
-
 sig_u <- function(msg) {
   cond <- simpleCondition(msg)
   class(cond) <- c('svgchop_unsupported', 'svgchop', class(cond))
@@ -237,7 +227,6 @@ sig_e <- function(msg) {
   signalCondition(cond)
   invisible(NULL)
 }
-
 #' Convert Objects into "svg_chopped" Objects into "svg_chopped_list"
 #'
 #' Useful in cases where we wish to take a list of "svg_chopped" objects, e.g.
@@ -275,3 +264,6 @@ as.svg_chopped_list.list <- function(x) {
 as.svg_chopped_list.svg_chopped <- function(x) {
   as.svg_chopped(list(x))
 }
+#' @export
+
+as.svg_chopped_list.svg_chopped_list <- function(x) x
