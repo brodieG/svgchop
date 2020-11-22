@@ -248,6 +248,7 @@ plot_one <- function(x, ppi, scale=FALSE, center=TRUE, ...) {
   # "hidden elements" so they are not plotted
   mats <- if(!inherits(x, 'svg_chopped_flat')) flatten(x) else x
   for(i in seq_along(mats)) {
+    cat(sprintf("Plotting %d/%d\r", i, length(mats)))
     mat <- mats[[i]]
     style <- attr(mat, 'style-computed')
     fill <- stroke <- stroke.width <- NA
@@ -306,10 +307,15 @@ plot_one <- function(x, ppi, scale=FALSE, center=TRUE, ...) {
     offset <- c(vb[['x']], vb[['y']])
     if(ncol(mat) > 1) {
       m <- t((mat - offset) * ppi / d.params[['uppi']] + offset)
-      polypath(m, col=fill, border=NA, rule=fill.rule, ...)
-      lines(m, col=stroke, lwd=stroke.width, ...)
+      if(!is.na(fill)) polypath(m, col=fill, border=NA, rule=fill.rule, ...)
+      if(!is.na(stroke)) lines(m, col=stroke, lwd=stroke.width, ...)
     }
   }
+  cat(
+    paste0(
+      c(rep(" ", 10 + ceiling(log(length(mats), 10)) * 2), "\r"),
+      collapse=""
+  ) )
   invisible(x)
 }
 
