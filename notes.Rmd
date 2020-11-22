@@ -7,40 +7,19 @@ anti-alias?
 
 * Transform, no transform + Clip, no Clip
 
-## Not Supported
-
-* Text
-
-* Mixed units (no unit conversion whatsoever), all lengths are assumed to be in
-  the user coordinate system (pixels?).
-
-* Nested SVG viewports are "ignored", which means that they are drawn without
-  any transformations and thus will not display as intended if any of the x, y,
-  width, height, or viewBox attributes are specified.  This information is
-  preserved in the recursive 'svg_chopped' structure so can be recovered and
-  used (e.g. with grid viewports) if the user so desires.
-
-* Patterns
-
 ## ToDo
 
 * Not sure if `parse_path` should be exported (probably not).
-
-* Bug with R6 logo with 'm'.
 
 * an "href" references an non-existing URL element (subscript oo error now?).
   Related: right now we drop any fallbacks when URL don't resolve.
 
 * Clipping
-    * "clip-rule" support.
-    * Warn about 'objectBoundingBox'
     * How clip links style and transform and clip is a mess.  The problem is
       clip paths are subject to transformation, but they can be attached to
       non-terminal leaves, so all the logic that focused on terminal based
-      branching now requires and exception to handle clip-paths (urgh).
-
-* Include mixed units in the "not supported" alerts, or maybe just non-pixel
-  units.
+      branching now requires and exception to handle clip-paths (urgh).  Update:
+      we just need to get rid of the option to apply transforms after the fact.
 
 * When implementing patterns, will need to think about whether to apply them
   truly (i.e. replace target with tessellated and clipped pattern, or just

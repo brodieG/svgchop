@@ -279,8 +279,6 @@ path_finalize <- function(path) {
   }
   rbind(x=xs, y=ys)
 }
-
-
 #' Convert SVG Path to Line Segments
 #'
 #' Parses the "d" path attribute into X-Y coordinates of line segments collected
@@ -332,10 +330,10 @@ parse_path <- function(x, steps=20) {
     cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
 
     # Simplify to M,L,C
-    cmds.simple <- unname(lapply(cmds.split, path_simplify))
+    cmds.simple <- unname(lapply(cmds.split, path_simplify, steps=steps))
 
     # Simplify to M,L
-    cmds.basic <- lapply(cmds.simple, path_interpolate, steps)
+    cmds.basic <- lapply(cmds.simple, path_interpolate, steps=steps)
 
     # Generate coord matrices
     coords <- lapply(cmds.basic, path_finalize)

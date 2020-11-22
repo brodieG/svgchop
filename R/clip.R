@@ -101,6 +101,13 @@ get_fill_rule <- function(x) {
 ## may be subject to once they are copied into the display tree.
 
 process_clip_path <- function(node, transform=TRUE) {
+  attrs <- attr(node, 'xml_attrs')
+  if(
+    !is.null(attrs[['clipPathUnits']]) && 
+    !identical(attrs[['clipPathUnits']], "userSpaceOnUse")
+  )
+    sig("clipPathUnits set to something other than 'userSpaceOnUse'")
+
   trans.tree <- compute_transform(node)
   res <- if(transform) apply_transform(trans.tree) else trans.tree
 

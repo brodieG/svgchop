@@ -149,7 +149,7 @@ parse_css <- function(x) {
       STYLE.PROPS
     )
   } else {
-    warning("CSS style sheet not in recognized format.")
+    sig("CSS style sheet in unrecognized format.")
     list()
   }
   structure(res, class="css")
@@ -182,9 +182,12 @@ parse_css_selector <- function(x) {
   )
   bad <- lengths(m) != 3
   if(any(bad))
-    warning(
-      "CSS selector \"", trimws(gsub('\\s+', ' ', x)),
-      "\" contains unrecognized tokens."
+    sig(
+      paste0(
+        "CSS selector \"", trimws(gsub('\\s+', ' ', x)),
+        "\" contains unrecognized tokens.",
+        collapse=""
+      )
     )
 
   good <- matrix(unlist(m[!bad]), 3)

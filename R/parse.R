@@ -45,8 +45,9 @@ parse_poly <- function(x, close=TRUE) {
 
 parse_rect <- function(x) {
   props <- names(x)
-  if(any(c('rx', 'ry', 'pathLength') %in% props))
-    warning('"r[xy]" and "pathLength" properties on "rect" not supported')
+  if('rx' %in% props) sig("'rx' property in <rect>")
+  if('ry' %in% props) sig("'ry' property in <rect>")
+  if('pathLenght' %in% props) sig("'pathLength' property in <rect>")
 
   if(!'x' %in% props) x[['x']] <- "0"
   if(!'y' %in% props) x[['y']] <- "0"
@@ -75,8 +76,7 @@ parse_rect <- function(x) {
 }
 parse_line <- function(x) {
   props <- names(x)
-  if(any(c('pathLength') %in% props))
-    warning('"pathLength" property on "line" not supported')
+  if(any(c('pathLength') %in% props)) sig("'pathLength' property in <line>")
 
   base.props <- c('x1', 'y1', 'x2', 'y2')
   points <- x[base.props]
@@ -92,7 +92,7 @@ parse_circle <- function(x, steps) {
 parse_ellipse <- function(x, steps) {
   props <- names(x)
   if(any(c('pathLength') %in% props))
-    warning('"pathLength" property "circle/ellipse"')
+    sig("'pathLength' property <circle>/<ellipse>")
 
   # Unspecified attributes set to 0.  this is not quite right, ellipses default
   # to 'auto' rx and ry, which we don't support.  It's right for circles though.
@@ -134,7 +134,7 @@ parse_use <- function(xnode, steps) {
       list(parse_node(ref, steps))
     }
   } else {
-    warning('"use" element with non-ID based "href"')
+    sig("non-id based 'href' in <use>")
     list()
   }
 }
@@ -205,7 +205,7 @@ process_use_node <- function(node) {
 #'   the "Styling" section).
 #' * "transform-computed": accumulated transformation data (see "Transforms"
 #'   section).
-#' * "starts": indicates the starting column of sub-paths in paths; paths with 
+#' * "starts": indicates the starting column of sub-paths in paths; paths with
 #'   embedded "M" or "m" commands will contain sub-paths.
 #' * "closed": logical vector indicating whether each subpath is closed (e.g.
 #'   ends in a "Z" or "z" command.
@@ -528,66 +528,87 @@ chop_all <- function(file, steps=10, transform=TRUE, clip=TRUE) {
 chop_internal <- function(
   file, steps=10, transform=TRUE, clip=TRUE, first.only=FALSE
 ) {
-  xml <- try(read_xml(file))
-  if(inherits(try, 'try-error'))
-    stop(
-      "Argument `file` could not be interpreted as an XML file; ",
-      "see prior errors"
+  unsupported <- integer()
+  res <- withCallingHandlers(
+    {
+      xml <- try(read_xml(file))
+      if(inherits(try, 'try-error'))
+        stop(
+          "Argument `file` could not be interpreted as an XML file; ",
+          "see prior errors"
+        )
+      css <- get_css(xml)
+
+      # top level svgs, nested ones will just be consumed in recursive traversal
+      xml <-
+        if(!identical(xml_name(xml), "svg"))
+          xml_find(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
+        else list(xml)
+
+      if(!length(xml))
+        stop("Document does not contain svg nodes")
+
+      if(first.only) xml <- xml[1]
+
+      # Extract relevant data from XML and convert to nested R list.  Elements
+      # coordinates are computed
+      tmp <- lapply(xml, parse_node, steps=steps)
+
+      # Extract and compute styles for terminal nodes
+      tmp <- lapply(tmp, process_css, style.sheet=css)
+
+      # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
+      # clip paths, masks, and patterns, although currently only gradients and
+      # clip-paths are supported.  These are also extracted from tree into the
+      # `url` list.
+      tmp <- process_url(tmp, transform=transform)
+      url <- attr(tmp, 'url')
+      attr(tmp, 'url') <- NULL
+
+      # We need to attach some URL objects to the tree, in particular clip-paths
+      # so that they may be transformed correctly.  Can only do this once all
+      # url references are resolved above.
+      tmp <- lapply(tmp, attach_url, url=url)
+
+      # Compute and apply transformations
+      tmp <- lapply(tmp, transform_coords, apply=transform)
+
+      # Compute extents (note we do this before clipping, after transform)
+      tmp <- lapply(tmp, compute_leaf_extents)
+      tmp <- lapply(tmp, update_extents)
+
+      # Apply the `url()` elements.  This is most meaningful for clip paths and
+      # patterns as we could apply them here. At this time we ony apply clipping
+      if(clip)
+        tmp <- lapply(tmp, apply_clip_path, url=url)
+
+      # Attach global objects
+      tmp <- lapply(
+        tmp, function(x) {
+          attr(x, 'url') <- url
+          attr(x, 'css') <- css
+          x
+      } )
+      # Return with pretty names
+      structure(give_names(tmp), class='svg_chopped_list')
+    },
+    svgchop_unsupported=function(e) {
+      unsupported[conditionMessage(e)] <<-
+        if(is.na(unsupported[conditionMessage(e)])) 1
+        else unsupported[conditionMessage(e)] + 1
+    }
+  )
+  if(length(unsupported)) {
+    warning(
+      "\rUnsupported SVG features encountered:\n",
+      paste0(
+        "* ", names(unsupported),
+        ifelse(unsupported > 1, sprintf("(%d times)", unsupported), ""),
+        collapse="\n"
+      )
     )
-  css <- get_css(xml)
-
-  # top level svgs, nested ones will just be consumed in recursive traversal
-  xml <-
-    if(!identical(xml_name(xml), "svg"))
-      xml_find(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
-    else list(xml)
-
-  if(!length(xml))
-    stop("Document does not contain svg nodes")
-
-  if(first.only) xml <- xml[1]
-
-  # Extract relevant data from XML and convert to nested R list.  Elements
-  # coordinates are computed
-  tmp <- lapply(xml, parse_node, steps=steps)
-
-  # Extract and compute styles for terminal nodes
-  tmp <- lapply(tmp, process_css, style.sheet=css)
-
-  # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
-  # clip paths, masks, and patterns, although currently only gradients and
-  # clip-paths are supported.  These are also extracted from tree into the `url`
-  # list.
-  tmp <- process_url(tmp, transform=transform)
-  url <- attr(tmp, 'url')
-  attr(tmp, 'url') <- NULL
-
-  # We need to attach some URL objects to the tree, in particular clip-paths so
-  # that they may be transformed correctly.  Can only do this once all url
-  # references are resolved above.
-  tmp <- lapply(tmp, attach_url, url=url)
-
-  # Compute and apply transformations
-  tmp <- lapply(tmp, transform_coords, apply=transform)
-
-  # Compute extents (note we do this before clipping, after transform)
-  tmp <- lapply(tmp, compute_leaf_extents)
-  tmp <- lapply(tmp, update_extents)
-
-  # Apply the `url()` elements.  This is most meaningful for clip paths and
-  # patterns as we could apply them here. At this time we ony apply clipping
-  if(clip)
-    tmp <- lapply(tmp, apply_clip_path, url=url)
-
-  # Attach global objects
-  tmp <- lapply(
-    tmp, function(x) {
-      attr(x, 'url') <- url
-      attr(x, 'css') <- css
-      x
-  } )
-  # Return with pretty names
-  structure(give_names(tmp), class='svg_chopped_list')
+  }
+  res
 }
 # Extent calc broken up into steps so we can update them when we subset.
 # Note we don't just recompute extents from the terminal leaves after the
@@ -630,20 +651,22 @@ update_extents <- function(x) {
 
 
 num.pat.core <- "([+-]?[0-9]*\\.?[0-9]+(?:[Ee][+-][0-9]+)?)"
-num.pat <- sprintf("%s(?:\\w|%%)*", num.pat.core)
+num.pat <- sprintf("%s(\\w*|%%)", num.pat.core)
 
 parse_length <- function(x) {
   vetr(character())
-  num.like <- grepl(sprintf("^\\s*%s\\s*$", num.pat), x)
+  x <- trimws(x)
+  num.like <- grepl(num.pat, x)
   res <- rep(NA_real_, length(x))
-  res[num.like] <- as.numeric(
-    sub(sprintf("^.*?%s.*$", num.pat), "\\1", x[num.like], perl=TRUE)
+  unit <- character(length(x))
+
+  parsed <- vapply(
+    regmatches(x[num.like], gregexec(num.pat, x[num.like], perl=TRUE)),
+    '[', character(2), -1
   )
-  if(!all(num.like))
-    warning(
-      "Some lengths ", paste0(deparse(x[!num.like]), collapse="\n"),
-      " could not be parsed into numbers."
-    )
+  res[num.like] <- as.numeric(parsed[1,])
+  unit[num.like] <- parsed[2,]
+  attr(res, 'unit') <- unit
   res
 }
 
@@ -680,23 +703,34 @@ parse_lengths <- function(x) {
 
 process_svg_node <- function(node.parsed) {
   attrs <- attr(node.parsed, 'xml_attrs')
-  width <- height <- x <- y <- NA_real_
+  width <- height <- x <- y <- structure(NA_real_, unit="")
   viewbox <- rep(NA_real_, 4)
 
   if('width' %in% names(attrs)) width <- parse_length(attrs[['width']])
   if('height' %in% names(attrs)) height <- parse_length(attrs[['height']])
   wh.pct <- c(width=FALSE, height=FALSE)
-  if(!is.na(width)) wh.pct['width'] <- is_pct(attrs[['width']])
-  if(!is.na(height)) wh.pct['height'] <- is_pct(attrs[['height']])
+  if(!is.na(width)) wh.pct['width'] <- isTRUE(attr(width, 'unit') == "%")
+  if(!is.na(height)) wh.pct['height'] <- isTRUE(attr(height, 'unit') == "%")
 
   if('x' %in% names(attrs)) x <- parse_length(attrs[['x']])
   if('y' %in% names(attrs)) y <- parse_length(attrs[['y']])
 
+  if(!isTRUE(attr(width, 'unit') %in% c('%', '', 'px')))
+    sig(sprintf("unit (%s) in <svg width='...'>.", attr(width, 'unit')))
+  if(!isTRUE(attr(height, 'unit') %in% c('%', '', 'px')))
+    sig(sprintf("unit (%s) in <svg height='...'>.", attr(height, 'unit')))
+  if(!isTRUE(attr(x, 'unit') %in% c('', 'px')))
+    sig(sprintf("unit (%s) in <svg x='...'>.", attr(x, 'unit')))
+  if(!isTRUE(attr(y, 'unit') %in% c('', 'px')))
+    sig(sprintf("unit (%s) in <svg y='...'>.", attr(y, 'unit')))
+
   if ('viewBox' %in% names(attrs)) {
     viewbox <- parse_lengths(attrs[['viewBox']])
     if(length(viewbox) != 4) {
-      warning("Unrecognized viewBox format")
+      sig("unrecognized viewBox format")
       viewbox <- rep(NA_real_, 4)
+    } else if (!all(nzchar(attr(viewbox, 'unit')) == 0)) {
+      sig("units in <svg viewBox=''>.")
     }
   }
   if(is.na(x)) x <- 0

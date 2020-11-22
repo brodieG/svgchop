@@ -207,3 +207,11 @@ make_name <- function(x) {
   }
   sprintf("%s%s%s", name, id, class)
 }
+## For Unsupported Features
+
+sig <- function(msg) {
+  cond <- simpleCondition(msg)
+  class(cond) <- c('svgchop_unsupported', class(cond))
+  signalCondition(cond)
+}
+
