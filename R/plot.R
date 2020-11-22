@@ -23,31 +23,26 @@
 #' in x and y directions.  The "width", "height", "x", and "y" attributes of the
 #' SVG element proper are ignored.
 #'
-#' Nested SVGs viewports will not be respected and their contents will be drawn
-#' in the outer viewport coordinates.
-#'
 #' Stroke widths are computed under the assumption that 1 "lwd" == 1/96th of an
 #' inch, and may look bad on devices that don't support "lwd" values less than
-#' one.
-#'
-#' The "svg_chopped_list" method will call the "svg_chopped" method for each
-#' item. If you set `par(mfrow=...)` or similar each element of the list will be
-#' plotted in its own grid spot.
-#'
-#' Future versions may switch to `grid` functions and take advantage of
-#' viewports and the implementation of gradients, etc.
+#' one.  Future versions may switch to `grid` functions and take advantage of
+#' viewports, gradients, patterns, etc.
 #'
 #' @export
 #' @inheritParams graphics::par
-#' @seealso [chop()], [graphics::par()] for other general graphical settings,
+#' @seealso [chop()] in particular the "Unsupported Features" section,
+#'   [graphics::par()] for other general graphical settings,
 #'   [graphics::polypath()], [graphics::lines()], for how the polygons and
-#'   their line strokes are drawn drawn, [compute_display_params()] for how
+#'   their line strokes are drawn, [compute_display_params()] for how
 #'   the SVG is sized, [as.svg_chopped_list()] to convert a list of
-#'   "svg_chopped" objects into a plottable version of it.
+#'   "svg_chopped" objects into a plottable version of it, [svg_samples()] for
+#'   sample SVG files that ship with this package.
 #' @param x an "svg_chopped" or "svg_chopped_list" object.
-#' @param ask TRUE or FALSE whether to prompt to display more plots when
-#'   plotting an "svg_chopped_list" with multiple elements that don't fit in the
-#'   current plotting grid.
+#' @param ask NULL (default) TRUE or FALSE whether to prompt to display more
+#'   plots when plotting an "svg_chopped_list" with multiple elements that don't
+#'   fit in the current plotting grid.  If NULL, auto-detects based on how many
+#'   elements there are to draw and whether they fit in the grid implied by
+#'   `prod(par('mfrow'))`.
 #' @param ppi numeric pixels per inch of the display device to assume for
 #'   calculations, defaults to 125 which is a common display density for retina
 #'   style displays (note these are "display" pixels, not screen pixels which
@@ -59,43 +54,64 @@
 #'   ignored.
 #' @param center TRUE (default)  or FALSE, whether to center the image on the
 #'   device.
-#' @param ... passed on to [polypath()] and/or [lines()].
+#' @param ... used to set graphical parameters with [graphics::par()].
 #' @return `x`, invisibly
+#' @examples
+#' \donttest{
+#' svg <- chop(R_logo())
+#' plot(svg)
+#' plot(svg, ppi=75)       # fat pixels
+#' plot(svg, scale=TRUE)   # fit to device
+#'
+#' ## Plot multiple svgs at once (chop_all is for all SVGS in
+#' ## a single XML doc, not multiple SVG docs)
+#' svgs <- as.svg_chopped_list(lapply(svg_samples()[1:4], chop))
+#' plot(svgs, mfrow=c(2,2), mai=rep(.1, 4), scale=TRUE)
+#' }
 
 plot.svg_chopped <- function(
-  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE, ...
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
+  xaxs='i', yaxs='i', mai=numeric(4), ...
 )
-  plot_one(x, ppi=ppi, scale=scale, center=center,...)
+  plot_list(
+    list(x), ppi=ppi, scale=scale, center=center, ask=FALSE,
+    xaxs=xaxs, yaxs=yaxs, mai=mai, ...
+  )
 
 #' @export
-#' @rdname plot.svg_chopped
 
 plot.svg_chopped_flat <- function(
-  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE, ...
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
+  xaxs='i', yaxs='i', mai=numeric(4), ...
 )
-  plot_one(x, ppi=ppi, scale=scale, center=center, ...)
+  plot_list(
+    list(x), ppi=ppi, scale=scale, center=center, ask=FALSE,
+    xaxs=xaxs, yaxs=yaxs, mai=mai, ...
+  )
 
 #' @export
-#' @rdname plot.svg_chopped
 
 plot.svg_chopped_list <- function(
   x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
-  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
-  ...
+  ask = NULL, xaxs='i', yaxs='i', mai=numeric(4), ...
 ) {
   vetr(structure(list(), class='svg_chopped_list'), INT.1.POS.STR, LGL.1)
-  plot_list(x, ppi=ppi, scale=scale, center=center, ask=ask, ...)
+  plot_list(
+    x, ppi=ppi, scale=scale, center=center, ask=ask,
+    xaxs=xaxs, yaxs=yaxs, mai=mai, ...
+  )
 }
 #' @export
-#' @rdname plot.svg_chopped
 
 plot.svg_chopped_list_flat <- function(
   x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
-  ask = prod(par("mfcol")) < length(x) && dev.interactive(),
-  ...
+  ask = NULL, xaxs='i', yaxs='i', mai=numeric(4), ...
 ) {
   vetr(structure(list(), class='svg_chopped_list_flat'), INT.1.POS.STR, LGL.1)
-  plot_list(x, ppi=ppi, ask=ask, center=center, scale=scale, ...)
+  plot_list(
+    x, ppi=ppi, scale=scale, center=center, ask=ask,
+    xaxs=xaxs, yaxs=yaxs, mai=mai, ...
+  )
 }
 
 #' Compute SVG Display Parameters given a Device
@@ -228,21 +244,30 @@ compute_vb_dim <- function(x) {
 
 ## Internal: plot either normal or flat chopped_list
 
-plot_list <- function(x, ppi, scale=FALSE, center=TRUE, ask, ...) {
+plot_list <- function(
+  x, ppi, scale=FALSE, center=TRUE, ask, xaxs='i', yaxs='i', mai=numeric(4),
+  ...
+) {
+  dots <- list(...)
+  old.par <- par(c(list(xaxs=xaxs, yaxs=yaxs, mai=mai), dots))
+  on.exit(par(old.par))
+  if(is.null(ask)) {
+    ask <- prod(par("mfrow")) < length(x) && dev.interactive()
+  }
   if (ask) {
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot, ppi=ppi, scale=scale, center=center, ...)
+  lapply(x, plot_one, ppi=ppi, scale=scale, center=center)
   invisible(x)
 }
 ## Internal: plot either normal or flat chopped
 
-plot_one <- function(x, ppi, scale=FALSE, center=TRUE, ...) {
+plot_one <- function(
+  x, ppi, scale=FALSE, center=TRUE
+) {
   url <- attr(x, 'url')   # gradients, patterns, etc., stored here
   extents <- attr(x, 'extents')
-  old.par <- par(xaxs='i', yaxs='i')
-  on.exit(par(old.par))
 
   # Compute plot dimensions in user units using viewBox info if availble, and if
   # not from the pre-computed extents attributes
@@ -319,8 +344,8 @@ plot_one <- function(x, ppi, scale=FALSE, center=TRUE, ...) {
     offset <- c(vb[['x']], vb[['y']])
     if(ncol(mat) > 1) {
       m <- t((mat - offset) * ppi / d.params[['uppi']] + offset)
-      if(!is.na(fill)) polypath(m, col=fill, border=NA, rule=fill.rule, ...)
-      if(!is.na(stroke)) lines(m, col=stroke, lwd=stroke.width, ...)
+      if(!is.na(fill)) polypath(m, col=fill, border=NA, rule=fill.rule)
+      if(!is.na(stroke)) lines(m, col=stroke, lwd=stroke.width)
     }
   }
   cat(
