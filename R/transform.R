@@ -167,6 +167,7 @@ apply_transform <- function(x) {
     if(is.list(clip) && length(clip[[1]])) {
       clip.dat <- as_svg_chop_mx(clip, closed=FALSE)
       clip.trans <- (trans[['mx']] %*% rbind(clip.dat, 1))[-3,,drop=FALSE]
+      attributes(clip.trans) <- attributes(clip.dat)
       clip <- as_polyclip_poly(clip.trans)
     }
   }

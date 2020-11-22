@@ -119,8 +119,8 @@ process_clip_path <- function(node, transform=TRUE) {
     pcpoly <- lapply(flat, as_polyclip_poly)
     fill.rule <- lapply(flat, get_fill_rule)
     res <- pcpoly[[1L]]
-    if(length(pcpoly) > 1) {
-      for(i in seq(2, length(pcpoly), 1)) {
+    if(length(flat) > 1) {
+      for(i in seq(2, length(flat), 1)) {
         res <- polyclip::polyclip(
           res, pcpoly[[i]], 'union',
           fillA=fill.rule[[i - 1]], fillB=fill.rule[[i]]
@@ -176,9 +176,9 @@ apply_clip_path <- function(node, url, prev.clip=NULL) {
   old.dim <- dim(res)
   old.dimnames <- dimnames(res)
   new.attrs <- attributes(node)[
-    !names(attributes(node)) %in% c('dim', 'dimnames')
+    !names(attributes(node)) %in% c('dim', 'dimnames', 'starts', 'closed')
   ]
-  attributes(res) <- new.attrs
+  attributes(res)[names(new.attrs)] <- new.attrs
   attr(res, 'clip-path') <- clip
   dim(res) <- old.dim
   dimnames(res) <- old.dimnames
