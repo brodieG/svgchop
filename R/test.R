@@ -14,18 +14,18 @@
 #
 # Go to <https://www.r-project.org/Licenses/GPL-2> for a copy of the license.
 
-#' Compare SVGs to Their "Chopped" Renderings
+#' Tools to Compare SVG Renderings
 #'
-#' Create an HTML page of SVG and their corresponding [chop()]ed and rasterized
-#' (png) counterparts juxtaposed into diptychs for comparison.  Viewport and
-#' viewbox parameters may be manipulated to ensure the images fit into boxes of
-#' width controlled by the `width` parameter.  Original SVG will be on the left,
-#' with the rasterized counterpart on the right.
+#' `compare_svg` juxtaposes an SVG file to the corresponding [chop()]ed and
+#' rasterized (via [plot.svg_chopped()]) version.  `compare_rsvg` does the same,
+#' except the reference SVG is rasterized with [rsvg::rsvg_png()].  For the
+#' latter we also show the mean absolute difference for each pixel across
+#' channels as a monochrome image.  Reference renderings are on the left.  Both
+#' these functions default to the built-in svgs listable via `svg_samples`.
 #'
 #' @export
 #' @importFrom xml2 `xml_attr<-` write_xml
-#' @param source character vector of paths or URLs for SVGs to compile into
-#'   single HTML file.
+#' @param character vector of paths or URLs for SVGs to compare.
 #' @param target a file to write the html to.
 #' @param width numeric(1L) if NA will use `height` and the aspect ratio from
 #'   the "viewBox" if present, or from the element extents if not.
@@ -35,12 +35,17 @@
 #'   generated HTML in a browser, and 2 (default) opens the generated HTML in a
 #'   browser, and after `timeout` seconds (enough time for browser to open)
 #'   deletes the files (to avoid cluttering drive during testing).
-#' @param cols integer(1L) how many columns to arrange the diptychs in.
-#' @param ... additional arguments passed on to [chop()]
+#' @param cols integer(1L) how many columns to arrange the diptychs in (only for
+#'   `compare_svg`.
+#' @param pattern character(1L) a regular expression to sub-select svgs from the
+#'   built-in samples.
+#' @param ... additional arguments passed on to [vs_svg()] and [chop()]
 #' @return character(1L) the name of the file written to
 #' @examples
 #' \dontrun{
-#' svg_gallery()   # opens a browser instance
+#' ## These open browser instances
+#' compare_svg()
+#' compare_rsvg()
 #' }
 #' \donttest{
 #' samples <- svg_samples()
@@ -50,7 +55,7 @@
 #' plot(svgs, mfcol=c(scol, srow), scale=TRUE)
 #' }
 
-svg_gallery <- function(
+compare_svg <- function(
   source=svg_samples(),
   target=tempfile(),
   ppi=getOption('svgchop.ppi', 125),
@@ -147,8 +152,6 @@ svg_gallery <- function(
     par(mai=numeric(4))
     plot(svg, ppi=ppi, scale=TRUE)
     dev.off()    # this resets old parameters
-    # nuke color profile info; couldn't figure out a better way
-    png::writePNG(png::readPNG(f), f)
 
     cat(sprintf("<td><img src='%s' />", f), file=out, append=TRUE)
   }
@@ -163,7 +166,7 @@ svg_gallery <- function(
   }
   res
 }
-#' @rdname svg_gallery
+#' @rdname compare_svg
 #' @export
 
 svg_samples <- function(pattern="\\.svg$")
@@ -182,10 +185,12 @@ collapse_alpha <- function(x) {
   } else x
 }
 
-#' @rdname svg_gallery
+#' @rdname compare_svg
 #' @export
 
-svg_diff <- function(..., width=400, display=2, timeout=2) {
+compare_rsvg <- function(..., width=400, display=2, timeout=2) {
+  if(!requireNamespace('png'))
+    stop("'png' package required for this function.")
   out <- svg_gallery(display=0, rsvg=TRUE, ...)
   dir <- dirname(out)
   svgs <- list.files(dir, pattern="^img-.*\\.png$", full.names=TRUE)

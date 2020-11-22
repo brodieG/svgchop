@@ -18,10 +18,11 @@ Imports:
     vetr,
     xml2,
     polyclip,
-    png,
     utils
 Suggests:
-    unitizer
+    unitizer,
+    png,
+    rsvg
 License: GPL (>= 2)
 LazyData: true
 URL: https://github.com/brodieG/svgchop
