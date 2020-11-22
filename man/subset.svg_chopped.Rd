@@ -2,18 +2,18 @@
 % Please edit documentation in R/misc.R
 \name{[.svg_chopped}
 \alias{[.svg_chopped}
+\alias{[.svg_chopped_flat}
 \alias{[.svg_chopped_list}
 \alias{[.svg_chopped_list_flat}
-\alias{[.svg_chopped_flat}
 \title{Subset "svg_chopped_flat" Objects}
 \usage{
 \method{[}{svg_chopped}(x, i, ...)
 
+\method{[}{svg_chopped_flat}(x, i, ...)
+
 \method{[}{svg_chopped_list}(x, i, ...)
 
 \method{[}{svg_chopped_list_flat}(x, i, ...)
-
-\method{[}{svg_chopped_flat}(x, i, ...)
 }
 \arguments{
 \item{x}{an "svg_chopped" or related object}

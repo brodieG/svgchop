@@ -11,7 +11,7 @@ approximate_color(color, url)
 element.}
 
 \item{url}{"url-data" object, typically kept as the "url" attribute of
-"svg_chopped_list" objects.}
+"svg_chopped" objects.}
 }
 \value{
 character(1L), a hex color, or NA_character_ if the fill could not

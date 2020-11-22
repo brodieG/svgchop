@@ -423,6 +423,7 @@ process_use_node <- function(node) {
 #' * "rgba" color specification.
 #' * Clip path "clipPathUnits" other than "userSpaceOnUse".
 #' * Nested SVG viewports.
+#' * "preserveAspectRatio" values other than "meet".
 #'
 #' There are other features that are either unimplemented, incompletely
 #' implemented, or incorrectly implemented.  The parser will signal conditions
@@ -432,8 +433,7 @@ process_use_node <- function(node) {
 #' There is a distinction between features unimplemented in the parser and those
 #' unimplemented in the `plot` method.  For example, gradients are mostly
 #' implemented in the parser, but the `plot` method is not able to represent
-#' them other than as a single color.  `plot` method limitations are not
-#' reported as unsupported.
+#' them other than as a single color.
 #'
 #' @export
 #' @seealso [plot.svg_chopped()], [flatten()] for an easier-to-manage data

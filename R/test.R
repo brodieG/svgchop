@@ -31,13 +31,24 @@
 #'   the "viewBox" if present, or from the element extents if not.
 #' @param height numeric(1L) if NA will use `height` and the aspect ratio from
 #'   the "viewBox" if present, or from the element extents if not.
-#' @param display numeric in 0:2, where does not display, 1 opens the generated
-#'   HTML in a browser, and 2 (default) is opens the generated URL in a browser,
-#'   and after `timeout` seconds (enough time for browser to open) deletes the
-#'   files (to avoid cluttering drive during testing).
+#' @param display numeric in 0:2, where 0 does not display, 1 opens the
+#'   generated HTML in a browser, and 2 (default) opens the generated HTML in a
+#'   browser, and after `timeout` seconds (enough time for browser to open)
+#'   deletes the files (to avoid cluttering drive during testing).
 #' @param cols integer(1L) how many columns to arrange the diptychs in.
 #' @param ... additional arguments passed on to [chop()]
 #' @return character(1L) the name of the file written to
+#' @examples
+#' \dontrun{
+#' svg_gallery()   # opens a browser instance
+#' }
+#' \donttest{
+#' samples <- svg_samples()
+#' scol <- ceiling(sqrt(length(samples)))
+#' srow <- ceiling(length(samples) / scol)
+#' svgs <- as.svg_chopped_list(lapply(samples, chop))
+#' plot(svgs, mfcol=c(scol, srow), scale=TRUE)
+#' }
 
 svg_gallery <- function(
   source=svg_samples(),

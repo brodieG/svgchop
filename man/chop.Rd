@@ -5,9 +5,21 @@
 \alias{chop_all}
 \title{Approximate SVG Documents With Line Segments}
 \usage{
-chop(file, steps = 10, transform = TRUE, clip = TRUE)
+chop(
+  file,
+  steps = 10,
+  transform = TRUE,
+  clip = TRUE,
+  warn = getOption("svgchop.warn", TRUE)
+)
 
-chop_all(file, steps = 10, transform = TRUE, clip = TRUE)
+chop_all(
+  file,
+  steps = 10,
+  transform = TRUE,
+  clip = TRUE,
+  warn = getOption("svgchop.warn", TRUE)
+)
 }
 \arguments{
 \item{file}{an HTML or other XML based text file containing SVG elements.}
@@ -21,14 +33,18 @@ in the future this parameter will be deprecated in favor of tolerance
 based ones.}
 
 \item{transform}{TRUE (default) or FALSE whether to apply the transformation
-to the computed element coordinates.}
+to the computed element coordinates.  There is a chance this parameter will
+become deprecated and we will no longer provide the option to leave
+transforms un-applied.  The option complicates code substantially.  If set
+to FALSE, you must should also set \code{clip} to FALSE and apply the clip-paths
+yourself.}
 
-\item{clip}{TRUE or FALSE (default) whether to apply clipping paths to the
+\item{clip}{TRUE (default) or FALSE whether to apply clipping paths to the
 output.  See "Gradients, Patterns, Masks, and Clip Paths".}
 }
 \value{
-an "svg_chopped_list" S3 object, which is a list of "svg_chopped"
-objects.  See "Details".
+an "svg_chopped" S3 object for \code{chop}, an "svg_chopped_list" S3
+object for \code{chop_all}.  See "Return Value" section for details.
 }
 \description{
 Parse and convert SVG elements into line segments and supporting meta data.
@@ -63,7 +79,7 @@ for \code{\link[=flatten]{flatten()}} to get a sense for how to interact with th
 
 
 For \code{chop}, an "svg_chopped" object, a recursive list that represents the
-first top-level SVG viewport in the document.  The leaves are usually \verb{2 x n}
+\emph{first} top-level SVG viewport in the document.  The leaves are usually \verb{2 x n}
 numeric matrices that contain the X-Y coordinates of the ordered \code{n}
 endpoints of the \code{n - 1} line segments that approximate the SVG element they
 represent.  These matrices will have attributes attached that modify how they
@@ -72,7 +88,7 @@ will appear as empty lists.  There may be terminal elements that are neither
 lists nor matrices (e.g. gradient "stop"s).
 
 For "chop_all", an "svg_chopped_list" object, a list of "svg_chopped"
-objects, each representing a top-level SVG viewport in the document.
+objects, each representing one of the top-level SVG viewport in the document.
 
 Each leaf in the tree will have several attributes attached.  An incomplete
 list of possible attributes:
@@ -284,14 +300,17 @@ make polygons in the shapes of the open paths, e.g. with
 "clip-path" attribute to apply it yourself.
 
 If you wish to manually apply the clip paths, you will need to retrieve all
-the ancestors and AND combine them yourself.  If you are also manually
-applying the transforms, you will need to apply the corresponding transforms
-to each ancestor clip path before AND combining them.  The transform data
-should be attached as the "transform-computed" attribute of any node that
-also has a "clip-path" attribute.  Note that transforms on the clip path
-definitions (i.e. those affecting the contents of <clipPath> elements)
-will always be applied, unlike those of that affect the elements that
-reference them.
+the ancestors and AND combine them yourself.  This is unlike transforms,
+which are computed accounting for ancestor transforms.  This oddity is
+required to ensure that clip paths still make sense for the case where
+transforms are deferred and applied manually later.
+In the transform deferral case, you will need to apply the corresponding
+transforms to each ancestor clip path before AND combining them.  The
+transform data should be attached as the "transform-computed" attribute of
+any node that also has a "clip-path" attribute.  Note that transforms on the
+clip path definitions (i.e. those affecting the contents of <clipPath>
+elements) will always be applied, unlike those of that affect the elements
+that reference them.
 
 "clip-path" attributes on "clipPath" elements are not followed, which is a
 departure from the spec.  "clipPathUnits" are assumed to be "userSpaceOnUse".
@@ -312,10 +331,19 @@ An incomplete list of known unsupported features:
 \item Complex CSS selectors.
 \item "rgba" color specification.
 \item Clip path "clipPathUnits" other than "userSpaceOnUse".
+\item Nested SVG viewports.
+\item "preserveAspectRatio" values other than "meet".
 }
 
 There are other features that are either unimplemented, incompletely
-implemented, or incorrectly implemented.
+implemented, or incorrectly implemented.  The parser will signal conditions
+that inherit class "svgchop" when encountering some of these.  See
+examples for ideas on how to use handlers to examine the problematic SVGs.
+
+There is a distinction between features unimplemented in the parser and those
+unimplemented in the \code{plot} method.  For example, gradients are mostly
+implemented in the parser, but the \code{plot} method is not able to represent
+them other than as a single color.
 }
 
 \examples{
@@ -329,7 +357,8 @@ hoop <-  svg[[2]]
 r <-     svg[[3]]
 ext <-   attr(svg, 'extents')
 if(interactive()) {
-  ## Basic geometry
+  ## Basic geometry; this is the default R plot method, not
+  ## the `svgchop` we used first.
   plot(
     t(hoop), type='l', ann=FALSE, asp=1, axes=FALSE,
     xlim=ext[['x']], ylim=rev(ext[['y']])
@@ -373,6 +402,16 @@ if(interactive()) {
   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
   polypath(t(rot2 \%*\% (h2 - center) + center), col=hfill)
   polypath(t(rot1 \%*\% (r2 - center) + center), col=rfill)
+}
+## Run with handlers to intercept errors
+\dontrun{
+withCallingHandlers(
+  svg_gallery(svg_samples('pie-and-arcs')),
+
+  ## set a handler on 'svgchop' signals, and
+  ## inspect stack at moment of problem
+  svgchop=function(e) recover()
+)
 }
 }
 \seealso{

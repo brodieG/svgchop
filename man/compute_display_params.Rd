@@ -2,13 +2,12 @@
 % Please edit documentation in R/plot.R
 \name{compute_display_params}
 \alias{compute_display_params}
-\title{Compute Display Parameters for Device}
+\title{Compute SVG Display Parameters given a Device}
 \usage{
 compute_display_params(
   x,
   pin = par("pin"),
   ppi = getOption("svgchop.ppi", 125),
-  scale = FALSE,
   center = TRUE
 )
 }
@@ -32,15 +31,24 @@ a list containing elements:
 \item "asp": numeric(1) the height/width ratio of each pixel in the plot (not the
 actual aspect ratio of the plot).
 \item "uppi": numeric(1) the user-pixels per inch.
+\item "vb": list of parsed "viewBox" parameters which may be computed from other
+values if it is missing; "has.vb" sub-element denotes whether the values
+were auto-computed (FALSE) or parsed from the "viewBox" element (TRUE).
 }
 }
 \description{
-Computes how the dimensions of the display device in user coordinates, the
-aspect ratio of user coordinates relative to device coordinates, and the user
-coordinates "ppi" (this is taken to be the higher of the X or Y ppi, which
-may not be the same if the aspect ratio is not 1).
+Relates SVG size to the device by accounting for device physical size given
+dimensions in inches and PPI per resolution.  SVGs that do not specify
+"width" or "height" will be scaled such that the "viewBox" fits the device
+while preserving aspect ratio.  Otherwise the "viewBox" is scaled to fit the
+"width" and "height", themselves measured in device units.  If there is no
+"viewBox" the extents are scaled directly against device dimensions.
 }
 \details{
 This information can be used by a rendering function such as
-\code{\link[=plot.svg_chopped]{plot.svg_chopped()}} to scale and position the output.
+\code{\link[=plot.svg_chopped]{plot.svg_chopped()}} to scale and position the output.  The key values are
+"plot.lim" which represent the user-space coordinate range of the device
+(i.e. what you would use as the \code{xlim} and \code{ylim} parameters to
+\code{\link[=plot.window]{plot.window()}}), and "uppi" which is the user pixels per display device inch
+resolution (i.e. there are uppi/ppi user pixels per display pixel).
 }

@@ -32,29 +32,37 @@ visible terminal leaves of those.
 \details{
 When flattening terminal leaves are retrieved via depth-first recursion into
 a single level list for each "svg_chopped" object.  Terminal elements
-defined inside "defs" will be hidden.  Attributes for the "svg_chopped",
-"svg_chopped_list", and terminal nodes are retained.
+defined inside "<defs>" blocks are considered hidden and omitted from
+the flat list.  Attributes for the "svg_chopped", "svg_chopped_list", and
+terminal nodes are retained.
 
-For convenience the flat list is named with the numeric index of the element
-and the svg element name.  The underlying recursive list is unnamed so we
-use the name to succinctly display key information about the object when
-examined with \code{\link[utils:str]{utils::str()}} (see example).
+The raw names of the flat structure may not be unique, so for convenience we
+prepend the numeric index of each element so you may subset with numeric
+indices.
+
+"svg_chopped_flat" (and "svg_chopped") objects are best inspected with
+\code{\link[utils:str]{utils::str()}}.
 }
 \examples{
 ## Normal "svg_chopped" objects are tree-like
 svg <- chop(svg_samples('shapes'))
-str(svg, max.level=4, list.len=3)
+str(svg, max.level=3, list.len=3)
 
 ## Flattened ones are linearized and lose hidden elements
 svgf <- flatten(svg)
 str(svgf, list.len=8)
-length([[1]]) # number of distinct SVG elements
+length(svgf)          # number of distinct SVG elements
 
 ## We can use this to plot only parts of the SVG
+\donttest{
 old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
 plot(svgf, scale=TRUE)             # full plot
-plot(svgf[[1]][4], scale=TRUE)     # one item
-plot(svgf[[1]][4:6], scale=TRUE)   # more
-plot(svgf[[1]][10:12], scale=TRUE) # more
+plot(svgf[4], scale=TRUE)     # one item
+plot(svgf[4:6], scale=TRUE)   # more
+plot(svgf[10:12], scale=TRUE) # more
 par(old.par)
+}
+}
+\seealso{
+\code{\link[=chop]{chop()}}
 }
