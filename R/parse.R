@@ -618,7 +618,7 @@ chop_internal <- function(
           x
       } )
       # Return with pretty names
-      structure(give_names(tmp), class='svg_chopped_list')
+      as.svg_chopped_list(give_names(tmp))
     },
     svgchop=function(e) {
       if(inherits(e, 'svgchop_unsupported')) {
