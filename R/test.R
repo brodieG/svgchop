@@ -53,7 +53,7 @@
 #' scol <- ceiling(sqrt(length(samples)))
 #' srow <- ceiling(length(samples) / scol)
 #' svgs <- as.svg_chopped_list(lapply(samples, chop))
-#' plot(svgs, mfcol=c(scol, srow), scale=TRUE)
+#' plot(svgs, mfcol=c(srow, scol), scale=TRUE, mai=rep(.1, 4))
 #' }
 
 compare_svg <- function(
