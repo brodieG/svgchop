@@ -238,3 +238,40 @@ sig_e <- function(msg) {
   invisible(NULL)
 }
 
+#' Convert Objects into "svg_chopped" Objects into "svg_chopped_list"
+#'
+#' Useful in cases where we wish to take a list of "svg_chopped" objects, e.g.
+#' because we produced them with `lapply`, but wish to have access to the
+#' "svg_chopped_list" methods.
+#'
+#' @export
+#' @param x a list of "svg_chopped" objects
+#' @return an "svg_chopped_list" object
+#' @examples
+#' svgs <- lapply(svg_samples()[1:2], chop)
+#' \dontrun{
+#' plot(svgs)  ## Error!
+#' }
+#' \donttest{
+#' plot(as.svg_chopped_list(svgs), mfrow=c(2,1), scale=TRUE)
+#' }
+
+as.svg_chopped_list <- function(x) UseMethod('as.svg_chopped_list')
+
+#' @export
+
+as.svg_chopped.default <- function(x)
+  stop('No `as.svg_chopped` method for object of class ', deparse(class(x)))
+
+#' @export
+
+as.svg_chopped_list.list <- function(x) {
+  if(!is.list(x) || !all(vapply(x, inherits, TRUE, 'svg_chopped')))
+    stop("Argument 'x' must be a list containing only \"svg_chopped\" objects.")
+  structure(x, class="svg_chopped_list")
+}
+#' @export
+
+as.svg_chopped_list.svg_chopped <- function(x) {
+  as.svg_chopped(list(x))
+}
