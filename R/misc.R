@@ -25,15 +25,19 @@
 #'
 #' When flattening terminal leaves are retrieved via depth-first recursion into
 #' a single level list for each "svg_chopped" object.  Terminal elements
-#' defined inside "defs" will be hidden.  Attributes for the "svg_chopped",
-#' "svg_chopped_list", and terminal nodes are retained.
+#' defined inside "&lt;defs&gt;" blocks are considered hidden and omitted from
+#' the flat list.  Attributes for the "svg_chopped", "svg_chopped_list", and
+#' terminal nodes are retained.
 #'
-#' For convenience the flat list is named with the numeric index of the element
-#' and the svg element name.  The underlying recursive list is unnamed so we
-#' use the name to succinctly display key information about the object when
-#' examined with [utils::str()] (see example).
+#' The raw names of the flat structure may not be unique, so for convenience we
+#' prepend the numeric index of each element so you may subset with numeric
+#' indices.
+#'
+#' "svg_chopped_flat" (and "svg_chopped") objects are best inspected with
+#' [utils::str()].
 #'
 #' @export
+#' @seealso [chop()]
 #' @param x an object to flatten
 #' @return the object flattened
 #' @examples
@@ -44,15 +48,17 @@
 #' ## Flattened ones are linearized and lose hidden elements
 #' svgf <- flatten(svg)
 #' str(svgf, list.len=8)
-#' length([[1]]) # number of distinct SVG elements
+#' length(svgf)          # number of distinct SVG elements
 #'
 #' ## We can use this to plot only parts of the SVG
+#' \donttest{
 #' old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
 #' plot(svgf, scale=TRUE)             # full plot
-#' plot(svgf[[1]][4], scale=TRUE)     # one item
-#' plot(svgf[[1]][4:6], scale=TRUE)   # more
-#' plot(svgf[[1]][10:12], scale=TRUE) # more
+#' plot(svgf[4], scale=TRUE)     # one item
+#' plot(svgf[4:6], scale=TRUE)   # more
+#' plot(svgf[10:12], scale=TRUE) # more
 #' par(old.par)
+#' }
 
 flatten <- function(x, ...) UseMethod('flatten')
 
@@ -62,10 +68,10 @@ flatten <- function(x, ...) UseMethod('flatten')
 flatten.default <- function(x, ...)
   stop("Default flatten method not implemented")
 
-flatten_rec <- function(x) {
+flatten_rec <- function(x, names=character(length(x))) {
   if(inherits(x, 'hidden')) list()
-  else if(!is.list(x)) setNames(list(x), attr(x, 'xml_name'))
-  else  unlist(unname(lapply(x, flatten_rec)), recursive=FALSE)
+  else if(!is.list(x)) setNames(list(x), names)
+  else  unlist(unname(Map(flatten_rec, x, names(x))), recursive=FALSE)
 }
 ## Simplified version for clipping
 
@@ -81,7 +87,7 @@ flatten.svg_chopped <- function(x, ...) {
   names <- names(res)
   attrs <- attributes(x)
   attributes(res) <- attrs[names(attrs) != 'names']
-  names(res) <- sprintf("[%s] %s", format(seq_along(names)), names)
+  names(res) <- flat_names(names)
   class(res) <- "svg_chopped_flat"
   res
 }
@@ -111,10 +117,11 @@ flatten.svg_chopped_list <- function(x, ...) {
 #' @rdname subset.svg_chopped
 #' @export
 
-`[.svg_chopped_flat` <- function(x, i, ...)
-  update_extents(subset_chop(x, i, ...))
-
-
+`[.svg_chopped_flat` <- function(x, i, ...) {
+  res <- update_extents(subset_chop(x, i, ...))
+  names(res) <- flat_names(names(res))
+  res
+}
 #' @rdname subset.svg_chopped
 #' @export
 
@@ -207,6 +214,14 @@ make_name <- function(x) {
   }
   sprintf("%s%s%s", name, id, class)
 }
+flat_names <- function(names) {
+  names <- sub("^\\s*\\[[0-9]+\\] ", "", names)
+  sprintf(
+    "%s %s",
+    format(sprintf("[%d]", seq_along(names)), justify='right'), names
+  )
+}
+
 ## For Unsupported Features
 
 sig <- function(msg) {
