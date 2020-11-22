@@ -120,13 +120,12 @@ plot.svg_chopped_list_flat <- function(
 #' * "uppi": numeric(1) the user-pixels per inch.
 
 compute_display_params <- function(
-  x, pin=par('pin'), ppi=getOption('svgchop.ppi', 125),
-  scale=FALSE, center=TRUE
+  x, pin=par('pin'), ppi=getOption('svgchop.ppi', 125), center=TRUE
 ) {
   vetr(
     structure(list(), class='svg_chopped') ||
     structure(list(), class='svg_chopped_flat'),
-    pin=numeric(2) && all(. > 0), scale=LGL.1, ppi=INT.1.POS.STR,
+    pin=numeric(2) && all(. > 0), ppi=INT.1.POS.STR,
     center=LGL.1
   )
   dev.width <- lim.width <- pin[1] * ppi
