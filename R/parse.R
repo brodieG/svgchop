@@ -435,6 +435,11 @@ process_use_node <- function(node) {
 #' implemented in the parser, but the `plot` method is not able to represent
 #' them other than as a single color.
 #'
+#' You can ask `chop` and `chop_all` to report when they encounter unsupported
+#' features by setting `warn=TRUE` or `options(svgchop.warn=TRUE), although the
+#' reporting is not comprehensive.  Both of these functions always signal
+#' conditions inheriting class "svgchop" so you may handle them (see example).
+#'
 #' @export
 #' @seealso [plot.svg_chopped()], [flatten()] for an easier-to-manage data
 #'   structure, [styles_computed()] for what styles are actively processed,
@@ -458,7 +463,9 @@ process_use_node <- function(node) {
 #'   yourself.
 #' @param clip TRUE (default) or FALSE whether to apply clipping paths to the
 #'   output.  See "Gradients, Patterns, Masks, and Clip Paths".
-#'
+#' @param warn TRUE or FALSE (default) whether to warn when unsupported SVG
+#'   features are encountered.  Note the warnings are not comprehensive.  See
+#'   "Unsupported Features" section for details.
 #' @return an "svg_chopped" S3 object for `chop`, an "svg_chopped_list" S3
 #'   object for `chop_all`.  See "Return Value" section for details.
 #' @examples
@@ -531,7 +538,7 @@ process_use_node <- function(node) {
 
 chop <- function(
   file, steps=10, transform=TRUE, clip=TRUE,
-  warn=getOption('svgchop.warn', TRUE)
+  warn=getOption('svgchop.warn', FALSE)
 ) {
   vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1, warn=LGL.1)
   chop_internal(
@@ -544,7 +551,7 @@ chop <- function(
 
 chop_all <- function(
   file, steps=10, transform=TRUE, clip=TRUE,
-  warn=getOption('svgchop.warn', TRUE)
+  warn=getOption('svgchop.warn', FALSE)
 ) {
   vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1, warn=LGL.1)
   chop_internal(
@@ -552,10 +559,7 @@ chop_all <- function(
   )
 }
 
-chop_internal <- function(
-  file, steps=10, transform=TRUE, clip=TRUE, first.only=FALSE,
-  warn=getOption('svgchop.warn', TRUE)
-) {
+chop_internal <- function(file, steps, transform, clip, first.only, warn) {
   sigs <- list(unsupported=integer(), error=integer(), other=integer())
   res <- withCallingHandlers(
     {
