@@ -773,8 +773,17 @@ process_svg_node <- function(node.parsed) {
     sig_u(sprintf("unit (%s) in <svg x='...'>.", attr(x, 'unit')))
   if(!isTRUE(attr(y, 'unit') %in% c('', 'px')))
     sig_u(sprintf("unit (%s) in <svg y='...'>.", attr(y, 'unit')))
+  if(
+    'preserveAspectRatio' %in% names(attrs) &&
+    'meet' != trimws(attrs['preserveAspectRatio'])
+  )
+    sig_u(
+      sprintf(
+        "'preserveAspectRatio' value '%s' unsupported",
+        trimws(attrs['preserveAspectRatio'])
+    ) )
 
-  if ('viewBox' %in% names(attrs)) {
+  if('viewBox' %in% names(attrs)) {
     viewbox <- parse_lengths(attrs[['viewBox']])
     if(length(viewbox) != 4) {
       sig_u("unrecognized viewBox format")
