@@ -43,7 +43,7 @@
 #' @examples
 #' ## Normal "svg_chopped" objects are tree-like
 #' svg <- chop(svg_samples('shapes'))
-#' str(svg, max.level=4, list.len=3)
+#' str(svg, max.level=3, list.len=3)
 #'
 #' ## Flattened ones are linearized and lose hidden elements
 #' svgf <- flatten(svg)

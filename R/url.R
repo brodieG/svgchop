@@ -121,7 +121,7 @@ get_url_obj <- function(x, url) {
 #' @param color character(1L) a value used as the "fill" attribute of an SVG
 #'   element.
 #' @param url "url-data" object, typically kept as the "url" attribute of
-#'   "svg_chopped_list" objects.
+#'   "svg_chopped" objects.
 #' @return character(1L), a hex color, or NA_character_ if the fill could not
 #'   be approximated by a color.
 #' @examples

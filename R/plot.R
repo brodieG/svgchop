@@ -24,22 +24,26 @@
 #' SVG element proper are ignored.
 #'
 #' Nested SVGs viewports will not be respected and their contents will be drawn
-#' in the outer viewport coordinates.  Maybe, this is untested.
+#' in the outer viewport coordinates.
 #'
 #' Stroke widths are computed under the assumption that 1 "lwd" == 1/96th of an
 #' inch, and may look bad on devices that don't support "lwd" values less than
 #' one.
 #'
 #' The "svg_chopped_list" method will call the "svg_chopped" method for each
-#' item, passing along the "url-data" object that is attached as the "url"
-#' attribute of the "svg_chopped_list" object.  If you set `par(mfrow=...)` or
-#' similar each element of the list will be plotted in its own grid spot.
+#' item. If you set `par(mfrow=...)` or similar each element of the list will be
+#' plotted in its own grid spot.
 #'
 #' Future versions may switch to `grid` functions and take advantage of
 #' viewports and the implementation of gradients, etc.
 #'
 #' @export
-#' @seealso [chop()]
+#' @inheritParams graphics::par
+#' @seealso [chop()], [graphics::par()] for other general graphical settings,
+#'   [graphics::polypath()], [graphics::lines()], for how the polygons and
+#'   their line strokes are drawn drawn, [compute_display_params()] for how
+#'   the SVG is sized, [as.svg_chopped_list()] to convert a list of
+#'   "svg_chopped" objects into a plottable version of it.
 #' @param x an "svg_chopped" or "svg_chopped_list" object.
 #' @param ask TRUE or FALSE whether to prompt to display more plots when
 #'   plotting an "svg_chopped_list" with multiple elements that don't fit in the
@@ -94,15 +98,21 @@ plot.svg_chopped_list_flat <- function(
   plot_list(x, ppi=ppi, ask=ask, center=center, scale=scale, ...)
 }
 
-#' Compute Display Parameters for Device
+#' Compute SVG Display Parameters given a Device
 #'
-#' Computes how the dimensions of the display device in user coordinates, the
-#' aspect ratio of user coordinates relative to device coordinates, and the user
-#' coordinates "ppi" (this is taken to be the higher of the X or Y ppi, which
-#' may not be the same if the aspect ratio is not 1).
+#' Relates SVG size to the device by accounting for device physical size given
+#' dimensions in inches and PPI per resolution.  SVGs that do not specify
+#' "width" or "height" will be scaled such that the "viewBox" fits the device
+#' while preserving aspect ratio.  Otherwise the "viewBox" is scaled to fit the
+#' "width" and "height", themselves measured in device units.  If there is no
+#' "viewBox" the extents are scaled directly against device dimensions.
 #'
 #' This information can be used by a rendering function such as
-#' [plot.svg_chopped()] to scale and position the output.
+#' [plot.svg_chopped()] to scale and position the output.  The key values are
+#' "plot.lim" which represent the user-space coordinate range of the device
+#' (i.e. what you would use as the `xlim` and `ylim` parameters to
+#' [plot.window()]), and "uppi" which is the user pixels per display device inch
+#' resolution (i.e. there are uppi/ppi user pixels per display pixel).
 #'
 #' @export
 #' @param x an "svg_chopped" object
@@ -118,6 +128,9 @@ plot.svg_chopped_list_flat <- function(
 #' * "asp": numeric(1) the height/width ratio of each pixel in the plot (not the
 #'   actual aspect ratio of the plot).
 #' * "uppi": numeric(1) the user-pixels per inch.
+#' * "vb": list of parsed "viewBox" parameters which may be computed from other
+#'   values if it is missing; "has.vb" sub-element denotes whether the values
+#'   were auto-computed (FALSE) or parsed from the "viewBox" element (TRUE).
 
 compute_display_params <- function(
   x, pin=par('pin'), ppi=getOption('svgchop.ppi', 125), center=TRUE
@@ -180,7 +193,7 @@ compute_display_params <- function(
       y=c(y0, y0 + dev.height)
     ),
     asp=asp,
-    uppi=uppi,  # ppi/uppi is userspace to device scaling ratio
+    uppi=c(uppi),  # ppi/uppi is userspace to device scaling ratio
     vb=vb
   )
 }

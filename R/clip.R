@@ -103,7 +103,7 @@ get_fill_rule <- function(x) {
 process_clip_path <- function(node, transform=TRUE) {
   attrs <- attr(node, 'xml_attrs')
   if(
-    !is.null(attrs[['clipPathUnits']]) && 
+    !is.null(attrs[['clipPathUnits']]) &&
     !identical(attrs[['clipPathUnits']], "userSpaceOnUse")
   )
     sig("clipPathUnits set to something other than 'userSpaceOnUse'")
