@@ -422,9 +422,11 @@ process_use_node <- function(node) {
 #' * Complex CSS selectors.
 #' * "rgba" color specification.
 #' * Clip path "clipPathUnits" other than "userSpaceOnUse".
+#' * Nested SVG viewports.
 #'
 #' There are other features that are either unimplemented, incompletely
-#' implemented, or incorrectly implemented.
+#' implemented, or incorrectly implemented.  The parser will signal conditions
+#' on encountering some of the known unsupported features.
 #'
 #' @export
 #' @seealso [plot.svg_chopped()], [flatten()] for an easier-to-manage data

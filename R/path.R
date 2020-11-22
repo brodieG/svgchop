@@ -181,8 +181,12 @@ path_simplify <- function(path, steps) {
             if(
               prevc %in% c('Q','T') && cmd == 'T' ||
               prevc %in% c('C','S') && cmd == 'S'
-            )
+            ) {
               ref <- prev[, ncol(prev) - 1L]
+            }
+            else {
+              stop("'", cmd, "' not valid when following '", prevc, "'.")
+            }
           } else {
             stop("'", cmd, "' command not valid as first command in path.")
           }
@@ -213,12 +217,7 @@ path_simplify <- function(path, steps) {
         ys <- coords[2L,]
         x <- xs[length(xs)]
         y <- ys[length(ys)]
-
-        # Cubic Bézier -> Line segments
-        start <- vapply(res[[i-1]][2:3], function(x) x[length(x)], 1)
-        coords.i <- bezier_interp(list(xs, ys), start, steps=steps)
-
-        c(list(rep('L', length(coords.i[[1L]]))), coords.i)
+        list(rep('C', length(xs)), xs, ys)
       },
       V=,H={
         if(cmd == 'V') {
@@ -248,20 +247,40 @@ path_simplify <- function(path, steps) {
       stop("unknown command ", el[[1]])
     )
   }
-  cmds <- unlist(lapply(res, '[[', 1))
-  xs <- unlist(lapply(res, '[[', 2))
-  ys <- unlist(lapply(res, '[[', 3))
+  res
+}
+path_interpolate <- function(path, steps) {
+  beziers <- which(vapply(path, function(x) x[[1]][1] == 'C', TRUE))
+  if(any(beziers < 2)) stop("'C' commands cannot be at start of path.")
+  starts <- lapply(
+    path[beziers - 1],
+    function(x) vapply(x[2:3], function(y) y[length(y)], 1)
+  )
+  path[beziers] <- Map(
+    function(p, start) {
+      coords.i <- bezier_interp(p[2:3], start, steps=steps)
+      c(list(rep('L', length(coords.i[[1L]]))), coords.i)
+    },
+    path[beziers],
+    starts
+  )
+  path
+}
+path_finalize <- function(path) {
+  cmds <- unlist(lapply(path, '[[', 1))
+  xs <- unlist(lapply(path, '[[', 2))
+  ys <- unlist(lapply(path, '[[', 3))
 
   # Confirm that only remaining commands are M/L and drop them
   if(!all(cmds %in% c('M','L'))) {
     # nocov start
-    stop(
-      "Internal Error: simplified path command other than 'M', or 'L' found."
-    )
+    stop("Internal Error: simplified path command other than 'M' or 'L'.")
     # nocov end
   }
   rbind(x=xs, y=ys)
 }
+
+
 #' Convert SVG Path to Line Segments
 #'
 #' Parses the "d" path attribute into X-Y coordinates of line segments collected
@@ -312,8 +331,14 @@ parse_path <- function(x, steps=20) {
     }
     cmds.split <- split(cmds.abs, cumsum(cmds.cmds == 'M'))
 
-    # Simplify to x,y coords
-    coords <- unname(lapply(cmds.split, path_simplify, steps))
+    # Simplify to M,L,C
+    cmds.simple <- unname(lapply(cmds.split, path_simplify))
+
+    # Simplify to M,L
+    cmds.basic <- lapply(cmds.simple, path_interpolate, steps)
+
+    # Generate coord matrices
+    coords <- lapply(cmds.basic, path_finalize)
 
     # compute which paths are closed
     closed <- unname(
