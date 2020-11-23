@@ -194,7 +194,7 @@ collapse_alpha <- function(x) {
 compare_rsvg <- function(..., width=400, display=2, timeout=2) {
   if(!requireNamespace('png', quietly=TRUE))
     stop("'png' package required for this function.")
-  out <- compare_svg(display=0, rsvg=TRUE, ...)
+  out <- compare_svg(display=0, timeout=timeout, rsvg=TRUE, width=width, ...)
   dir <- dirname(out)
   svgs <- list.files(dir, pattern="^img-.*\\.png$", full.names=TRUE)
   rsvgs <- list.files(dir, pattern="^rsvg-.*\\.png$", full.names=TRUE)
