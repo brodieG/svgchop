@@ -249,7 +249,7 @@ as.svg_chopped_list <- function(x) UseMethod('as.svg_chopped_list')
 
 #' @export
 
-as.svg_chopped.default <- function(x)
+as.svg_chopped_list.default <- function(x)
   stop('No `as.svg_chopped` method for object of class ', deparse(class(x)))
 
 #' @export
@@ -262,7 +262,7 @@ as.svg_chopped_list.list <- function(x) {
 #' @export
 
 as.svg_chopped_list.svg_chopped <- function(x) {
-  as.svg_chopped(list(x))
+  as.svg_chopped_list(list(x))
 }
 #' @export
 
