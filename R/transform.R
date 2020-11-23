@@ -108,9 +108,7 @@ parse_transform <- function(node, trans.prev=trans()) {
               trans1[1:2, 3] <- valsi[2:3]
               trans2[1:2, 3] <- -valsi[2:3]
               mx.tmp <- trans1 %*% mx.tmp %*% trans2
-            } else if(length(valsi) != 1)
-              sig_e('Invalid "rotate" transform command')
-          }
+          } }
         },
         scale={
           if(length(valsi) %in% 1:2) {
@@ -132,7 +130,7 @@ parse_transform <- function(node, trans.prev=trans()) {
             mx.tmp[1:2,1:3] <- valsi
           } else sig_e('Invalid "matrix" transform command')
         },
-        sig_e('Unknown transform "', cmds[i], '"')
+        sig_e(paste0('Unknown transform "', cmds[i], '"'))
       )
       mx <- mx %*% mx.tmp
       # for posterity...
