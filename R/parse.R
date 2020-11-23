@@ -555,75 +555,77 @@ chop_all <- function(
 ) {
   vetr(file=CHR.1, steps=INT.1.POS.STR, transform=LGL.1, clip=LGL.1, warn=LGL.1)
   chop_internal(
-    file=file, steps=steps, transform=transform, clip=clip, warn=warn
+    file=file, steps=steps, transform=transform, clip=clip, warn=warn,
+    first.only=FALSE
   )
+}
+chop_core <- function(file, steps, transform, clip, first.only, warn) {
+  xml <- try(read_xml(file))
+  if(inherits(xml, 'try-error'))
+    stop(
+      "Argument `file` could not be interpreted as an XML file; ",
+      "see prior errors."
+    )
+  css <- get_css(xml)
+
+  # top level svgs, nested ones will just be consumed in recursive traversal
+  xml <-
+    if(!identical(xml_name(xml), "svg"))
+      xml_find_all(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
+    else list(xml)
+
+  if(!length(xml))
+    stop("Document does not contain svg nodes.")
+
+  if(first.only) xml <- xml[1]
+
+  # Extract relevant data from XML and convert to nested R list.  Elements
+  # coordinates are computed
+  tmp <- lapply(xml, parse_node, steps=steps)
+
+  # Extract and compute styles for terminal nodes
+  tmp <- lapply(tmp, process_css, style.sheet=css)
+
+  # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
+  # clip paths, masks, and patterns, although currently only gradients and
+  # clip-paths are supported.  These are also extracted from tree into the
+  # `url` list.
+  tmp <- process_url(tmp, transform=transform)
+  url <- attr(tmp, 'url')
+  attr(tmp, 'url') <- NULL
+
+  # We need to attach some URL objects to the tree, in particular clip-paths
+  # so that they may be transformed correctly.  Can only do this once all
+  # url references are resolved above.
+  tmp <- lapply(tmp, attach_url, url=url)
+
+  # Compute and apply transformations
+  tmp <- lapply(tmp, transform_coords, apply=transform)
+
+  # Compute extents (note we do this before clipping, after transform)
+  tmp <- lapply(tmp, compute_leaf_extents)
+  tmp <- lapply(tmp, update_extents)
+
+  # Apply the `url()` elements.  This is most meaningful for clip paths and
+  # patterns as we could apply them here. At this time we ony apply clipping
+  if(clip)
+    tmp <- lapply(tmp, apply_clip_path, url=url)
+
+  # Attach global objects
+  tmp <- lapply(
+    tmp, function(x) {
+      attr(x, 'url') <- url
+      attr(x, 'css') <- css
+      x
+  } )
+  # Return with pretty names
+  as.svg_chopped_list(give_names(tmp))
 }
 
 chop_internal <- function(file, steps, transform, clip, first.only, warn) {
   sigs <- list(unsupported=integer(), error=integer(), other=integer())
   res <- withCallingHandlers(
-    {
-      xml <- try(read_xml(file))
-      if(inherits(try, 'try-error'))
-        stop(
-          "Argument `file` could not be interpreted as an XML file; ",
-          "see prior errors"
-        )
-      css <- get_css(xml)
-
-      # top level svgs, nested ones will just be consumed in recursive traversal
-      xml <-
-        if(!identical(xml_name(xml), "svg"))
-          xml_find(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
-        else list(xml)
-
-      if(!length(xml))
-        stop("Document does not contain svg nodes")
-
-      if(first.only) xml <- xml[1]
-
-      # Extract relevant data from XML and convert to nested R list.  Elements
-      # coordinates are computed
-      tmp <- lapply(xml, parse_node, steps=steps)
-
-      # Extract and compute styles for terminal nodes
-      tmp <- lapply(tmp, process_css, style.sheet=css)
-
-      # Process elements that are used via `url(#id)`, e.g. gradients, patterns,
-      # clip paths, masks, and patterns, although currently only gradients and
-      # clip-paths are supported.  These are also extracted from tree into the
-      # `url` list.
-      tmp <- process_url(tmp, transform=transform)
-      url <- attr(tmp, 'url')
-      attr(tmp, 'url') <- NULL
-
-      # We need to attach some URL objects to the tree, in particular clip-paths
-      # so that they may be transformed correctly.  Can only do this once all
-      # url references are resolved above.
-      tmp <- lapply(tmp, attach_url, url=url)
-
-      # Compute and apply transformations
-      tmp <- lapply(tmp, transform_coords, apply=transform)
-
-      # Compute extents (note we do this before clipping, after transform)
-      tmp <- lapply(tmp, compute_leaf_extents)
-      tmp <- lapply(tmp, update_extents)
-
-      # Apply the `url()` elements.  This is most meaningful for clip paths and
-      # patterns as we could apply them here. At this time we ony apply clipping
-      if(clip)
-        tmp <- lapply(tmp, apply_clip_path, url=url)
-
-      # Attach global objects
-      tmp <- lapply(
-        tmp, function(x) {
-          attr(x, 'url') <- url
-          attr(x, 'css') <- css
-          x
-      } )
-      # Return with pretty names
-      as.svg_chopped_list(give_names(tmp))
-    },
+    chop_core(file, steps, transform, clip, first.only, warn),
     svgchop=function(e) {
       if(inherits(e, 'svgchop_unsupported')) {
         sigs[['unsupported']][conditionMessage(e)] <<-
