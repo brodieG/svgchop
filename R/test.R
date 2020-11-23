@@ -136,11 +136,20 @@ compare_svg <- function(
     } else if (is.na(w) && is.na(h))
       stop("Internal Error: contact maintainer.")
 
+    # xml_attr(svg.node, 'preserveAspectRatio') <- 'meet'
     svg.tmp <- file.path(target, sprintf("tmp-%s.svg", bname))
     write_xml(xml, svg.tmp)
     if(rsvg) {
+      # rsvg force fits if both width and height are specified, so there appears
+      # to be no way to have it respect aspect ratio if we specify both, and
+      # thus no way to match something exactly when the viewbox does not match
+      # the device aspect ratio.
+      #
+      # https://stackoverflow.com/questions/35966182/why-is-svg-preserveaspectratio-not-working-rsvg-convert
+      #
+      # specify only the most constraining of the two
       svg.png <- file.path(target, sprintf("rsvg-%s.png", bname))
-      rsvg::rsvg_png(svg.tmp, file=svg.png, width=width, height=h)
+      rsvg::rsvg_png(svg.tmp, file=svg.png, width=w, height=h)
       svg.tmp <- svg.png
     }
     cat(
@@ -161,11 +170,14 @@ compare_svg <- function(
   cat("</table></body></html>\n", file=out, append=TRUE)
   res <- file.path(target, 'index.html')
   if(display) {
+    # not allowed to test this
+    # nocov start
     browseURL(res)
     if(display > 1) {
       Sys.sleep(timeout)
       unlink(dirname(res), recursive=TRUE)
     }
+    # nocov end
   }
   res
 }
@@ -241,11 +253,14 @@ compare_rsvg <- function(..., width=400, display=2, timeout=2) {
   )
   cat("</table></body></html>\n", file=out, append=TRUE)
   if(display) {
+    # not allowed to test this
+    # nocov start
     browseURL(out)
     if(display > 1) {
       Sys.sleep(timeout)
       unlink(dirname(out), recursive=TRUE)
     }
+    # nocov end
   }
   out
 }
@@ -270,9 +285,8 @@ R_logo <- function(internal=TRUE) {
 ##
 ## Used to test that parsing of multiple SVGs in a single HTML page works.
 
-samples_to_html <- function(
-  source=svg_samples(),
-  target=paste0(tempfile(), ".html")
+svg_to_html <- function(
+  source, target=paste0(tempfile(), ".html")
 ) {
   writeLines("<!DOCTYPE html><html><body>", target)
   lapply(source, file.append, file1=target)
