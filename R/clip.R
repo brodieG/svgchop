@@ -87,6 +87,11 @@ get_fill_rule <- function(x) {
   if(isTRUE(fill.rule %in% c('nonzero', 'evenodd'))) fill.rule
   else 'evenodd'
 }
+get_clip_rule <- function(x) {
+  clip.rule <- attr(x, 'xml-attr')[['clip-rule']]
+  if(isTRUE(clip.rule %in% c('nonzero', 'evenodd'))) clip.rule
+  else 'evenodd'
+}
 
 ## Process Clip Paths
 ##
@@ -117,17 +122,17 @@ process_clip_path <- function(node, transform=TRUE) {
   flat <- flatten_rec2(res)
   if(length(flat)) {
     pcpoly <- lapply(flat, as_polyclip_poly)
-    fill.rule <- lapply(flat, get_fill_rule)
+    clip.rule <- lapply(flat, get_clip_rule)
     res <- pcpoly[[1L]]
     if(length(flat) > 1) {
       for(i in seq(2, length(flat), 1)) {
         res <- polyclip::polyclip(
           res, pcpoly[[i]], 'union',
-          fillA=fill.rule[[i - 1]], fillB=fill.rule[[i]]
+          fillA=clip.rule[[i - 1]], fillB=clip.rule[[i]]
       ) }
-      attr(res, 'fill-rule') <- "evenodd" # either is valid
+      attr(res, 'clip-rule') <- "evenodd" # either is valid
     } else {
-      attr(res, 'fill-rule') <- fill.rule[[1]]
+      attr(res, 'clip-rule') <- clip.rule[[1]]
     }
     res
   } else {
@@ -154,9 +159,9 @@ apply_clip_path <- function(node, url, prev.clip=NULL) {
     if(is.list(prev.clip)) {
       tmp <- polyclip::polyclip(
         prev.clip, clip.path,
-        fillA=attr(prev.clip, 'fill-rule'), fillB=attr(clip.path, 'fill-rule')
+        fillA=attr(prev.clip, 'clip-rule'), fillB=attr(clip.path, 'clip-rule')
       )
-      attr(tmp, 'fill-rule') <- 'evenodd'
+      attr(tmp, 'clip-rule') <- 'evenodd'
       tmp
     } else clip.path
   } else prev.clip
@@ -165,7 +170,7 @@ apply_clip_path <- function(node, url, prev.clip=NULL) {
     if(length(clip)) {
       res.pc <- polyclip::polyclip(
         as_polyclip_poly(node), clip,
-        fillA=get_fill_rule(node), fillB=attr(clip, 'fill-rule')
+        fillA=get_fill_rule(node), fillB=attr(clip, 'clip-rule')
       )
       as_svg_chop_mx(res.pc, attr(node, 'closed'))
     } else {

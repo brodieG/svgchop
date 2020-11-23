@@ -22,7 +22,7 @@ STYLE.PROPS.NORM <- c(
   'stroke-width', 'stroke-opacity',
   'opacity',
   'stop-color', 'stop-opacity',
-  'clip-path'
+  'clip-path', 'clip-rule'
 )
 STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)

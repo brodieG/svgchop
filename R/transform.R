@@ -80,7 +80,7 @@ parse_transform <- function(node, trans.prev=trans()) {
     vals <- proc1[seq_len(nrow(cs)) + nrow(cs)]
     vals2 <- lapply(regmatches(vals, gregexpr(num.pat.core, vals)), as.numeric)
     if(any(vapply(vals2, anyNA, TRUE)))
-      stop('unparseable parameters in SVG transform command')
+      sig_e('Unparseable parameters in SVG transform command')
 
     cmds.full <- character()
     for(i in seq_along(cmds)) {
@@ -132,7 +132,7 @@ parse_transform <- function(node, trans.prev=trans()) {
             mx.tmp[1:2,1:3] <- valsi
           } else sig_e('Invalid "matrix" transform command')
         },
-        stop('"', cmds[i], '" transformation not supported')
+        sig_e('Unknown transform "', cmds[i], '"')
       )
       mx <- mx %*% mx.tmp
       # for posterity...
