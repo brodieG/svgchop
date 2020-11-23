@@ -8,7 +8,10 @@
   <stop offset="1" stop-color="red" />
 </radialGradient>
 <radialGradient
-  id="grad2" cx=".8" cy=".9" r=".5" fx=".6" fy=".7" href="#grad1">
+  id="grad1a" cx=".5" cy=".5" r=".5" fx=".5" fy=".5" href="#grad1">
+</radialGradient>
+<radialGradient
+  id="grad2" cx=".8" cy=".9" r=".5" fx=".6" fy=".7" href="#grad1a">
 </radialGradient>
 </defs>
 <circle r="20" fill="url(#grad1)" transform="skewX(20) translate(15 25)"/>

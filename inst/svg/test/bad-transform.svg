@@ -2,10 +2,15 @@
      xmlns:xlink="http://www.w3.org/1999/xlink"
      viewBox="0 0 100 100">
 <rect
-  x="30" y="30" width="40" height="40"
+  x="30" y="30" width="50" height="40"
   transform="
     translate(10 20 30) rotate(20 20) scale(1 1.2 .8)
     skewX(20 10) skewY(10 20) matrix(1 1 1 1)"
+/>
+<rect
+  x="40" y="40" width="20" height="30"
+  transform="translate(oops) nodice(10)"
+  fill="red"
 />
 </svg>
 
