@@ -68,9 +68,11 @@ as_svg_chop_mx <- function(pc.poly, closed) {
     }
     # re-compute starts for holes
     starts <- if(length(pc.poly) > 1) {
-      cumsum(
-        vapply(pc.poly, function(x) length(x[[1]]), 0)[-length(pc.poly)]
-      ) + 1
+      c(
+        0,
+        cumsum(
+          vapply(pc.poly, function(x) length(x[[1]]), 0)[-length(pc.poly)]
+      ) ) + 1
     } else {
       NULL
     }
@@ -78,7 +80,7 @@ as_svg_chop_mx <- function(pc.poly, closed) {
     ys <- unlist(lapply(pc.poly, '[[', 'y'))
     res <- rbind(xs, ys)
     attr(res, 'starts') <- starts
-    attr(res, 'closed') <- rep(closed, length(starts) + 1)
+    attr(res, 'closed') <- rep(closed, length(starts))
     res
   }
 }
