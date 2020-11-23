@@ -71,8 +71,8 @@ compare_svg <- function(
 ) {
   vetr(
     display=INT.1 && . %in% 0:2,
-    width=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(height))),
-    height=(NUM.1 && . > 0) || (numeric(1) && !is.na(.(width))),
+    width=(NUM.1 && . > 0) || (isTRUE(is.na(.)) && !is.na(.(height))),
+    height=(NUM.1 && . > 0) || (isTRUE(is.na(.)) && !is.na(.(width))),
     ncol=INT.1.POS.STR, timeout=NUM.1.POS, quietly=LGL.1
   )
   dir.create(target)
