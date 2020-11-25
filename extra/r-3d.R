@@ -1,7 +1,7 @@
 library(svgchop)
 source('../website/static/script/_lib/rayrender.R')
 
-steps <- 30
+steps <- 12
 chopped <- lapply(lapply(seq_len(steps), chop, file=R_logo()), flatten)
 starts <- lapply(chopped, lapply, attr, 'starts')
 ext <- attr(chopped[[length(chopped)]], 'extents')
@@ -32,7 +32,7 @@ cols <- rgb(col.num, maxColorValue=255)
 
 library(rayrender)
 
-frames <- 11
+frames <- 21
 stopifnot(frames%%2 != 0)
 frames.start <- floor(frames/2)
 frames.end <- floor(frames/2)
@@ -53,7 +53,9 @@ radii <- approxfun(0:1, c(1e3, 10))(x)
 # radii <- rep(1e3, 5)
 start <- Sys.time()
 fovs <- approxfun(0:1, c(11, 25))(x)
-svgs <- round(approxfun(0:1, c(1, length(norm)))(x))
+svgs <- round(
+  approxfun(c(0,1, 1), c(1, steps, steps))(seq(0, 1, length.out=frames))
+)
 
 for(i in seq_along(x)) {
   cat(sprintf("\rFrame %03d ellapsed %f", i, Sys.time() - start))
@@ -62,20 +64,21 @@ for(i in seq_along(x)) {
   radius <- radii[i]
   fov <- fovs[i]
   nudge <- 1e-3
-  hoop <- t(norm[[i]][[1]])
-  rrr <- t(norm[[i]][[2]])
+  svgi <- svgs[i]
+  hoop <- t(norm[[svgi]][[1]])
+  rrr <- t(norm[[svgi]][[2]])
 
   ray.r <- extruded_polygon(
     rrr,
     top=depth / 2 + 2 * nudge, bottom=-depth / 2 - 2 * nudge,
     material=diffuse(color=cols[1]),
-    holes=starts[[i]][[2]][-1]
+    holes=starts[[svgi]][[2]][-1]
   )
   ray.hoop <- extruded_polygon(
     hoop,
     top=depth / 4 + nudge, bottom=-depth / 4 - nudge,
     material=diffuse(color=cols[2]),
-    holes=starts[[i]][[1]][-1]
+    holes=starts[[svgi]][[1]][-1]
   )
   ray.logo <- group_objects(
     dplyr::bind_rows(ray.hoop, ray.r),
