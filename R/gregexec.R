@@ -22,7 +22,7 @@ gregexec <- function(
    )
    lapply(dat,
      function(x) {
-       if(any(x < 0)) y <- x
+       if(anyNA(x) || any(x < 0)) y <- x
        else {
          # we want to interleave matches with captures
          y <- c(t(cbind(x, attr(x, "capture.start"))))
