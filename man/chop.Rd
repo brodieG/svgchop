@@ -105,7 +105,10 @@ the "Styling" section).
 \item "transform-computed": accumulated transformation data (see "Transforms"
 section).
 \item "starts": indicates the starting column of sub-paths in paths; paths with
-embedded "M" or "m" commands will contain sub-paths.
+embedded "M" or "m" commands will contain sub-paths.  Will always start
+with 1 when present so it is the same length as "closed".  For use with
+e.g. \href{https://cran.r-project.org/package=decido}{\code{decido}} you will need to
+drop the first element.
 \item "closed": logical vector indicating whether each subpath is closed (e.g.
 ends in a "Z" or "z" command.
 \item "extents": the extents of the element including clipped areas, transformed

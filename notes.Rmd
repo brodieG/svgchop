@@ -9,6 +9,9 @@ anti-alias?
 
 ## ToDo
 
+* "starts" should be same length as sub-paths and should always start with 1 so
+  it matches closed.
+
 * Not sure if `parse_path` should be exported (probably not).
 
 * an "href" references an non-existing URL element (subscript oo error now?).

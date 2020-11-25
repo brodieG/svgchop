@@ -12,7 +12,8 @@ compare_svg(
   ppi = getOption("svgchop.ppi", 125),
   width = 400,
   height = NA_real_,
-  cols = 1,
+  ncol = 1,
+  quietly = FALSE,
   display = 2,
   timeout = 2,
   rsvg = FALSE,
@@ -32,15 +33,17 @@ the "viewBox" if present, or from the element extents if not.}
 \item{height}{numeric(1L) if NA will use \code{height} and the aspect ratio from
 the "viewBox" if present, or from the element extents if not.}
 
-\item{cols}{integer(1L) how many columns to arrange the diptychs in (only for
+\item{ncol}{integer(1L) how many columns to arrange the diptychs in (only for
 \code{compare_svg}.}
+
+\item{quietly}{TRUE or FALSE (default) passed on to the \code{\link[=plot.svg_chopped]{plot.svg_chopped()}}.}
 
 \item{display}{numeric in 0:2, where 0 does not display, 1 opens the
 generated HTML in a browser, and 2 (default) opens the generated HTML in a
 browser, and after \code{timeout} seconds (enough time for browser to open)
 deletes the files (to avoid cluttering drive during testing).}
 
-\item{...}{additional arguments passed on to \code{\link[=vs_svg]{vs_svg()}} and \code{\link[=chop]{chop()}}}
+\item{...}{additional arguments passed on to \code{\link[=compare_svg]{compare_svg()}} and \code{\link[=chop]{chop()}}}
 
 \item{pattern}{character(1L) a regular expression to sub-select svgs from the
 built-in samples.}
@@ -69,6 +72,6 @@ samples <- svg_samples()
 scol <- ceiling(sqrt(length(samples)))
 srow <- ceiling(length(samples) / scol)
 svgs <- as.svg_chopped_list(lapply(samples, chop))
-plot(svgs, mfcol=c(scol, srow), scale=TRUE)
+plot(svgs, mfcol=c(srow, scol), scale=TRUE, mai=rep(.1, 4))
 }
 }

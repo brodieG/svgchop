@@ -2,18 +2,9 @@
 % Please edit documentation in R/misc.R
 \name{str.svg_chopped}
 \alias{str.svg_chopped}
-\alias{str.svg_chopped_list}
-\alias{str.svg_chopped_flat}
-\alias{str.svg_chopped_list_flat}
 \title{str Method "svg_chopped*" Objects}
 \usage{
 \method{str}{svg_chopped}(object, give.attr = FALSE, ...)
-
-\method{str}{svg_chopped_list}(object, give.attr = FALSE, ...)
-
-\method{str}{svg_chopped_flat}(object, give.attr = FALSE, ...)
-
-\method{str}{svg_chopped_list_flat}(object, give.attr = FALSE, ...)
 }
 \arguments{
 \item{object}{any \R object about which you want to have some

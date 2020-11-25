@@ -9,6 +9,7 @@
   ppi = getOption("svgchop.ppi", 125),
   scale = FALSE,
   center = TRUE,
+  quietly = FALSE,
   xaxs = "i",
   yaxs = "i",
   mai = numeric(4),
