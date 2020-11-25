@@ -1,17 +1,22 @@
 library(svgchop)
 source('../website/static/script/_lib/rayrender.R')
 
-
-svg <- flatten(chop(R_logo(), steps=steps))
-ext <- attr(svg, 'extents')
+steps <- 30
+chopped <- lapply(lapply(seq_len(steps), chop, file=R_logo()), flatten)
+starts <- lapply(chopped, lapply, attr, 'starts')
+ext <- attr(chopped[[length(chopped)]], 'extents')
 norm <- lapply(
-  svg,
-  function(x) (x[,] - vapply(ext, '[', 0, 1)) / vapply(ext, diff, 0) - .5
-)
-norm <- lapply(norm, '*', vapply(ext, diff, 0) / diff(ext$x) * c(-1, -1))
+  chopped,
+  function(svg) {
+    norm <- lapply(
+      svg,
+      function(x) (x[,] - vapply(ext, '[', 0, 1)) / vapply(ext, diff, 0) - .5
+    )
+    lapply(norm, '*', vapply(ext, diff, 0) / diff(ext$x) * c(-1, -1))
+} )
+bottom <- min(unlist(lapply(norm[[length(norm)]], '[', 2, )))
+svg <- chopped[[1]]
 url <- attr(svg, 'url')
-hoop <- t(norm[[1]])
-rrr <- t(norm[[2]])
 
 ## Compute colors
 hoop.col <- attr(svg[[1]], 'style-computed')[['fill']]
@@ -26,12 +31,11 @@ col.num <- t(col2rgb(c(rrr.col, hoop.col)) * .7)
 cols <- rgb(col.num, maxColorValue=255)
 
 library(rayrender)
-bottom <- min(unlist(lapply(norm, '[', 2, )))
 
 frames <- 11
 stopifnot(frames%%2 != 0)
-frames.start <- floor(steps/2)
-frames.end <- floor(steps/2)
+frames.start <- floor(frames/2)
+frames.end <- floor(frames/2)
 point.pwr <- 5
 point.x <- 1
 points.start <- c(0, diff(seq(0, point.x, length.out=frames.start)^point.pwr))
@@ -48,7 +52,8 @@ angles <- x * 90
 radii <- approxfun(0:1, c(1e3, 10))(x)
 # radii <- rep(1e3, 5)
 start <- Sys.time()
-fovs <- approxfun(0:1, c(11, 30))(x)
+fovs <- approxfun(0:1, c(11, 25))(x)
+svgs <- round(approxfun(0:1, c(1, length(norm)))(x))
 
 for(i in seq_along(x)) {
   cat(sprintf("\rFrame %03d ellapsed %f", i, Sys.time() - start))
@@ -57,18 +62,20 @@ for(i in seq_along(x)) {
   radius <- radii[i]
   fov <- fovs[i]
   nudge <- 1e-3
+  hoop <- t(norm[[i]][[1]])
+  rrr <- t(norm[[i]][[2]])
 
   ray.r <- extruded_polygon(
     rrr,
     top=depth / 2 + 2 * nudge, bottom=-depth / 2 - 2 * nudge,
     material=diffuse(color=cols[1]),
-    holes=attr(svg[[2]], 'starts')[-1]
+    holes=starts[[i]][[2]][-1]
   )
   ray.hoop <- extruded_polygon(
     hoop,
     top=depth / 4 + nudge, bottom=-depth / 4 - nudge,
     material=diffuse(color=cols[2]),
-    holes=attr(svg[[1]], 'starts')[-1]
+    holes=starts[[i]][[1]][-1]
   )
   ray.logo <- group_objects(
     dplyr::bind_rows(ray.hoop, ray.r),
