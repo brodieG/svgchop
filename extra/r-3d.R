@@ -1,10 +1,6 @@
 library(svgchop)
 source('../website/static/script/_lib/rayrender.R')
 
-steps <- 20
-
-function(steps) {
-}
 
 svg <- flatten(chop(R_logo(), steps=steps))
 ext <- attr(svg, 'extents')
@@ -32,8 +28,21 @@ cols <- rgb(col.num, maxColorValue=255)
 library(rayrender)
 bottom <- min(unlist(lapply(norm, '[', 2, )))
 
-frames <- 10
-x <- (2-(cos(seq(0, pi, length.out=frames)) + 1)) * .5
+frames <- 11
+stopifnot(frames%%2 != 0)
+frames.start <- floor(steps/2)
+frames.end <- floor(steps/2)
+point.pwr <- 5
+point.x <- 1
+points.start <- c(0, diff(seq(0, point.x, length.out=frames.start)^point.pwr))
+points.end <- rev(diff(seq(0, point.x, length.out=frames.end + 1)^point.pwr))
+points.end <- points.end / points.end[1] * points.start[length(points.start)]
+frame.points <- cumsum(
+  c(points.start, points.start[length(points.start)], points.end)
+)
+x <- frame.points / max(frame.points)
+
+# x <- (2-(cos(seq(0, pi, length.out=frames)) + 1)) * .5
 depths <- x * .5
 angles <- x * 90
 radii <- approxfun(0:1, c(1e3, 10))(x)
