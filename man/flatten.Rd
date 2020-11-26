@@ -8,6 +8,8 @@ flatten(x, ...)
 }
 \arguments{
 \item{x}{an object to flatten}
+
+\item{...}{unused for additional method parameters}
 }
 \value{
 the object flattened
@@ -45,13 +47,13 @@ str(svgf, list.len=8)
 length(svgf)          # number of distinct SVG elements
 
 ## We can use this to plot only parts of the SVG
-\donttest{
-old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
-plot(svgf, scale=TRUE)             # full plot
-plot(svgf[4], scale=TRUE)     # one item
-plot(svgf[4:6], scale=TRUE)   # more
-plot(svgf[10:12], scale=TRUE) # more
-par(old.par)
+if(interactive()) {
+  old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
+  plot(svgf, scale=TRUE)             # full plot
+  plot(svgf[4], scale=TRUE)     # one item
+  plot(svgf[4:6], scale=TRUE)   # more
+  plot(svgf[10:12], scale=TRUE) # more
+  par(old.par)
 }
 }
 \seealso{

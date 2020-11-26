@@ -110,7 +110,7 @@ with 1 when present so it is the same length as "closed".  For use with
 e.g. \href{https://cran.r-project.org/package=decido}{\code{decido}} you will need to
 drop the first element.
 \item "closed": logical vector indicating whether each subpath is closed (e.g.
-ends in a "Z" or "z" command.
+ends in a "Z" or "z" command).
 \item "extents": the extents of the element including clipped areas, transformed
 if the transform is applied by \code{svgchop}.
 \item "clip-path": if present, the clip path to apply to the element, in
@@ -229,18 +229,18 @@ may be used as a wild card.  Selector hierarchies, properties, or anything
 other than basic selectors is not supported.  For example, the following
 selectors are supported:
 \itemize{
-\item "*"
-\item "*.class"
-\item "rect.class"
-\item "rect#id"
-\item ".class"
-\item "#id"
+\item "*".
+\item "*.class".
+\item "rect.class".
+\item "rect#id".
+\item ".class".
+\item "#id".
 }
 
 But these are not:
 \itemize{
-\item "g class"        (element of class "class" a descendant of a "g" element)
-\item "*.class.klass"  (two classes)
+\item "g class"        (element of class "class" a descendant of a "g" element).
+\item "*.class.klass"  (two classes).
 }
 
 Style sheets are parsed with regex, so parsing may fail if you have
@@ -363,28 +363,43 @@ conditions inheriting class "svgchop" so you may handle them (see example).
 svg <- chop(R_logo())
 if(interactive()) plot(svg)
 
-## Directly access the internals for our purposes
+## Let's do this manually instead of the built-in method
+xy <- get_xy_coords(svg)
+fills <- get_fills(svg)
+ext <- attr(svg, "extents")
+if(interactive()) {
+  ## These are all base plotting commands
+  plot.new()
+  plot.window(ext$x, rev(ext$y), asp=1)
+  polypath(xy[[1]], col=fills[[1]], border=NA)
+  polypath(xy[[2]], col=fills[[2]], border=NA)
+}
+
+## Let's do it the ugly way, directly retrieving the
+## data instead of relying on the helper `get_` funs.
+## This is useful because the `get_` funs are limited.
 str(svg) # str(svg, give.attr=TRUE) # to show attributes
 hoop <-  svg[[2]]
 r <-     svg[[3]]
-ext <-   attr(svg, 'extents')
 if(interactive()) {
-  ## Basic geometry; this is the default R plot method, not
-  ## the `svgchop` we used first.
+  ## Basic geometry; Note that coordinates are natively
+  ## stored as 2 x n matrices.
   plot(
     t(hoop), type='l', ann=FALSE, asp=1, axes=FALSE,
     xlim=ext[['x']], ylim=rev(ext[['y']])
   )
   lines(t(r))
 }
+## All the way now, by "hand" again to show some
+## details of internal data structure
 if(interactive()) {
-  ## Let's do better
   plot.new()
   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
   r2 <- r
   ## Abuse the fact we know the polygons are explicitly closed,
   ## so make the last value of each sub-path NA so they are treated
-  ## as separate by polypath.
+  ## as separate by polypath (`get_coords_xy` does this without
+  ## abuse)
   r2[,attr(r, 'starts')] <- NA
   polypath(t(r2), col='blue')
 

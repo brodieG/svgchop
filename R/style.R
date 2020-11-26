@@ -41,7 +41,7 @@ web.colors <- readRDS(system.file('extdata/web-colors.RDS', package='svgchop'))
 #' [W3C SVG 1.1. Spec](https://www.w3.org/TR/SVG11/types.html#ColorKeywords).
 #'
 #' @export
-#' @param character of color keywords (names).
+#' @param colors character of color keywords (names).
 #' @return character vector named with color and with the 6 digit RGB hex code
 #'   as the value.  Unmatched color names return NA.
 #' @examples

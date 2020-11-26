@@ -117,7 +117,9 @@ get_url_obj <- function(x, url) {
 #' the arithmetic mean of the stop color RGB values.
 #'
 #' @export
-#' @seealso [chop()]
+#' @seealso [chop()], [get_fills()] and [get_strokes()] for quickly retrieving
+#'   approximated gradient fills and strokes.
+#' @importFrom grDevices rgb col2rgb
 #' @param color character(1L) a value used as the "fill" attribute of an SVG
 #'   element.
 #' @param url "url-data" object, typically kept as the "url" attribute of
@@ -125,8 +127,9 @@ get_url_obj <- function(x, url) {
 #' @return character(1L), a hex color, or NA_character_ if the fill could not
 #'   be approximated by a color.
 #' @examples
-#' svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
-#' fill.1 <- attr(svg[[1]][[2]], 'style-computed')[['fill']]
+#' svg <- chop(R_logo())
+#' ## str(svg) to see structure
+#' fill.1 <- attr(svg[[2]], 'style-computed')[['fill']]
 #' fill.1 # A gradient fill
 #' approximate_color(fill.1, attr(svg, 'url'))
 

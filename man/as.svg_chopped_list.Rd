@@ -22,7 +22,6 @@ svgs <- lapply(svg_samples()[1:2], chop)
 \dontrun{
 plot(svgs)  ## Error!
 }
-\donttest{
-plot(as.svg_chopped_list(svgs), mfrow=c(2,1), scale=TRUE)
-}
+if(interactive())
+  plot(as.svg_chopped_list(svgs), mfrow=c(2,1), scale=TRUE)
 }

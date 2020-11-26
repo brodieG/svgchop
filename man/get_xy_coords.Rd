@@ -39,16 +39,16 @@ the "xy.coords" objects are.  The
 svg <- chop(R_logo(), steps=3)
 str(xy <- get_xy_coords(svg))
 (fills <- get_fills(svg))
-\donttest{
-plot.new()
-ext <- attr(svg, "extents")
-plot.window(ext$x, rev(ext$y), asp=1)
+if(interactive()) {
+  plot.new()
+  ext <- attr(svg, "extents")
+  plot.window(ext$x, rev(ext$y), asp=1)
 
-polypath(xy[[1]], col=fills[[1]], border=NA)
-polypath(xy[[2]], col=fills[[2]], border=NA)
+  polypath(xy[[1]], col=fills[[1]], border=NA)
+  polypath(xy[[2]], col=fills[[2]], border=NA)
 }
 }
 \seealso{
 \code{\link[grDevices:xy.coords]{grDevices::xy.coords()}}, \code{\link[=approximate_color]{approximate_color()}},
-\code{\link[=plot.svg_chopped]{plot.svg_chopped()}}.
+\code{\link[=plot.svg_chopped]{plot.svg_chopped()}}.  @export
 }

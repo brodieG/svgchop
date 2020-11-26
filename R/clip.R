@@ -113,7 +113,7 @@ process_clip_path <- function(node, transform=TRUE) {
     !is.null(attrs[['clipPathUnits']]) &&
     !identical(attrs[['clipPathUnits']], "userSpaceOnUse")
   )
-    sig("clipPathUnits set to something other than 'userSpaceOnUse'")
+    sig_u("clipPathUnits set to something other than 'userSpaceOnUse'")
 
   trans.tree <- compute_transform(node)
   res <- if(transform) apply_transform(trans.tree) else trans.tree

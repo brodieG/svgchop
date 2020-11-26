@@ -10,7 +10,7 @@ svg_colors(colors)
 svg_colors_all()
 }
 \arguments{
-\item{character}{of color keywords (names).}
+\item{colors}{character of color keywords (names).}
 }
 \value{
 character vector named with color and with the 6 digit RGB hex code

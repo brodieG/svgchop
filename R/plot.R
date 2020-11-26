@@ -29,7 +29,8 @@
 #' viewports, gradients, patterns, etc.
 #'
 #' @export
-#' @inheritParams graphics::par
+#' @importFrom grDevices dev.interactive devAskNewPage
+#' @importFrom graphics par plot.window polypath lines plot.new
 #' @seealso [chop()] in particular the "Unsupported Features" section,
 #'   [graphics::par()] for other general graphical settings,
 #'   [graphics::polypath()], [graphics::lines()], for how the polygons and
@@ -54,19 +55,24 @@
 #'   ignored.
 #' @param center TRUE (default)  or FALSE, whether to center the image on the
 #'   device.
+#' @param quietly TRUE or FALSE (default), whether to suppress progress report
+#'   in rendering output.
+#' @param xaxs see [graphics::par()].
+#' @param yaxs see [graphics::par()].
+#' @param mai see [graphics::par()].
 #' @param ... used to set graphical parameters with [graphics::par()].
 #' @return `x`, invisibly
 #' @examples
-#' \donttest{
-#' svg <- chop(R_logo())
-#' plot(svg)
-#' plot(svg, ppi=75)       # fat pixels
-#' plot(svg, scale=TRUE)   # fit to device
+#' if(interactive()) {
+#'   svg <- chop(R_logo())
+#'   plot(svg)
+#'   plot(svg, ppi=75)       # fat pixels
+#'   plot(svg, scale=TRUE)   # fit to device
 #'
-#' ## Plot multiple svgs at once (chop_all is for all SVGS in
-#' ## a single XML doc, not multiple SVG docs)
-#' svgs <- as.svg_chopped_list(lapply(svg_samples()[1:4], chop))
-#' plot(svgs, mfrow=c(2,2), mai=rep(.1, 4), scale=TRUE)
+#'   ## Plot multiple svgs at once (chop_all is for all SVGS in
+#'   ## a single XML doc, not multiple SVG docs)
+#'   svgs <- as.svg_chopped_list(lapply(svg_samples()[1:4], chop))
+#'   plot(svgs, mfrow=c(2,2), mai=rep(.1, 4), scale=TRUE)
 #' }
 
 plot.svg_chopped <- function(
@@ -89,6 +95,7 @@ plot.svg_chopped_flat <- function(
     xaxs=xaxs, yaxs=yaxs, mai=mai, quietly=quietly, ...
   )
 
+#' @rdname plot.svg_chopped
 #' @export
 
 plot.svg_chopped_list <- function(
@@ -131,14 +138,12 @@ plot.svg_chopped_list_flat <- function(
 #' resolution (i.e. there are uppi/ppi user pixels per display pixel).
 #'
 #' @export
+#' @inheritParams plot.svg_chopped
 #' @param x an "svg_chopped" object
 #' @param pin numeric length 2 width and height of the plot area in inches.
 #' @param ppi numeric device resolution in pixels per inch; if rendered SVGs
 #'   look larger or smaller than in your browser you may need to adjust this
 #'   setting.
-#' @param scale TRUE (currently unsupported) or FALSE (default) whether units
-#'   should be scaled to fit the viewbox in the display.  Aspect ratio will be
-#'   preserved.
 #' @return a list containing elements:
 #' * "plot.lim": a list with the x and y plot limits in user coordinates.
 #' * "asp": numeric(1) the height/width ratio of each pixel in the plot (not the

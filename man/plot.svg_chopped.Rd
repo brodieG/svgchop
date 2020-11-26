@@ -2,6 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{plot.svg_chopped}
 \alias{plot.svg_chopped}
+\alias{plot.svg_chopped_list}
 \title{Plot Method for "svg_chopped" Objects}
 \usage{
 \method{plot}{svg_chopped}(
@@ -10,6 +11,19 @@
   scale = FALSE,
   center = TRUE,
   quietly = FALSE,
+  xaxs = "i",
+  yaxs = "i",
+  mai = numeric(4),
+  ...
+)
+
+\method{plot}{svg_chopped_list}(
+  x,
+  ppi = getOption("svgchop.ppi", 125),
+  scale = FALSE,
+  center = TRUE,
+  quietly = FALSE,
+  ask = NULL,
   xaxs = "i",
   yaxs = "i",
   mai = numeric(4),
@@ -32,6 +46,15 @@ ignored.}
 
 \item{center}{TRUE (default)  or FALSE, whether to center the image on the
 device.}
+
+\item{quietly}{TRUE or FALSE (default), whether to suppress progress report
+in rendering output.}
+
+\item{xaxs}{see \code{\link[graphics:par]{graphics::par()}}.}
+
+\item{yaxs}{see \code{\link[graphics:par]{graphics::par()}}.}
+
+\item{mai}{see \code{\link[graphics:par]{graphics::par()}}.}
 
 \item{...}{used to set graphical parameters with \code{\link[graphics:par]{graphics::par()}}.}
 
@@ -59,16 +82,16 @@ one.  Future versions may switch to \code{grid} functions and take advantage of
 viewports, gradients, patterns, etc.
 }
 \examples{
-\donttest{
-svg <- chop(R_logo())
-plot(svg)
-plot(svg, ppi=75)       # fat pixels
-plot(svg, scale=TRUE)   # fit to device
+if(interactive()) {
+  svg <- chop(R_logo())
+  plot(svg)
+  plot(svg, ppi=75)       # fat pixels
+  plot(svg, scale=TRUE)   # fit to device
 
-## Plot multiple svgs at once (chop_all is for all SVGS in
-## a single XML doc, not multiple SVG docs)
-svgs <- as.svg_chopped_list(lapply(svg_samples()[1:4], chop))
-plot(svgs, mfrow=c(2,2), mai=rep(.1, 4), scale=TRUE)
+  ## Plot multiple svgs at once (chop_all is for all SVGS in
+  ## a single XML doc, not multiple SVG docs)
+  svgs <- as.svg_chopped_list(lapply(svg_samples()[1:4], chop))
+  plot(svgs, mfrow=c(2,2), mai=rep(.1, 4), scale=TRUE)
 }
 }
 \seealso{

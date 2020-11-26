@@ -39,6 +39,7 @@
 #' @export
 #' @seealso [chop()]
 #' @param x an object to flatten
+#' @param ... unused for additional method parameters
 #' @return the object flattened
 #' @examples
 #' ## Normal "svg_chopped" objects are tree-like
@@ -51,13 +52,13 @@
 #' length(svgf)          # number of distinct SVG elements
 #'
 #' ## We can use this to plot only parts of the SVG
-#' \donttest{
-#' old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
-#' plot(svgf, scale=TRUE)             # full plot
-#' plot(svgf[4], scale=TRUE)     # one item
-#' plot(svgf[4:6], scale=TRUE)   # more
-#' plot(svgf[10:12], scale=TRUE) # more
-#' par(old.par)
+#' if(interactive()) {
+#'   old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
+#'   plot(svgf, scale=TRUE)             # full plot
+#'   plot(svgf[4], scale=TRUE)     # one item
+#'   plot(svgf[4:6], scale=TRUE)   # more
+#'   plot(svgf[10:12], scale=TRUE) # more
+#'   par(old.par)
 #' }
 
 flatten <- function(x, ...) UseMethod('flatten')
@@ -114,6 +115,7 @@ flatten.svg_chopped_list_flat <- function(x, ...) x
 #' @rdname subset.svg_chopped
 #' @param x an "svg_chopped" or related object
 #' @param i mixed subsetting indices
+#' @param ... additional parameters passed on to `.subset`
 #' @export
 
 `[.svg_chopped` <- function(x, i, ...) update_extents(subset_chop(x, i, ...))
@@ -248,9 +250,8 @@ sig_e <- function(msg) {
 #' \dontrun{
 #' plot(svgs)  ## Error!
 #' }
-#' \donttest{
-#' plot(as.svg_chopped_list(svgs), mfrow=c(2,1), scale=TRUE)
-#' }
+#' if(interactive())
+#'   plot(as.svg_chopped_list(svgs), mfrow=c(2,1), scale=TRUE)
 
 as.svg_chopped_list <- function(x) UseMethod('as.svg_chopped_list')
 
@@ -293,7 +294,7 @@ as.svg_chopped_list.svg_chopped_list <- function(x) x
 #' the "xy.coords" objects are.  The
 #'
 #' @seealso [grDevices::xy.coords()], [approximate_color()],
-#'   [plot.svg_chopped()].
+#'   [plot.svg_chopped()].  @export
 #' @export
 #' @param x an "svg_chopped" or "svg_chopped_flat" object.
 #' @return a list or character vector of the same length as `x`.  See details.
@@ -301,13 +302,13 @@ as.svg_chopped_list.svg_chopped_list <- function(x) x
 #' svg <- chop(R_logo(), steps=3)
 #' str(xy <- get_xy_coords(svg))
 #' (fills <- get_fills(svg))
-#' \donttest{
-#' plot.new()
-#' ext <- attr(svg, "extents")
-#' plot.window(ext$x, rev(ext$y), asp=1)
+#' if(interactive()) {
+#'   plot.new()
+#'   ext <- attr(svg, "extents")
+#'   plot.window(ext$x, rev(ext$y), asp=1)
 #'
-#' polypath(xy[[1]], col=fills[[1]], border=NA)
-#' polypath(xy[[2]], col=fills[[2]], border=NA)
+#'   polypath(xy[[1]], col=fills[[1]], border=NA)
+#'   polypath(xy[[2]], col=fills[[2]], border=NA)
 #' }
 
 get_xy_coords <- function(x) {
@@ -344,8 +345,16 @@ get_colors <- function(x, type) {
 #' @export
 
 get_fills <- function(x) get_colors(x, 'fill')
-#'
+
 #' @rdname get_xy_coords
 #' @export
 
 get_strokes <- function(x) get_colors(x, 'stroke')
+
+# Seem silly to import stats just for this; maybe we should?
+
+setNames <- function(x, y) {
+  if(length(x) == length(y) && is.character(y)) names(x) <- y
+  x
+}
+

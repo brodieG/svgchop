@@ -20,9 +20,8 @@ compute_display_params(
 look larger or smaller than in your browser you may need to adjust this
 setting.}
 
-\item{scale}{TRUE (currently unsupported) or FALSE (default) whether units
-should be scaled to fit the viewbox in the display.  Aspect ratio will be
-preserved.}
+\item{center}{TRUE (default)  or FALSE, whether to center the image on the
+device.}
 }
 \value{
 a list containing elements:

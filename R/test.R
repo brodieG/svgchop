@@ -25,8 +25,14 @@
 #'
 #' @export
 #' @importFrom xml2 `xml_attr<-` write_xml
-#' @param character vector of paths or URLs for SVGs to compare.
-#' @param target a file to write the html to.
+#' @importFrom grDevices png dev.off
+#' @importFrom utils browseURL
+#' @inheritParams plot.svg_chopped
+#' @param files character vector of paths or URLs for SVGs to compare.
+#' @param target a file to use as a directory to contain all the elements
+#'   required for the output webpage, or NULL.  If NULL (default) a temporary
+#'   file will be used.  If specified directly, it should not already exist on
+#'   the file system.
 #' @param width numeric(1L) if NA will use `height` and the aspect ratio from
 #'   the "viewBox" if present, or from the element extents if not.
 #' @param height numeric(1L) if NA will use `height` and the aspect ratio from
@@ -34,31 +40,36 @@
 #' @param display numeric in 0:2, where 0 does not display, 1 opens the
 #'   generated HTML in a browser, and 2 (default) opens the generated HTML in a
 #'   browser, and after `timeout` seconds (enough time for browser to open)
-#'   deletes the files (to avoid cluttering drive during testing).
+#'   deletes the files, but only if target was NULL (to avoid cluttering drive
+#'   during testing).
 #' @param ncol integer(1L) how many columns to arrange the diptychs in (only for
-#'   `compare_svg`.
+#'   `compare_svg`).
 #' @param quietly TRUE or FALSE (default) passed on to the [plot.svg_chopped()].
+#' @param rsvg TRUE or FALSE (default) whether to compare against `rsvg`
+#'   rasterizations instead of browser output.
 #' @param pattern character(1L) a regular expression to sub-select svgs from the
 #'   built-in samples.
-#' @param ... additional arguments passed on to [compare_svg()] and [chop()]
-#' @return character(1L) the name of the file written to
+#' @param timeout numeric(1L) for the case when `display > `, how many seconds
+#'   to wait before unlinking the `target` folder.
+#' @param ... additional arguments passed on to [compare_svg()] and [chop()].
+#' @return character(1L) the name of the file written to.
 #' @examples
 #' \dontrun{
 #' ## These open browser instances
 #' compare_svg()
 #' compare_rsvg()
 #' }
-#' \donttest{
-#' samples <- svg_samples()
-#' scol <- ceiling(sqrt(length(samples)))
-#' srow <- ceiling(length(samples) / scol)
-#' svgs <- as.svg_chopped_list(lapply(samples, chop))
-#' plot(svgs, mfcol=c(srow, scol), scale=TRUE, mai=rep(.1, 4))
+#' if(interactive()) {
+#'   samples <- svg_samples()
+#'   scol <- ceiling(sqrt(length(samples)))
+#'   srow <- ceiling(length(samples) / scol)
+#'   svgs <- as.svg_chopped_list(lapply(samples, chop))
+#'   plot(svgs, mfcol=c(srow, scol), scale=TRUE, mai=rep(.1, 4))
 #' }
 
 compare_svg <- function(
-  source=svg_samples(),
-  target=tempfile(),
+  files=svg_samples(),
+  target=NULL,
   ppi=getOption('svgchop.ppi', 125),
   width=400,
   height=NA_real_,
@@ -73,8 +84,16 @@ compare_svg <- function(
     display=INT.1 && . %in% 0:2,
     width=(NUM.1 && . > 0) || (isTRUE(is.na(.)) && !is.na(.(height))),
     height=(NUM.1 && . > 0) || (isTRUE(is.na(.)) && !is.na(.(width))),
-    ncol=INT.1.POS.STR, timeout=NUM.1.POS, quietly=LGL.1
+    ncol=INT.1.POS.STR, timeout=NUM.1.POS, quietly=LGL.1,
+    target=character(1L) || NULL
   )
+  unlink.ok <- FALSE
+  if(is.null(target)) {
+    unlink.ok <- TRUE
+    target <- tempfile()
+  }
+  if(file.exists(target))
+    stop("`target` (", target, ") already exists; cannot proceed.")
   dir.create(target)
   out <- file.path(target, "index.html")
   col.str <- sprintf(
@@ -98,20 +117,20 @@ compare_svg <- function(
     ),
     out
   )
-  imgs <- character(length(source))
+  imgs <- character(length(files))
   if(rsvg) {
     if(!requireNamespace('rsvg', quietly=TRUE))
       stop("`rsvg` not available, set `rsvg=FALSE`.")
   }
-  for(i in seq_along(source)) {
+  for(i in seq_along(files)) {
     if(!(i - 1) %% ncol) cat("<tr>", file=out, append=TRUE)
 
-    bname <- sub("\\..*$", "", basename(source[i]))
+    bname <- sub("\\..*$", "", basename(files[i]))
     f <- file.path(target, sprintf("img-%s.png", bname))
     imgs[i] <- f
-    svg <- chop(source[i], ...)
+    svg <- chop(files[i], ...)
 
-    xml <- read_xml(source[i])
+    xml <- read_xml(files[i])
     svg.node <- xml_find_first(xml, "//svg:svg[not(ancestor::svg:svg)]", NSMAP)
 
     # set viewbox to extents
@@ -173,7 +192,7 @@ compare_svg <- function(
     # not allowed to test this
     # nocov start
     browseURL(res)
-    if(display > 1) {
+    if(display > 1 && unlink.ok) {
       Sys.sleep(timeout)
       unlink(dirname(res), recursive=TRUE)
     }
@@ -203,10 +222,13 @@ collapse_alpha <- function(x) {
 #' @rdname compare_svg
 #' @export
 
-compare_rsvg <- function(..., width=400, display=2, timeout=2) {
+compare_rsvg <- function(..., target=NULL, width=400, display=2, timeout=2) {
   if(!requireNamespace('png', quietly=TRUE))
     stop("'png' package required for this function.")
   out <- compare_svg(display=0, timeout=timeout, rsvg=TRUE, width=width, ...)
+  unlink.ok <- FALSE
+  if(is.null(target)) unlink.ok <- TRUE
+
   dir <- dirname(out)
   svgs <- list.files(dir, pattern="^img-.*\\.png$", full.names=TRUE)
   rsvgs <- list.files(dir, pattern="^rsvg-.*\\.png$", full.names=TRUE)
@@ -256,7 +278,7 @@ compare_rsvg <- function(..., width=400, display=2, timeout=2) {
     # not allowed to test this
     # nocov start
     browseURL(out)
-    if(display > 1) {
+    if(display > 1 && unlink.ok) {
       Sys.sleep(timeout)
       unlink(dirname(out), recursive=TRUE)
     }
@@ -286,10 +308,10 @@ R_logo <- function(internal=TRUE) {
 ## Used to test that parsing of multiple SVGs in a single HTML page works.
 
 svg_to_html <- function(
-  source, target=paste0(tempfile(), ".html")
+  files, target=paste0(tempfile(), ".html")
 ) {
   writeLines("<!DOCTYPE html><html><body>", target)
-  lapply(source, file.append, file1=target)
+  lapply(files, file.append, file1=target)
   cat( "</body></html>\n", file=target, append=TRUE)
   target
 }

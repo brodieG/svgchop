@@ -10,6 +10,8 @@
 \item{x}{an "svg_chopped" or related object}
 
 \item{i}{mixed subsetting indices}
+
+\item{...}{additional parameters passed on to \code{.subset}}
 }
 \description{
 Versions of the base subsetting functions that do not drop attributes.  Among

@@ -7,8 +7,8 @@
 \title{Tools to Compare SVG Renderings}
 \usage{
 compare_svg(
-  source = svg_samples(),
-  target = tempfile(),
+  files = svg_samples(),
+  target = NULL,
   ppi = getOption("svgchop.ppi", 125),
   width = 400,
   height = NA_real_,
@@ -22,10 +22,20 @@ compare_svg(
 
 svg_samples(pattern = "\\\\.svg$")
 
-compare_rsvg(..., width = 400, display = 2, timeout = 2)
+compare_rsvg(..., target = NULL, width = 400, display = 2, timeout = 2)
 }
 \arguments{
-\item{target}{a file to write the html to.}
+\item{files}{character vector of paths or URLs for SVGs to compare.}
+
+\item{target}{a file to use as a directory to contain all the elements
+required for the output webpage, or NULL.  If NULL (default) a temporary
+file will be used.  If specified directly, it should not already exist on
+the file system.}
+
+\item{ppi}{numeric pixels per inch of the display device to assume for
+calculations, defaults to 125 which is a common display density for retina
+style displays (note these are "display" pixels, not screen pixels which
+are ~2x denser).}
 
 \item{width}{numeric(1L) if NA will use \code{height} and the aspect ratio from
 the "viewBox" if present, or from the element extents if not.}
@@ -34,24 +44,29 @@ the "viewBox" if present, or from the element extents if not.}
 the "viewBox" if present, or from the element extents if not.}
 
 \item{ncol}{integer(1L) how many columns to arrange the diptychs in (only for
-\code{compare_svg}.}
+\code{compare_svg}).}
 
 \item{quietly}{TRUE or FALSE (default) passed on to the \code{\link[=plot.svg_chopped]{plot.svg_chopped()}}.}
 
 \item{display}{numeric in 0:2, where 0 does not display, 1 opens the
 generated HTML in a browser, and 2 (default) opens the generated HTML in a
 browser, and after \code{timeout} seconds (enough time for browser to open)
-deletes the files (to avoid cluttering drive during testing).}
+deletes the files, but only if target was NULL (to avoid cluttering drive
+during testing).}
 
-\item{...}{additional arguments passed on to \code{\link[=compare_svg]{compare_svg()}} and \code{\link[=chop]{chop()}}}
+\item{timeout}{numeric(1L) for the case when \verb{display > }, how many seconds
+to wait before unlinking the \code{target} folder.}
+
+\item{rsvg}{TRUE or FALSE (default) whether to compare against \code{rsvg}
+rasterizations instead of browser output.}
+
+\item{...}{additional arguments passed on to \code{\link[=compare_svg]{compare_svg()}} and \code{\link[=chop]{chop()}}.}
 
 \item{pattern}{character(1L) a regular expression to sub-select svgs from the
 built-in samples.}
-
-\item{character}{vector of paths or URLs for SVGs to compare.}
 }
 \value{
-character(1L) the name of the file written to
+character(1L) the name of the file written to.
 }
 \description{
 \code{compare_svg} juxtaposes an SVG file to the corresponding \code{\link[=chop]{chop()}}ed and
@@ -67,11 +82,11 @@ these functions default to the built-in svgs listable via \code{svg_samples}.
 compare_svg()
 compare_rsvg()
 }
-\donttest{
-samples <- svg_samples()
-scol <- ceiling(sqrt(length(samples)))
-srow <- ceiling(length(samples) / scol)
-svgs <- as.svg_chopped_list(lapply(samples, chop))
-plot(svgs, mfcol=c(srow, scol), scale=TRUE, mai=rep(.1, 4))
+if(interactive()) {
+  samples <- svg_samples()
+  scol <- ceiling(sqrt(length(samples)))
+  srow <- ceiling(length(samples) / scol)
+  svgs <- as.svg_chopped_list(lapply(samples, chop))
+  plot(svgs, mfcol=c(srow, scol), scale=TRUE, mai=rep(.1, 4))
 }
 }

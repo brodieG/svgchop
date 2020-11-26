@@ -29,11 +29,13 @@ Currently only gradients are approximated.  They are approximated by taking
 the arithmetic mean of the stop color RGB values.
 }
 \examples{
-svg <- chop(file.path(R.home(), 'doc', 'html', 'Rlogo.svg'))
-fill.1 <- attr(svg[[1]][[2]], 'style-computed')[['fill']]
+svg <- chop(R_logo())
+## str(svg) to see structure
+fill.1 <- attr(svg[[2]], 'style-computed')[['fill']]
 fill.1 # A gradient fill
 approximate_color(fill.1, attr(svg, 'url'))
 }
 \seealso{
-\code{\link[=chop]{chop()}}
+\code{\link[=chop]{chop()}}, \code{\link[=get_fills]{get_fills()}} and \code{\link[=get_strokes]{get_strokes()}} for quickly retrieving
+approximated gradient fills and strokes.
 }

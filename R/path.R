@@ -44,8 +44,9 @@ interleave_cols <- function(x, y, mult) {
 ## @return a list of lists similar to the input, except all commands will be in
 ##   absolute form.
 
+invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
+
 path_to_abs <- function(path) {
-  invalid_cmd <- function(i, cmd) stop("Invalid ", cmd, " command at index ", i)
   x0 <- x <- 0
   y0 <- y <- 0
   res <- vector('list', length(path))

@@ -18,7 +18,9 @@ Imports:
     vetr,
     xml2,
     polyclip,
-    utils
+    utils,
+    grDevices,
+    graphics
 Suggests:
     unitizer,
     png,
