@@ -445,8 +445,9 @@ process_use_node <- function(node) {
 #'
 #' @export
 #' @seealso [plot.svg_chopped()], [flatten()] for an easier-to-manage data
-#'   structure, [styles_computed()] for what styles are actively processed,
-#'   [approximate_color()] for how to approximate gradient fills.
+#'   structure, [get_xy_coords()] for an easy way to get some basic data out of
+#'   the "svg_chopped" objects, [styles_computed()] for what styles are actively
+#'   processed, [approximate_color()] for how to approximate gradient fills.
 #' @importFrom xml2 xml_attrs xml_find_all xml_ns_strip read_xml xml_name
 #'   xml_text xml_length xml_children xml_attr xml_find_first xml_root
 #'   xml_parents
