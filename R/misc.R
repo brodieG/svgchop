@@ -97,6 +97,13 @@ flatten.svg_chopped_list <- function(x, ...) {
   class(res) <- "svg_chopped_list_flat"
   res
 }
+#' @export
+
+flatten.svg_chopped_flat <- function(x, ...) x
+
+#' @export
+
+flatten.svg_chopped_list_flat <- function(x, ...) x
 
 #' Subset "svg_chopped_flat" Objects
 #'
@@ -267,3 +274,78 @@ as.svg_chopped_list.svg_chopped <- function(x) {
 #' @export
 
 as.svg_chopped_list.svg_chopped_list <- function(x) x
+
+#' Retrieve Basic Data From "svg_chopped" Objects
+#'
+#' Specialized retrieval functions designed to return a small but useful subset
+#' of the data encoded in "svg_chopped" objects so you don't have to wade
+#' through the complex structure of those objects.
+#'
+#' "svg_chopped" objects are first [flatten()]ed and the data is retrieved from
+#' each displayable element.
+#'
+#' `get_xy_coords` returns the coordinates in a format compatible with
+#' [grDevices::xy.coords()] (a list with x and y coordinates as numeric
+#' vectors), and `get_fills` and `get_strokes` return a character vector with
+#' colors processed by [approximate_color()].
+#'
+#' For each diplay element in an "svg_chopped" object return a list structure as
+#' the "xy.coords" objects are.  The
+#'
+#' @seealso [grDevices::xy.coords()], [approximate_color()],
+#'   [plot.svg_chopped()].
+#' @export
+#' @param x an "svg_chopped" or "svg_chopped_flat" object.
+#' @return a list or character vector of the same length as `x`.  See details.
+#' @examples
+#' svg <- chop(R_logo(), steps=3)
+#' str(xy <- get_xy_coords(svg))
+#' (fills <- get_fills(svg))
+#' \donttest{
+#' plot.new()
+#' ext <- attr(svg, "extents")
+#' plot.window(ext$x, rev(ext$y), asp=1)
+#'
+#' polypath(xy[[1]], col=fills[[1]], border=NA)
+#' polypath(xy[[2]], col=fills[[2]], border=NA)
+#' }
+
+get_xy_coords <- function(x) {
+  vetr(
+    structure(list(), class='svg_chopped') ||
+    structure(list(), class='svg_chopped_flat')
+  )
+  x <- flatten(x)
+  lapply(
+    x,
+    function(mat) {
+      if(is.numeric(attr(mat, 'starts'))) {
+        idx <- rep(
+          seq_len(ncol(mat)),
+          seq_len(ncol(mat)) %in% (attr(mat, 'starts') - 1) + 1
+        )
+        idx[duplicated(idx)] <- NA
+        mat <- mat[,idx]
+      }
+      list(x=mat[1,], y=mat[2,])
+    }
+  )
+}
+get_colors <- function(x, type) {
+  vetr(
+    structure(list(), class='svg_chopped') ||
+    structure(list(), class='svg_chopped_flat')
+  )
+  x <- flatten(x)
+  col <- vapply(x, function(y) attr(y, 'style-computed')[[type]], 'character')
+  unname(vapply(col, approximate_color, "", url=attr(x, 'url')))
+}
+#' @rdname get_xy_coords
+#' @export
+
+get_fills <- function(x) get_colors(x, 'fill')
+#'
+#' @rdname get_xy_coords
+#' @export
+
+get_strokes <- function(x) get_colors(x, 'stroke')
