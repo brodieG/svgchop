@@ -37,10 +37,11 @@ for that to happen.
 Why?
 ----
 
-I wanted to render SVGs in 3D using \[`rayrender`\]\[5\] and I needed
-the SVGs as polygons for that:
+I wanted to render SVGs in 3D using
+[`rayrender`](https://cran.r-project.org/web/packages/rayrender/index.html)
+and I needed the SVGs as polygons for that:
 
-<img src=extra/r-3d.png alt="R Logo in 3D!" />
+<img src=extra/r-3d.png alt="R Logo in 3D!" style='width: 650px;'/>
 
 That’s it. If you find any good use-cases for this package do let me
 know.
@@ -65,7 +66,7 @@ do so with base plotting functionality:
     polypath(xy[[1]], col=fills[[1]], border=NA)
     polypath(xy[[2]], col=fills[[2]], border=NA)
 
-![](extra/figures/README-unnamed-chunk-3-1.png)
+![](extra/figures/README-r-logo-1.png)
 
 Installation
 ------------
@@ -106,8 +107,7 @@ reasonably well across a wide variety of SVGs:
 /> </a>
 
 Each diptych has a browser-rendered image on the left, and an
-`svgchop`ped render on the right. We purposefully chopped coarsely for
-effect.
+`svgchop`ped render purposefully coarsely on the right for effect.
 
 `svgchop` implements a `plot` method which we used for the diptychs
 above. There are a few issues in matching the browser output: gradients
@@ -158,6 +158,9 @@ Acknowledgments
     and Adrian Baddley etal. for making it available in R via
     [polyclip](https://cran.r-project.org/package=polyclip). We use
     `polyclip` to implement clip paths.
+-   [Tyler Morgan Wall](https://github.com/tylermorganwall/) for
+    [`rayrender`](https://cran.r-project.org/web/packages/rayrender/index.html)
+    with which I rendered the logos in beautiful path-traced glory.
 -   [MDN](https://developer.mozilla.org/en-US/) for being a fantastic
     resource for web development.
 -   [Mortoray](https://twitter.com/edaqa) for pointing me to the SVG arc

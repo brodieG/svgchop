@@ -61,7 +61,7 @@ with base plotting functionality:
 ```{r echo=FALSE}
 par(mai=numeric(4))
 ```
-```{r fig.width=6, fig.height=4}
+```{r r-logo, fig.width=6, fig.height=4}
 ext <- attr(svg, "extents")
 plot.new()
 plot.window(ext$x, rev(ext$y), asp=1)
