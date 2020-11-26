@@ -34,4 +34,11 @@ unitizer_sect("chop errors", {
   chop(f)
 
 })
+unitizer_sect("get", {
+  file <- system.file(package='svgchop', 'svg', 'test', 'simple-01.svg')
+  svg <- chop(file)
+  get_xy_coords(svg)
+  get_fills(svg)
+  get_strokes(svg)
+})
 
