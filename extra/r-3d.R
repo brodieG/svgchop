@@ -134,7 +134,7 @@ for(i in seq_along(x)[length(x)]) {
       scene,
       fov=fov,
       # fov=11,
-      width=1280, height=640, samples=500,
+      width=720, height=400, samples=500,
       lookfrom=c(0, .5, 6),
       lookat=c(0, 0, 0),
       filename=out,
