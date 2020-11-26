@@ -52,12 +52,12 @@ angles <- x * 90
 radii <- approxfun(0:1, c(1e3, 10))(x)
 # radii <- rep(1e3, 5)
 start <- Sys.time()
-fovs <- approxfun(0:1, c(11, 25))(x)
+fovs <- approxfun(0:1, c(11, 11))(x)
 svgs <- round(
   approxfun(c(0,1, 1), c(1, steps, steps))(seq(0, 1, length.out=frames))
 )
 
-for(i in seq_along(x)) {
+for(i in seq_along(x)[length(x)]) {
   cat(sprintf("\rFrame %03d ellapsed %f", i, Sys.time() - start))
   depth <- depths[i]
   angle <- angles[i]
@@ -134,7 +134,7 @@ for(i in seq_along(x)) {
       scene,
       fov=fov,
       # fov=11,
-      width=200, height=200, samples=20,
+      width=1280, height=640, samples=500,
       lookfrom=c(0, .5, 6),
       lookat=c(0, 0, 0),
       filename=out,
@@ -145,4 +145,91 @@ for(i in seq_along(x)) {
 }
 cat(paste0(c("\r", rep(" ", getOption('width')), "\r"), collapse=""))
 
+stop("done")
 
+# side by side for the logo.  Assumes frames = 23
+
+cat(sprintf("\rFrame %03d ellapsed %f", i, Sys.time() - start))
+depth <- depths[i]
+angle <- angles[i]
+radius <- radii[i]
+fov <- fovs[i]
+nudge <- 1e-3
+svgi <- svgs[i]
+
+hoop1 <- t(norm[[2]][[1]])
+rrr1 <- t(norm[[2]][[2]])
+
+hoop <- t(norm[[svgi]][[1]])
+rrr <- t(norm[[svgi]][[2]])
+
+ray.r <- extruded_polygon(
+  rrr,
+  top=depth / 2 + 2 * nudge, bottom=-depth / 2 - 2 * nudge,
+  material=diffuse(color=cols[1]),
+  holes=starts[[svgi]][[2]][-1]
+)
+ray.hoop <- extruded_polygon(
+  hoop,
+  top=depth / 4 + nudge, bottom=-depth / 4 - nudge,
+  material=diffuse(color=cols[2]),
+  holes=starts[[svgi]][[1]][-1]
+)
+ray.r1 <- extruded_polygon(
+  rrr1,
+  top=depth / 2 + 2 * nudge, bottom=-depth / 2 - 2 * nudge,
+  material=diffuse(color=cols[1]),
+  holes=starts[[2]][[2]][-1]
+)
+ray.hoop1 <- extruded_polygon(
+  hoop1,
+  top=depth / 4 + nudge, bottom=-depth / 4 - nudge,
+  material=diffuse(color=cols[2]),
+  holes=starts[[2]][[1]][-1]
+)
+ray.logo <- group_objects(
+  dplyr::bind_rows(ray.hoop, ray.r),
+  group_angle=c(90, 180, 0),
+  group_translate=c(+.55, 0, 0)
+)
+ray.logo1 <- group_objects(
+  dplyr::bind_rows(ray.hoop1, ray.r1),
+  group_angle=c(90, 180, 0),
+  group_translate=c(-.55, 0, 0)
+)
+radius <- 50
+floor <- sphere(
+  z=-radius, radius=radius
+)
+walls <- group_objects(
+  floor,
+  group_angle=c(angle, 0, 0),
+  # pivot_point=c(0, bottom, -depth / 2)
+  pivot_point=c(0, bottom, 0)
+)
+# light <- sphere(x=5, y=5, z=5, material=light(intensity=100))
+light <- group_objects(
+  sphere(x=0, y=0, z=sqrt(75), material=light(intensity=80)),
+  group_angle=c(angle * .45, angle * .15, 0),
+  pivot_point=numeric(3)
+)
+
+scene <- dplyr::bind_rows(
+  ray.logo,
+  ray.logo1,
+  walls,
+  light,
+  # cube(x=.4, y=.4, xwidth=.1, ywidth=.1)
+)
+out <- next_file('~/Downloads/svgchop/test1/img-000.png')
+render_scene(
+  scene,
+  fov=fov,
+  # fov=11,
+  width=1280, height=640, samples=500,
+  lookfrom=c(0, .5, 6),
+  lookat=c(0, 0, 0),
+  filename=out,
+  clamp_value=5,
+  # debug_channel="normals"
+)
