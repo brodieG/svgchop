@@ -105,7 +105,10 @@ the "Styling" section).
 \item "transform-computed": accumulated transformation data (see "Transforms"
 section).
 \item "starts": indicates the starting column of sub-paths in paths; paths with
-embedded "M" or "m" commands will contain sub-paths.
+embedded "M" or "m" commands will contain sub-paths.  Will always start
+with 1 when present so it is the same length as "closed".  For use with
+e.g. \href{https://cran.r-project.org/package=decido}{\code{decido}} you will need to
+drop the first element.
 \item "closed": logical vector indicating whether each subpath is closed (e.g.
 ends in a "Z" or "z" command.
 \item "extents": the extents of the element including clipped areas, transformed
@@ -425,6 +428,7 @@ withCallingHandlers(
 }
 \seealso{
 \code{\link[=plot.svg_chopped]{plot.svg_chopped()}}, \code{\link[=flatten]{flatten()}} for an easier-to-manage data
-structure, \code{\link[=styles_computed]{styles_computed()}} for what styles are actively processed,
-\code{\link[=approximate_color]{approximate_color()}} for how to approximate gradient fills.
+structure, \code{\link[=get_xy_coords]{get_xy_coords()}} for an easy way to get some basic data out of
+the "svg_chopped" objects, \code{\link[=styles_computed]{styles_computed()}} for what styles are actively
+processed, \code{\link[=approximate_color]{approximate_color()}} for how to approximate gradient fills.
 }

@@ -16,3 +16,4 @@
 notcran
 ^doc$
 ^Meta$
+^\.github$

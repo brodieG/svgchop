@@ -345,7 +345,7 @@ parse_path <- function(x, steps=20) {
     # Compute sub-path starting points
     coords <- if(length(coords) > 1) {
       starts <- cumsum(vapply(coords, ncol, 0))
-      starts <- starts[-length(starts)] + 1L
+      starts <- c(0L, starts[-length(starts)]) + 1L
       coords <- do.call(cbind, coords)
       attr(coords, 'starts') <- starts
       coords

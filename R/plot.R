@@ -71,29 +71,29 @@
 
 plot.svg_chopped <- function(
   x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
-  xaxs='i', yaxs='i', mai=numeric(4), ...
+  quietly=FALSE, xaxs='i', yaxs='i', mai=numeric(4), ...
 )
   plot_list(
     list(x), ppi=ppi, scale=scale, center=center, ask=FALSE,
-    xaxs=xaxs, yaxs=yaxs, mai=mai, ...
+    xaxs=xaxs, yaxs=yaxs, mai=mai, quietly=quietly, ...
   )
 
 #' @export
 
 plot.svg_chopped_flat <- function(
   x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
-  xaxs='i', yaxs='i', mai=numeric(4), ...
+  quietly=FALSE, xaxs='i', yaxs='i', mai=numeric(4), ...
 )
   plot_list(
     list(x), ppi=ppi, scale=scale, center=center, ask=FALSE,
-    xaxs=xaxs, yaxs=yaxs, mai=mai, ...
+    xaxs=xaxs, yaxs=yaxs, mai=mai, quietly=quietly, ...
   )
 
 #' @export
 
 plot.svg_chopped_list <- function(
   x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
-  ask = NULL, xaxs='i', yaxs='i', mai=numeric(4), ...
+  quietly=FALSE, ask = NULL, xaxs='i', yaxs='i', mai=numeric(4), ...
 ) {
   vetr(structure(list(), class='svg_chopped_list'), INT.1.POS.STR, LGL.1)
   plot_list(
@@ -104,7 +104,7 @@ plot.svg_chopped_list <- function(
 #' @export
 
 plot.svg_chopped_list_flat <- function(
-  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE,
+  x, ppi=getOption('svgchop.ppi', 125), scale=FALSE, center=TRUE, quietly=FALSE,
   ask = NULL, xaxs='i', yaxs='i', mai=numeric(4), ...
 ) {
   vetr(structure(list(), class='svg_chopped_list_flat'), INT.1.POS.STR, LGL.1)
@@ -245,8 +245,8 @@ compute_vb_dim <- function(x) {
 ## Internal: plot either normal or flat chopped_list
 
 plot_list <- function(
-  x, ppi, scale=FALSE, center=TRUE, ask, xaxs='i', yaxs='i', mai=numeric(4),
-  ...
+  x, ppi, scale=FALSE, center=TRUE, quietly=FALSE, ask,
+  xaxs='i', yaxs='i', mai=numeric(4), ...
 ) {
   dots <- list(...)
   old.par <- par(c(list(xaxs=xaxs, yaxs=yaxs, mai=mai), dots))
@@ -258,13 +258,13 @@ plot_list <- function(
     oask <- devAskNewPage(TRUE)
     on.exit(devAskNewPage(oask))
   }
-  lapply(x, plot_one, ppi=ppi, scale=scale, center=center)
+  lapply(x, plot_one, ppi=ppi, scale=scale, center=center, quietly=quietly)
   invisible(x)
 }
 ## Internal: plot either normal or flat chopped
 
 plot_one <- function(
-  x, ppi, scale=FALSE, center=TRUE
+  x, ppi, scale=FALSE, center=TRUE, quietly=FALSE
 ) {
   url <- attr(x, 'url')   # gradients, patterns, etc., stored here
   extents <- attr(x, 'extents')
@@ -285,7 +285,7 @@ plot_one <- function(
   # "hidden elements" so they are not plotted
   mats <- if(!inherits(x, 'svg_chopped_flat')) flatten(x) else x
   for(i in seq_along(mats)) {
-    cat(sprintf("Plotting %d/%d\r", i, length(mats)))
+    if(!quietly) cat(sprintf("Plotting %d/%d\r", i, length(mats)))
     mat <- mats[[i]]
     style <- attr(mat, 'style-computed')
     fill <- stroke <- stroke.width <- NA
@@ -348,11 +348,12 @@ plot_one <- function(
       if(!is.na(stroke)) lines(m, col=stroke, lwd=stroke.width)
     }
   }
-  cat(
-    paste0(
-      c(rep(" ", 10 + ceiling(log(length(mats), 10)) * 2), "\r"),
-      collapse=""
-  ) )
+  if(!quietly)
+    cat(
+      paste0(
+        c(rep(" ", 10 + ceiling(log(length(mats), 10)) * 2), "\r"),
+        collapse=""
+    ) )
   invisible(x)
 }
 

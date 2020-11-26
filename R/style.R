@@ -22,7 +22,7 @@ STYLE.PROPS.NORM <- c(
   'stroke-width', 'stroke-opacity',
   'opacity',
   'stop-color', 'stop-opacity',
-  'clip-path'
+  'clip-path', 'clip-rule'
 )
 STYLE.PROPS.CUM <- c()  # used to think some styles needed to accumulate
 STYLE.PROPS <- c(STYLE.PROPS.NORM, STYLE.PROPS.CUM)
@@ -149,8 +149,11 @@ parse_css <- function(x) {
       STYLE.PROPS
     )
   } else {
-    sig("CSS style sheet in unrecognized format.")
-    list()
+    # empty style
+    if (!length(x) || nzchar(x)) {
+      sig_e("CSS style sheet in unrecognized format.")
+    }
+    setNames(vector('list', length(STYLE.PROPS)), STYLE.PROPS)
   }
   structure(res, class="css")
 }
@@ -162,10 +165,14 @@ parse_css_rule <- function(x) {
     gregexec(
       "\\h*([0-9a-zA-Z_\\-]+)\\h*:\\h*([^;\n]*)\\h*(?:[;\n]|$)", x, perl=TRUE
   ) )[[1]]
-  if(!length(m) || length(m) %% 3)
-    stop("CSS style sheet not in recognized format.")
-
-  setNames(m[seq(3, length(m), by=3)], m[seq(2, length(m), by=3)])
+  if(!length(m) || length(m) %% 3) {
+    sig_u("CSS rule in unrecognized format.")
+    m <- character()
+  }
+  setNames(
+    m[seq(3, length.out=length(m)/3, by=3)],
+    m[seq(2, length.out=length(m)/3, by=3)]
+  )
 }
 parse_css_selector <- function(x) {
   x <- trimws(x)
@@ -181,34 +188,36 @@ parse_css_selector <- function(x) {
     )
   )
   bad <- lengths(m) != 3
-  if(any(bad))
-    sig(
+  if(any(bad)) {
+    sig_u(
       paste0(
         "CSS selector \"", trimws(gsub('\\s+', ' ', x)),
         "\" contains unrecognized tokens.",
         collapse=""
-      )
-    )
+  ) ) }
+  if(all(bad)) {
+    character(length(bad))
+  } else {
+    good <- matrix(unlist(m[!bad]), 3)
+    # infer "*" if unspecified element selector
+    good[2, !nzchar(good[2,])] <- "*"
+    # infer "*" if unspecified class/id selector and generate both the class and
+    # id selector.  Most of the complication that follows is trying to get the
+    # additional generated values re-inserted into the vector in the right order
+    # UPDATE: it's not obvious that we need "*.*" and "*#*"?
+    postfix <- as.list(good[3,])
+    postfix.wild <- !nzchar(good[3,])
+    postfix[postfix.wild] <- list(c(".*", "#*"))
+    p.lens <- lengths(postfix)
+    good.cat <- paste0(rep(good[2,], p.lens), unlist(postfix))
 
-  good <- matrix(unlist(m[!bad]), 3)
-  # infer "*" if unspecified element selector
-  good[2, !nzchar(good[2,])] <- "*"
-  # infer "*" if unspecified class/id selector and generate both the class and
-  # id selector.  Most of the complication that follows is trying to get the
-  # additional generated values re-inserted into the vector in the right order
-  # UPDATE: it's not obvious that we need "*.*" and "*#*"?
-  postfix <- as.list(good[3,])
-  postfix.wild <- !nzchar(good[3,])
-  postfix[postfix.wild] <- list(c(".*", "#*"))
-  p.lens <- lengths(postfix)
-  good.cat <- paste0(rep(good[2,], p.lens), unlist(postfix))
-
-  res <- character(length(m) + sum(postfix.wild))
-  ids <- rep(1, length(bad))
-  ids[!bad][postfix.wild] <- 2
-  bad2 <- rep(bad, ids)
-  res[!bad2] <- good.cat
-  res
+    res <- character(length(m) + sum(postfix.wild))
+    ids <- rep(1, length(bad))
+    ids[!bad][postfix.wild] <- 2
+    bad2 <- rep(bad, ids)
+    res[!bad2] <- good.cat
+    res
+  }
 }
 
 style <- function() {

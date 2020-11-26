@@ -99,19 +99,15 @@ parse_stop <- function(node) {
 parse_gradient_terminal <- function(node) {
 
   # steps don't matter, and `parse_use` adds a wrapping list because `use`
-  # element sare supposed to be a wrapper.  For gradients we actually want the
+  # elements are supposed to be a wrapper.  For gradients we actually want the
   # wrapping layer to preserve its attributes.
-
   parsed <- parse_use(node, steps=5)[[1L]]
-  # Collapse all the gradient layers untill all that is left is the stops
 
-  while(isTRUE(grepl('Gradient$', attr(parsed[[1L]], 'xml_name')))) {
-    out.attr <- attr(parsed, 'xml_attrs')
-    out.name <- attr(parsed, 'xml_name')
-    parsed <- parsed[[1L]]
-    attr(parsed, 'xml_name') <- out.name
-    attr(parsed, 'xml_attrs')[names(out.attr)] <- out.attr
-  }
+  # Recover/merge original attributes
+  out.attr <- xml_attrs(node)
+  out.attr[names(attr(parsed, 'xml_attrs'))] <- attr(parsed, 'xml_attrs')
+  attr(parsed, 'xml_attrs') <- out.attr
+  attr(parsed, 'xml_name') <- xml_name(node)
   parsed
 }
 

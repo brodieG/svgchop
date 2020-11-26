@@ -2,18 +2,9 @@
 % Please edit documentation in R/misc.R
 \name{flatten}
 \alias{flatten}
-\alias{flatten.default}
-\alias{flatten.svg_chopped}
-\alias{flatten.svg_chopped_list}
 \title{Simplify "svg_chopped" Structure}
 \usage{
 flatten(x, ...)
-
-\method{flatten}{default}(x, ...)
-
-\method{flatten}{svg_chopped}(x, ...)
-
-\method{flatten}{svg_chopped_list}(x, ...)
 }
 \arguments{
 \item{x}{an object to flatten}
