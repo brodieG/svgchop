@@ -16,7 +16,8 @@ knitr::opts_knit$set(global.par = TRUE)
 
 <!-- badges: start -->
 [![R build status](https://github.com/brodieG/svgchop/workflows/R-CMD-check/badge.svg)](https://github.com/brodieG/svgchop/actions)
-[![](https://codecov.io/github/brodieG/svgchop/coverage.svg?branch=master)](https://codecov.io/github/brodieG/svgchop?branch=development)
+[![](https://codecov.io/github/brodieG/svgchop/coverage.svg?branch=master)](https://codecov.io/github/brodieG/svgchop?branch=master)
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 <!-- badges: end -->
 
 ## Overview
