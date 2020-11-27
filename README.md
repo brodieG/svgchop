@@ -109,8 +109,8 @@ reasonably well across a wide variety of SVGs:
   alt="diptychs comparing SVGs to their svgchop counterparts"
 /> </a>
 
-Each diptych has a browser-rendered image on the left, and an
-`svgchop`ped render purposefully coarsely on the right for effect.
+Each diptych has a browser-rendered image on the left, and a
+purposefully coarse `svgchop`ped render on the right.
 
 `svgchop` implements a `plot` method which we used for the diptychs
 above. There are a few issues in matching the browser output: gradients
@@ -163,7 +163,14 @@ Acknowledgments
     `polyclip` to implement clip paths.
 -   [Tyler Morgan Wall](https://github.com/tylermorganwall/) for
     [`rayrender`](https://cran.r-project.org/web/packages/rayrender/index.html)
-    with which I rendered the logos in beautiful path-traced glory.
+    which I used for the 3D path-traced renderings.
+-   Simon Urbanek for [`png`](https://cran.r-project.org/package=png).
+-   Dom Lachowicz, Christian Persch, and Federico Mena Quintero for
+    [Librsvg](https://developer.gnome.org/rsvg/), and [Jeroen
+    Ooms](https://github.com/jeroen) for making it available in R via
+    [rsvg](https://cran.r-project.org/package=rsvg).
+-   [Jim Hester](https://github.com/jimhester) because
+    [covr](https://cran.r-project.org/package=covr) rocks.
 -   [MDN](https://developer.mozilla.org/en-US/) for being a fantastic
     resource for web development.
 -   [Mortoray](https://twitter.com/edaqa) for pointing me to the SVG arc
@@ -177,8 +184,7 @@ Acknowledgments
     Allaire](https://github.com/jjallaire) etal for
     [rmarkdown](https://cran.r-project.org/package=rmarkdown), and by
     extension John MacFarlane for [pandoc](http://pandoc.org/).
--   [Github](https://github.com/), [Travis-CI](https://travis-ci.org/),
-    [Codecov](https://codecov.io/),
+-   [Github](https://github.com/), [Codecov](https://codecov.io/),
     [Vagrant](https://www.vagrantup.com/),
     [Docker](https://www.docker.com/),
     [Ubuntu](https://www.ubuntu.com/), [Brew](https://brew.sh/) for

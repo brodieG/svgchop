@@ -114,8 +114,8 @@ well across a wide variety of SVGs:
 />
 </a>
 
-Each diptych has a browser-rendered image on the left, and an `svgchop`ped
-render purposefully coarsely on the right for effect.
+Each diptych has a browser-rendered image on the left, and a purposefully coarse
+`svgchop`ped render on the right.
 
 `svgchop` implements a `plot` method which we used for the diptychs above.
 There are a few issues in matching the browser output: gradients and filters are
@@ -132,7 +132,7 @@ See `?svgchop::chop`, in particular the examples.
 ## References
 
 * [Rsvg](https://cran.r-project.org/package=rsvg), a wrapper around the [Librsvg
-  Gnome library](https://developer.gnome.org/rsvg/), to rasterize SVGs.
+  Gnome library][7], to rasterize SVGs.
 * [string2path](https://github.com/yutannihilation/string2path) for converting
   fonts to polygons.
 * [svgpathtools](https://github.com/mathandy/svgpathtools) or a Python SVG
@@ -159,8 +159,13 @@ See `?svgchop::chop`, in particular the examples.
   Baddley etal. for making it available in R via
   [polyclip](https://cran.r-project.org/package=polyclip).  We use `polyclip` to
   implement clip paths.
-* [Tyler Morgan Wall][5] for [`rayrender`][4] with which I rendered the logos in
-  beautiful path-traced glory.
+* [Tyler Morgan Wall][5] for [`rayrender`][4] which I used for the 3D
+  path-traced renderings.
+* Simon Urbanek for [`png`][6].
+* Dom Lachowicz, Christian Persch, and Federico Mena Quintero for [Librsvg][7], 
+  and [Jeroen Ooms][8] for making it available in R via [rsvg][9].
+* [Jim Hester](https://github.com/jimhester) because
+  [covr](https://cran.r-project.org/package=covr) rocks.
 * [MDN](https://developer.mozilla.org/en-US/) for being a fantastic resource for
   web development.
 * [Mortoray](https://twitter.com/edaqa) for pointing me to the SVG arc
@@ -173,11 +178,10 @@ See `?svgchop::chop`, in particular the examples.
   Allaire](https://github.com/jjallaire) etal for
   [rmarkdown](https://cran.r-project.org/package=rmarkdown), and by extension
   John MacFarlane for [pandoc](http://pandoc.org/).
-* [Github](https://github.com/), [Travis-CI](https://travis-ci.org/),
-  [Codecov](https://codecov.io/), [Vagrant](https://www.vagrantup.com/),
-  [Docker](https://www.docker.com/), [Ubuntu](https://www.ubuntu.com/),
-  [Brew](https://brew.sh/) for providing infrastructure that greatly simplifies
-  open source development.
+* [Github](https://github.com/), [Codecov](https://codecov.io/),
+  [Vagrant](https://www.vagrantup.com/), [Docker](https://www.docker.com/),
+  [Ubuntu](https://www.ubuntu.com/), [Brew](https://brew.sh/) for providing
+  infrastructure that greatly simplifies open source development.
 * [Free Software Foundation](http://fsf.org/) for developing the GPL license and
   promotion of the free software movement.
 
@@ -186,6 +190,10 @@ See `?svgchop::chop`, in particular the examples.
 [3]: https://mortoray.com/2017/02/16/rendering-an-svg-elliptical-arc-as-bezier-curves/
 [4]: https://cran.r-project.org/web/packages/rayrender/index.html
 [5]: https://github.com/tylermorganwall/
+[6]: https://cran.r-project.org/package=png
+[7]: https://developer.gnome.org/rsvg/
+[8]: https://github.com/jeroen
+[9]: https://cran.r-project.org/package=rsvg
 
 [^gradients]: Gradients are fully parsed and the data required to render them is
   made available to the user.  The built-in plot method reduces them to a single
