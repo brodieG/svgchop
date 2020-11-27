@@ -1,0 +1,131 @@
+## Tests
+
+Maybe run all the gallery things.  Store some subset as small images?  No
+anti-alias?
+
+* Scale, not-scale
+
+* Transform, no transform + Clip, no Clip
+
+## ToDo
+
+* "starts" should be same length as sub-paths and should always start with 1 so
+  it matches closed.
+
+* Not sure if `parse_path` should be exported (probably not).
+
+* an "href" references an non-existing URL element (subscript oo error now?).
+  Related: right now we drop any fallbacks when URL don't resolve.
+
+* Clipping
+    * How clip links style and transform and clip is a mess.  The problem is
+      clip paths are subject to transformation, but they can be attached to
+      non-terminal leaves, so all the logic that focused on terminal based
+      branching now requires and exception to handle clip-paths (urgh).  Update:
+      we just need to get rid of the option to apply transforms after the fact.
+
+* When implementing patterns, will need to think about whether to apply them
+  truly (i.e. replace target with tessellated and clipped pattern, or just
+  compute the un-transformed pattern).  Probably the latter, relying on the
+  display device to apply the pattern (maybe, this works for e.g. the new grid
+  device, but will not for rayrender).
+
+## Lit Review
+
+On further inspection, seems like there is some stuff we could have used from
+NPM to first compute the "cannonicalized" (C only) shape, and then breaking it
+up:
+
+* https://github.com/mattdesl/svg-mesh-3d
+* https://github.com/jkroso/normalize-svg-path/blob/master/index.js
+* https://github.com/fontello/svgpath
+
+Would have saved re-implementing some stuff.
+
+## Patterns
+
+Patterns are far more complicated because they should have at least some limited
+form of inheritance.  In fact, it seems we can place them outside of the defs
+and they do inherit properties from the parents.  **Doesn't seem to inherit
+transforms** in the place they are created.  The spec seems to suggest they
+should if set on the pattern element itself.  They do however inherit the
+tranforms of the object they are painting  So for patterns they should be
+applied at the time of styling, or at least moved from the "url" list to be an
+attribute of the object so that it may be transformed.  One saving grace in all
+this is maybe we don't do any of this and let the display implementation figure
+out how they want to apply the pattern based on the pattern directions?  Hmm,
+no, we'll need to apply the transforms to the patterns as right now we provide
+the actual elements transformed.  To apply patterns we really want to do so
+before the transforms are done.  Applying a pattern means tiling the object,
+clipping it with the object.  So the object will be replaced with a recursive
+structure of clipped elements.  Once that is all done the transformation can be
+carried out.  Clipping and Masks should probably be treated the same way.
+
+So:
+
+* Collect all gradients with ids
+* Compute all stop 'stop-color' and offset where the only two possible sources
+  of values are the style sheet and the in-line properties (and the in-line
+  style?). Also need 'stop-opacity'.  Not clear that 
+* Store gradients (and possibly other things) an ID basis in a named list to be
+  looked up with `url`.
+
+Does this apply to patterns?  Maybe, again unlikely that they will be nested,
+although since they do specify real elements therein they will contain matrices
+of coordinates (i.e. recursive list containing matrices).  We'll want those to
+be resolved normally, but not displayed.  Maybe flatten lops them off?  But it
+does seem for patterns we will actually want to do the normal parsing.
+
+What about clip paths and masks?  Since those are made up of elements we
+probably want them parsed in the normal pass.
+
+So patterns, clip paths, and masks will get all the normal property inherit
+behavior, transform, wherever they are **defined**.  They then need to be
+suppressed in rendering in some way / moved into the URL attribute.
+
+Gradients though because they don't have terminal elements and we don't want the
+styles applied to the terminal elements (because there are none) need to be
+treated differentially.  So those just get pulled out in a separate stage.
+
+To summarize, since gradients / patterns / clips, etc seem to inherit properties
+to some extent from their own parents rather than where they are referenced
+(except for transforms which they seem exempted from) it makes most sense to:
+
+1. Do early processing (coord and style computation)  with them in place
+    * This means non-matrix elements get to be terminal too, temporarily.
+2. Remove them from the tree and into an auxillary list, while applying
+   additional computations that can be done in isolation.
+3. Re-attach them to the tree at the appropriate places.
+    * For patterns that will may mean replacing the referencing object with the
+      clipped pattern
+    * For clip paths it may mean clipping the referencing object
+4. (optional) Apply the transforms
+    * If the pattern was not applied, do we transform the pattern?  Probably not
+      as the only point of not applying the pattern is to make it available to a
+      device that woudl apply it before transformation.
+
+   , including styling.  Once that's done,
+they should be moved to an external list
+
+
+## Arcs
+
+[Mortoray post][1] on computing the center from the SVG parameters seems like a
+useful starting point.  He also links to the full [FUSE implementation][2] to
+Bézier curves but that looks like it might be challenging to port without
+understanding the semantics of that program (e.g. `EllipticArcToBezierCurve`
+shows up twice with different signatures in the same class).
+
+[1]: https://mortoray.com/2017/02/16/rendering-an-svg-elliptical-arc-as-bezier-curves/
+[2]: https://github.com/fuse-open/fuselibs/blob/ee4df9deacb400211bcc30bbd11cfa6ccf787888/Source/Fuse.Drawing.Surface/SurfaceUtil.uno
+
+Rather than beziers we can just draw segments connecting projections onto the
+ellipse at regular angles, though we'll have to solve the intersection of the
+ellipse with the spokes?  No, if we know rx and ry (which we will?) then we can
+just use the cos/sin business to draw the ellipses.  Rotation around the x axis
+remains to be accounted for.
+
+Mortoray uses the [SVG appendix][3].
+
+[3]: https://www.w3.org/Graphics/SVG/1.1/implnote.html#ArcImplementationNotes
+

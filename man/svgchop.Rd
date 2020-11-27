@@ -5,11 +5,16 @@
 \alias{svgchop}
 \title{Approximate SVG Elements With Line Segments}
 \description{
-Parse SVG elements and approximate them with straight line segments.  Only a
-small set of SVG syntax and commands are recognized.  The parsing is done
-with regex so don't expect it to be robust.  The code is slow and hacky.
+Parse and convert SVG elements into line segments and supporting meta data.
+SVG transforms and clip paths are applied, and SVG presentation attributes
+are computed from style sheets, inline styles and attributes.  The SVG 1.1
+specification is only loosely followed so do not expect outputs to be exactly
+the same as in a conforming SVG rendering engine.  This package is
+experimental and the API will likely change in future versions.  The code is
+optimized neither for speed nor memory use.
 }
 \details{
-This is package is experimental, lightly tested, and not intended for
-production use.
+The workhorse function is \code{\link[=chop]{chop()}} and you should look at its documentation
+to get started, in particular the examples.  \code{\link[=compare_svg]{compare_svg()}} will give you a
+sense of how well the approximation performs.
 }

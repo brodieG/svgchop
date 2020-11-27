@@ -5,21 +5,30 @@ Description: Parses SVG elements and approximates them with straight line
   segments.  Only a small set of SVG syntax and commands are recognized.  The
   parsing is done with regex so don't expect it to be robust.  The code is slow
   and hacky.
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person(
     "Brodie", "Gaslam", email="brodie.gaslam@yahoo.com",
-    role=c("aut", "cre")))
+    role=c("aut", "cre")),
+    person(family="R Core",
+    email="R-core@r-project.org", role="cph",
+    comment="implementation for using devAskNewPage from plot.lm")
+    )
 Imports:
-    grid,
-    gridBezier,
     vetr,
-    xml2
+    xml2,
+    polyclip,
+    utils,
+    grDevices,
+    graphics
+Suggests:
+    unitizer,
+    png,
+    rsvg
 License: GPL (>= 2)
 LazyData: true
 URL: https://github.com/brodieG/svgchop
 BugReports: https://github.com/brodieG/svgchop/issues
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
-VignetteBuilder: knitr
 Encoding: UTF-8
