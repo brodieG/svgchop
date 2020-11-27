@@ -14,7 +14,7 @@ experimental and the API will likely change in future versions.  The code is
 optimized neither for speed nor memory use.
 }
 \details{
-The workhorse function is \code{\link[=chop]{chop()}} and you should look at its documentation,
-in particular the examples, to get started.  \code{\link[=compare_svg]{compare_svg()}} will give you a
+The workhorse function is \code{\link[=chop]{chop()}} and you should look at its documentation
+to get started, in particular the examples.  \code{\link[=compare_svg]{compare_svg()}} will give you a
 sense of how well the approximation performs.
 }

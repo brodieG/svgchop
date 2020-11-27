@@ -139,7 +139,7 @@ plot.svg_chopped_list_flat <- function(
 #'
 #' @export
 #' @inheritParams plot.svg_chopped
-#' @param x an "svg_chopped" object
+#' @param x an "svg_chopped" object.
 #' @param pin numeric length 2 width and height of the plot area in inches.
 #' @param ppi numeric device resolution in pixels per inch; if rendered SVGs
 #'   look larger or smaller than in your browser you may need to adjust this

@@ -61,7 +61,7 @@ svg_colors_all <- function() web.colors
 #' attributes, CSS style sheets, and inheritance.  This function returns which
 #' styles receive that treatment.
 #'
-#' @return character names of styles computed by `svgchop`
+#' @return character names of styles computed by `svgchop`.
 #' @export
 #' @examples
 #' styles_computed()

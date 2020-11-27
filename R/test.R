@@ -200,15 +200,6 @@ compare_svg <- function(
   }
   res
 }
-#' @rdname compare_svg
-#' @export
-
-svg_samples <- function(pattern="\\.svg$")
-  list.files(
-    system.file(package='svgchop', 'svg'), pattern=pattern, ignore.case=TRUE,
-    full.names=TRUE
-  )
-
 ## Collapse RGBA Into RGB
 ##
 ## Blend Assuming White Background.  Assumes values in 0-1
@@ -286,6 +277,15 @@ compare_rsvg <- function(..., target=NULL, width=400, display=2, timeout=2) {
   }
   out
 }
+#' @rdname compare_svg
+#' @export
+
+svg_samples <- function(pattern="\\.svg$")
+  list.files(
+    system.file(package='svgchop', 'svg'), pattern=pattern, ignore.case=TRUE,
+    full.names=TRUE
+  )
+
 
 #' Return a Path to the SVG R Logo
 #'

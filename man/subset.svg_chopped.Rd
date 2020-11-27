@@ -7,11 +7,14 @@
 \method{[}{svg_chopped}(x, i, ...)
 }
 \arguments{
-\item{x}{an "svg_chopped" or related object}
+\item{x}{an "svg_chopped" or related object.}
 
-\item{i}{mixed subsetting indices}
+\item{i}{mixed subsetting indices.}
 
-\item{...}{additional parameters passed on to \code{.subset}}
+\item{...}{additional parameters passed on to \code{.subset}.}
+}
+\value{
+on object of the same type as \code{x}.
 }
 \description{
 Versions of the base subsetting functions that do not drop attributes.  Among

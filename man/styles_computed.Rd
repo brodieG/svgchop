@@ -7,7 +7,7 @@
 styles_computed()
 }
 \value{
-character names of styles computed by \code{svgchop}
+character names of styles computed by \code{svgchop}.
 }
 \description{
 \code{svgchop} computes a small subset of style attributess based on element

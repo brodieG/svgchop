@@ -105,7 +105,7 @@ get_url_obj <- function(x, url) {
   }
 }
 
-#' Approximate Color
+#' Approximate Color From Complex Styles
 #'
 #' The "fill" and "stroke" attributes to SVG elements may be specified in the
 #' form "url(#id)" where "id" is the DOM id of another SVG element.  This is
@@ -114,10 +114,11 @@ get_url_obj <- function(x, url) {
 #' it can based on data from the url-referenced object.
 #'
 #' Currently only gradients are approximated.  They are approximated by taking
-#' the arithmetic mean of the stop color RGB values.
+#' the arithmetic mean of the stop color RGB values.  The mean stop opacity is
+#' attached as an attribute.
 #'
 #' @export
-#' @seealso [chop()], [get_fills()] and [get_strokes()] for quickly retrieving
+#' @seealso [chop()], [get_fills()] and [get_strokes()] for easily retrieving
 #'   approximated gradient fills and strokes.
 #' @importFrom grDevices rgb col2rgb
 #' @param color character(1L) a value used as the "fill" attribute of an SVG

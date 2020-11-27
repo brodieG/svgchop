@@ -8,8 +8,8 @@
 #' experimental and the API will likely change in future versions.  The code is
 #' optimized neither for speed nor memory use.
 #'
-#' The workhorse function is [chop()] and you should look at its documentation,
-#' in particular the examples, to get started.  [compare_svg()] will give you a
+#' The workhorse function is [chop()] and you should look at its documentation
+#' to get started, in particular the examples.  [compare_svg()] will give you a
 #' sense of how well the approximation performs.
 #'
 #' @import vetr

@@ -2,7 +2,7 @@
 % Please edit documentation in R/url.R
 \name{approximate_color}
 \alias{approximate_color}
-\title{Approximate Color}
+\title{Approximate Color From Complex Styles}
 \usage{
 approximate_color(color, url)
 }
@@ -26,7 +26,8 @@ it can based on data from the url-referenced object.
 }
 \details{
 Currently only gradients are approximated.  They are approximated by taking
-the arithmetic mean of the stop color RGB values.
+the arithmetic mean of the stop color RGB values.  The mean stop opacity is
+attached as an attribute.
 }
 \examples{
 svg <- chop(R_logo())
@@ -36,6 +37,6 @@ fill.1 # A gradient fill
 approximate_color(fill.1, attr(svg, 'url'))
 }
 \seealso{
-\code{\link[=chop]{chop()}}, \code{\link[=get_fills]{get_fills()}} and \code{\link[=get_strokes]{get_strokes()}} for quickly retrieving
+\code{\link[=chop]{chop()}}, \code{\link[=get_fills]{get_fills()}} and \code{\link[=get_strokes]{get_strokes()}} for easily retrieving
 approximated gradient fills and strokes.
 }

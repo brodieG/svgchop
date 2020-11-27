@@ -39,8 +39,8 @@
 #' @export
 #' @seealso [chop()]
 #' @param x an object to flatten
-#' @param ... unused for additional method parameters
-#' @return the object flattened
+#' @param ... unused for additional method parameters.
+#' @return the object flattened.
 #' @examples
 #' ## Normal "svg_chopped" objects are tree-like
 #' svg <- chop(svg_samples('shapes'))
@@ -52,7 +52,7 @@
 #' length(svgf)          # number of distinct SVG elements
 #'
 #' ## We can use this to plot only parts of the SVG
-#' if(interactive()) {
+#' if(interactive())
 #'   old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
 #'   plot(svgf, scale=TRUE)             # full plot
 #'   plot(svgf[4], scale=TRUE)     # one item
@@ -113,9 +113,10 @@ flatten.svg_chopped_list_flat <- function(x, ...) x
 #' the inspection methods in the package.
 #'
 #' @rdname subset.svg_chopped
-#' @param x an "svg_chopped" or related object
-#' @param i mixed subsetting indices
-#' @param ... additional parameters passed on to `.subset`
+#' @param x an "svg_chopped" or related object.
+#' @param i mixed subsetting indices.
+#' @param ... additional parameters passed on to `.subset`.
+#' @return on object of the same type as `x`.
 #' @export
 
 `[.svg_chopped` <- function(x, i, ...) update_extents(subset_chop(x, i, ...))
@@ -243,8 +244,8 @@ sig_e <- function(msg) {
 #' "svg_chopped_list" methods.
 #'
 #' @export
-#' @param x a list of "svg_chopped" objects
-#' @return an "svg_chopped_list" object
+#' @param x a list of "svg_chopped" objects.
+#' @return an "svg_chopped_list" object.
 #' @examples
 #' svgs <- lapply(svg_samples()[1:2], chop)
 #' \dontrun{
@@ -289,9 +290,6 @@ as.svg_chopped_list.svg_chopped_list <- function(x) x
 #' [grDevices::xy.coords()] (a list with x and y coordinates as numeric
 #' vectors), and `get_fills` and `get_strokes` return a character vector with
 #' colors processed by [approximate_color()].
-#'
-#' For each diplay element in an "svg_chopped" object return a list structure as
-#' the "xy.coords" objects are.  The
 #'
 #' @seealso [grDevices::xy.coords()], [approximate_color()],
 #'   [plot.svg_chopped()].  @export

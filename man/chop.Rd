@@ -3,7 +3,7 @@
 \name{chop}
 \alias{chop}
 \alias{chop_all}
-\title{Approximate SVG Documents With Line Segments}
+\title{Approximate SVG Elements  With Line Segments}
 \usage{
 chop(
   file,
@@ -35,9 +35,8 @@ based ones.}
 \item{transform}{TRUE (default) or FALSE whether to apply the transformation
 to the computed element coordinates.  There is a chance this parameter will
 become deprecated and we will no longer provide the option to leave
-transforms un-applied.  The option complicates code substantially.  If set
-to FALSE, you must should also set \code{clip} to FALSE and apply the clip-paths
-yourself.}
+transforms un-applied.  If set to FALSE, you must should also set \code{clip} to
+FALSE and apply the clip-paths yourself.}
 
 \item{clip}{TRUE (default) or FALSE whether to apply clipping paths to the
 output.  See "Gradients, Patterns, Masks, and Clip Paths".}
@@ -54,11 +53,10 @@ object for \code{chop_all}.  See "Return Value" section for details.
 Parse and convert SVG elements into line segments and supporting meta data.
 SVG transforms and clip paths are optionally applied, and SVG presentation
 attributes are computed from style sheets, inline styles and attributes.  The
-\href{https://www.w3.org/TR/SVG11/}{SVG 1.1 specification} is only loosely
-followed so expect divergences from conforming SVG rendering engines.  This
-function is experimental and the API and structure of the return value will
-likely change in future versions.  The code is optimized neither for speed
-nor memory use.
+\href{https://www.w3.org/TR/SVG11/}{SVG 1.1 specification} is loosely followed so
+expect divergences from conforming SVG rendering engines.  This function is
+experimental and the API and structure of the return value will likely change
+in future versions.  The code is optimized neither for speed nor memory use.
 }
 \section{Details}{
 
@@ -363,7 +361,7 @@ conditions inheriting class "svgchop" so you may handle them (see example).
 svg <- chop(R_logo())
 if(interactive()) plot(svg)
 
-## Let's do this manually instead of the built-in method
+## Let's do this manually instead of the built-in plot method
 xy <- get_xy_coords(svg)
 fills <- get_fills(svg)
 ext <- attr(svg, "extents")
@@ -397,16 +395,16 @@ if(interactive()) {
   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
   r2 <- r
   ## Abuse the fact we know the polygons are explicitly closed,
-  ## so make the last value of each sub-path NA so they are treated
+  ## so make the first value of each sub-path NA so they are treated
   ## as separate by polypath (`get_coords_xy` does this without
-  ## abuse)
-  r2[,attr(r, 'starts')] <- NA
+  ## abuse). We skip first index otherwise `polypath` complains.
+  r2[,attr(r, 'starts')[-1]] <- NA
   polypath(t(r2), col='blue')
 
   ## Color not right, let's retrieve actual color
   rfill <- attr(r, 'style-computed')[['fill']]
   rfill
-  ## Gah, it's a gradient.  But that's okay.
+  ## Gah, it's a gradient.  But we can approximate the color.
   rfill <- approximate_color(rfill, attr(svg, 'url'))
   plot.new()
   plot.window(xlim=ext[['x']], ylim=rev(ext[['y']]), asp=1)
@@ -417,7 +415,7 @@ if(interactive()) {
   ## logo but applying arbitrary transforms (note: SVG transforms
   ## are applied automatically).
   h2 <- hoop
-  h2[, attr(hoop, 'starts')] <- NA
+  h2[, attr(hoop, 'starts')[-1]] <- NA
   hfill <- attr(hoop, 'style-computed')[['fill']]
   hfill <- approximate_color(hfill, attr(svg, 'url'))
   ## rotation matrices

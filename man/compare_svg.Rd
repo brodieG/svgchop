@@ -2,8 +2,8 @@
 % Please edit documentation in R/test.R
 \name{compare_svg}
 \alias{compare_svg}
-\alias{svg_samples}
 \alias{compare_rsvg}
+\alias{svg_samples}
 \title{Tools to Compare SVG Renderings}
 \usage{
 compare_svg(
@@ -20,9 +20,9 @@ compare_svg(
   ...
 )
 
-svg_samples(pattern = "\\\\.svg$")
-
 compare_rsvg(..., target = NULL, width = 400, display = 2, timeout = 2)
+
+svg_samples(pattern = "\\\\.svg$")
 }
 \arguments{
 \item{files}{character vector of paths or URLs for SVGs to compare.}

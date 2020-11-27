@@ -12,7 +12,7 @@ compute_display_params(
 )
 }
 \arguments{
-\item{x}{an "svg_chopped" object}
+\item{x}{an "svg_chopped" object.}
 
 \item{pin}{numeric length 2 width and height of the plot area in inches.}
 

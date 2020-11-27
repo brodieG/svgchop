@@ -7,10 +7,10 @@
 as.svg_chopped_list(x)
 }
 \arguments{
-\item{x}{a list of "svg_chopped" objects}
+\item{x}{a list of "svg_chopped" objects.}
 }
 \value{
-an "svg_chopped_list" object
+an "svg_chopped_list" object.
 }
 \description{
 Useful in cases where we wish to take a list of "svg_chopped" objects, e.g.

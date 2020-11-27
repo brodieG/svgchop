@@ -31,9 +31,6 @@ each displayable element.
 \code{\link[grDevices:xy.coords]{grDevices::xy.coords()}} (a list with x and y coordinates as numeric
 vectors), and \code{get_fills} and \code{get_strokes} return a character vector with
 colors processed by \code{\link[=approximate_color]{approximate_color()}}.
-
-For each diplay element in an "svg_chopped" object return a list structure as
-the "xy.coords" objects are.  The
 }
 \examples{
 svg <- chop(R_logo(), steps=3)
