@@ -126,8 +126,8 @@ Documentation
 
 See `?svgchop::chop`, in particular the examples.
 
-Related Software
-----------------
+References
+----------
 
 -   [Rsvg](https://cran.r-project.org/package=rsvg), a wrapper around
     the [Librsvg Gnome library](https://developer.gnome.org/rsvg/), to
