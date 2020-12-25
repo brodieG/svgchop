@@ -71,7 +71,7 @@ character(1L) the name of the file written to.
 \description{
 \code{compare_svg} juxtaposes an SVG file to the corresponding \code{\link[=chop]{chop()}}ed and
 rasterized (via \code{\link[=plot.svg_chopped]{plot.svg_chopped()}}) version.  \code{compare_rsvg} does the same,
-except the reference SVG is rasterized with \code{\link[rsvg:rsvg_png]{rsvg::rsvg_png()}}.  For the
+except the reference SVG is rasterized with \code{\link[rsvg:rsvg]{rsvg::rsvg_png()}}.  For the
 latter we also show the mean absolute difference for each pixel across
 channels as a monochrome image.  Reference renderings are on the left.  Both
 these functions default to the built-in svgs listable via \code{svg_samples}.

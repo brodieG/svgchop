@@ -36,6 +36,26 @@ indices.
 "svg_chopped_flat" (and "svg_chopped") objects are best inspected with
 \code{\link[utils:str]{utils::str()}}.
 }
+\examples{
+## Normal "svg_chopped" objects are tree-like
+svg <- chop(svg_samples('shapes'))
+str(svg, max.level=3, list.len=3)
+
+## Flattened ones are linearized and lose hidden elements
+svgf <- flatten(svg)
+str(svgf, list.len=8)
+length(svgf)          # number of distinct SVG elements
+
+## We can use this to plot only parts of the SVG
+if (interactive()) {
+  old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
+  plot(svgf, scale=TRUE)             # full plot
+  plot(svgf[4], scale=TRUE)     # one item
+  plot(svgf[4:6], scale=TRUE)   # more
+  plot(svgf[10:12], scale=TRUE) # more
+  par(old.par)
+}
+}
 \seealso{
 \code{\link[=chop]{chop()}}
 }

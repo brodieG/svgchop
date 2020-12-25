@@ -52,7 +52,7 @@
 #' length(svgf)          # number of distinct SVG elements
 #'
 #' ## We can use this to plot only parts of the SVG
-#' if(interactive())
+#' if (interactive()) {
 #'   old.par <- par(mfrow=c(2,2), mai=rep(.1, 4))
 #'   plot(svgf, scale=TRUE)             # full plot
 #'   plot(svgf[4], scale=TRUE)     # one item
