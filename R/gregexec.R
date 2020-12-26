@@ -40,18 +40,28 @@ gregexec2a <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
     stopifnot(perl)
     dat <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
                     fixed = fixed, useBytes = useBytes, perl = TRUE)
-    capt.attr <- c('capture.start', 'capture.length', 'capture.names')
+    drop.attr <- c('capture.start', 'capture.length', 'capture.names',
+                   'match.lenght')
+    copy.attr <- c('index.type', 'useBytes')
     process <- function(x) {
         if(anyNA(x) || any(x < 0)) y <- x
         else {
             # we want to interleave matches with captures
-            y <-
-                asplit(cbind(x, attr(x, "capture.start"), deparse.level=0L), 1L)
-            attributes(y)[names(attributes(x))] <- attributes(x)
-            attr(y, "match.length") <-
-                asplit(cbind(attr(x, "match.length"), attr(x, "capture.length"),
-                             deparse.level=0L), 1L)
-            attributes(y)[capt.attr] <- NULL
+            y <- asplit(
+                cbind(x, attr(x, "capture.start"), deparse.level=0L), 1L)
+            m.l <- asplit(
+                cbind(attr(x, "match.length"), attr(x, "capture.length"),
+                      deparse.level=0L), 1L)
+            y <- Map(
+                function(a, b) {
+                    a <- c(a)
+                    attributes(a)[copy.attr] <- attributes(x)[copy.attr]
+                    attr(a, 'match.length') <- c(b)
+                    a
+                },
+                y, m.l
+            )
+            attributes(y)[drop.attr] <- NULL
         }
         y
     }
