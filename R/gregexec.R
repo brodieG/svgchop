@@ -43,20 +43,21 @@ gregexec2a <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
     drop.attr <- c('capture.start', 'capture.length', 'capture.names',
                    'match.lenght')
     copy.attr <- c('index.type', 'useBytes')
+    # `asplit` is slow relative to this naive implementation for special case
+    split_rows <- function(m) lapply(seq_len(nrow(m)), function(i) m[i,])
     process <- function(x) {
         if(anyNA(x) || any(x < 0)) y <- x
         else {
             # we want to interleave matches with captures
-            y <- asplit(
-                cbind(x, attr(x, "capture.start"), deparse.level=0L), 1L)
-            m.l <- asplit(
+            y <- split_rows(
+                cbind(x, attr(x, "capture.start"), deparse.level=0L))
+            m.l <- split_rows(
                 cbind(attr(x, "match.length"), attr(x, "capture.length"),
-                      deparse.level=0L), 1L)
+                      deparse.level=0L))
             y <- Map(
                 function(a, b) {
-                    a <- c(a)
                     attributes(a)[copy.attr] <- attributes(x)[copy.attr]
-                    attr(a, 'match.length') <- c(b)
+                    attr(a, 'match.length') <- b
                     a
                 },
                 y, m.l
