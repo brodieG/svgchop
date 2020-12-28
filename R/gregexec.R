@@ -13,7 +13,7 @@
 #' @inheritParams base::grep
 
 gregexec <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
-                     fixed = FALSE, useBytes = FALSE, method = 'matrix') {
+                     fixed = FALSE, useBytes = FALSE) {
     stopifnot(perl)
     dat <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
                     fixed = fixed, useBytes = useBytes, perl = TRUE)
@@ -27,15 +27,71 @@ gregexec <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
             attr(y, "match.length") <-
                 t(cbind(attr(x, "match.length"), attr(x, "capture.length"),
                         deparse.level=0L))
-            attributes(y)[capt.attr] <- NULL
         }
+        attributes(y)[capt.attr] <- NULL
         y
     }
     lapply(dat, process)
 }
+#' Original gregexec, returns matches with their captures as matrices
+#'
 #' @export
 
-gregexec2a <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
+gregexec_M <- gregexec
+
+#' Based on `?regexec` example, returns matches and captures as nested lists.
+#'
+#' @export
+
+gregexec_L <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
+                      fixed = FALSE, useBytes = FALSE) {
+    dat <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
+                    fixed = fixed, useBytes = useBytes, perl = perl)
+    g <- lapply(regmatches(text, dat),
+                regexec, pattern = pattern, ignore.case = ignore.case,
+                perl = perl, fixed = fixed, useBytes = useBytes)
+    Map(function(global, local) Map(`+`, local, global - 1L), dat, g)
+}
+#' Matrix output, but computed from as `gregexec_L` with the result
+#' post-processed into matrix.  This allows it to work with perl=FALSE.
+#'
+#' @noRd
+#' @export
+
+gregexec_M2 <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
+                     fixed = FALSE, useBytes = FALSE) {
+    m0 <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
+                   fixed = fixed, useBytes = useBytes, perl = perl)
+    m1 <- lapply(regmatches(text, m0),
+                 regexec, pattern = pattern, ignore.case = ignore.case,
+                 perl = perl, fixed = fixed, useBytes = useBytes)
+    mlen <- lengths(m1)
+    res <- vector("list", length(m1))
+    im <- mlen > 0
+    res[!im] <- m0[!im]   # -1, NA
+    res[im] <- Map(
+        function(outer, inner) {
+            tmp <- do.call(cbind, inner)
+            attributes(tmp)[names(attributes(inner))] <- attributes(inner)
+            attr(tmp, 'match.length') <-
+                do.call(cbind, lapply(inner, `attr`, 'match.length'))
+            # useBytes/index.type should be same for all so use outer vals
+            attr(tmp, 'useBytes') <- attr(outer, 'useBytes')
+            attr(tmp, 'index.type') <- attr(outer, 'index.type')
+            tmp + rep(outer - 1L, each = nrow(tmp))
+        },
+        m0[im],
+        m1[im]
+    )
+    res
+}
+
+#' Experimental, trying to see if it is worth trying to generate the list
+#' version from the matrix version for perl = TRUE
+#'
+#' @export
+
+gregexec_L2 <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
                      fixed = FALSE, useBytes = FALSE, method = 'matrix') {
     stopifnot(perl)
     dat <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
@@ -68,30 +124,21 @@ gregexec2a <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
     }
     lapply(dat, process)
 }
+
+#' Like `regmatches` but copies input dimension to output so matrices are
+#' preserved.
+#'
 #' @export
 
-gregexec1 <- gregexec
-
-#' @export
-
-gregexec2 <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
-                      fixed = FALSE, useBytes = FALSE) {
-    dat <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
-                    fixed = fixed, useBytes = useBytes, perl = perl)
-    g <- lapply(regmatches(text, dat),
-                regexec, pattern = pattern, ignore.case = ignore.case,
-                perl = perl, fixed = fixed, useBytes = useBytes)
-    Map(function(global, local) Map(`+`, local, global - 1L), dat, g)
-}
-#' @export
-
-regmatches1 <- function(x, m, invert = FALSE) {
+regmatches_M <- function(x, m, invert = FALSE) {
     res <- regmatches(x = x, m = m, invert = invert)
     Map(function(x, y) { dim(x) <- dim(y); x }, res, m)
 }
+#' Like `regmatches` but can handle nested list input.
+#'
 #' @export
 
-regmatches2 <- function(x, m, invert = FALSE) {
+regmatches_L <- function(x, m, invert = FALSE) {
     lens <- integer()
     if (length(m) && is.list(m[[1L]]) && length(m[[1L]])) {
         lens <- lengths(m)
@@ -99,7 +146,7 @@ regmatches2 <- function(x, m, invert = FALSE) {
         m <- unlist(m, recursive = FALSE)
     }
     res <- regmatches(x = x, m = m, invert = invert)
-        if (length(lens)) {
+    if (length(lens)) {
           unname(split(res, rep(seq_along(lens), lens)))
     } else res
 }
