@@ -14,6 +14,19 @@
 
 gregexec <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
                      fixed = FALSE, useBytes = FALSE) {
+    if(perl)
+        gregexec_M(pattern = pattern, text = text, ignore.case = ignore.case,
+                   perl = perl, fixed = fixed, useBytes = useBytes)
+    else
+        gregexec_M2(pattern = pattern, text = text, ignore.case = ignore.case,
+                   perl = perl, fixed = fixed, useBytes = useBytes)
+
+}
+#' Original gregexec, returns matches with their captures as matrices
+#' @export
+
+gregexec_M <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
+                     fixed = FALSE, useBytes = FALSE) {
     stopifnot(perl)
     dat <- gregexpr(pattern = pattern, text=text, ignore.case = ignore.case,
                     fixed = fixed, useBytes = useBytes, perl = TRUE)
@@ -33,12 +46,6 @@ gregexec <- function(pattern, text, ignore.case = FALSE, perl = FALSE,
     }
     lapply(dat, process)
 }
-#' Original gregexec, returns matches with their captures as matrices
-#'
-#' @export
-
-gregexec_M <- gregexec
-
 #' Based on `?regexec` example, returns matches and captures as nested lists.
 #'
 #' @export
